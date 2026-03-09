@@ -71,15 +71,21 @@ interface DashboardLayout {
 }
 ```
 ## Design System
-- **Typography**: IBM Plex Sans (UI text), IBM Plex Mono (code/numbers)
-- **Primary colour**: Indigo-600 (#4F46E5)
-- **Cards**: Glassmorphic styling with subtle backdrop blur and border opacity
-- **Spacing**: 4px base scale (4, 8, 12, 16, 24, 32, 48)
-- **Aesthetic**: Apple-inspired, clean, premium feel
-- **Numbers**: Always use tabular number formatting
+- **Typography**: IBM Plex Sans (body), IBM Plex Mono (headlines, labels, numbers, data)
+- **Labels**: font-mono, text-[10px] or text-xs, uppercase, tracking-widest
+- **Page background**: #FAFAF8 (warm off-white, `bg-page`)
+- **Cards**: bg-white, 1px solid border-gray-200, NO border-radius (or 2px max), no shadows (0 1px 3px rgba(0,0,0,0.04) max)
+- **Primary text**: #0E0D0D (`text-ink`)
+- **Secondary text**: gray-400 to gray-500
+- **Accent**: #2A9D8F (muted teal) — use SPARINGLY, only for primary CTAs and active states
+- **Buttons primary**: bg-gray-900 text-white, font-mono text-xs uppercase tracking-wide, px-6 py-3, no border-radius or 2px max
+- **Buttons secondary**: border border-gray-900 text-gray-900, hover:bg-gray-900 hover:text-white
+- **Navigation**: pill-style (bg-gray-100 rounded-full p-1, active: bg-gray-900 text-white rounded-full)
+- **Numbers**: Always tabular-nums, font-mono
 - **Formatting**: £536.7K not £536700, conditional colouring (red low, green high)
 - **Loading**: Skeleton screens, never spinners
-- **Empty states**: Helpful illustrations with clear CTAs
+- **Empty states**: Editorial, generous whitespace, large monospace text
+- **Aesthetic**: Editorial, typewriter-inspired, black/white with purposeful whitespace. Inspired by midday.ai / Fictional Spaces. No indigo, no purple, no bright colours.
 ## Code Conventions
 - Functional components with hooks only, no class components
 - All styling via Tailwind CSS utility classes, no inline styles or CSS modules
@@ -88,7 +94,7 @@ interface DashboardLayout {
 - Custom hooks for data fetching and state management
 - Proper TypeScript types for all props and state
 ## Frontend Aesthetics
-Avoid generic AI-generated design. No Inter, Roboto, or system fonts. No purple gradients on white. Commit to the indigo + glassmorphic aesthetic with IBM Plex typography. Every component should feel intentionally designed, not template-generated. Use CSS variables for colour consistency. Dominant colours with sharp accents, not timid evenly-distributed palettes.
+Avoid generic AI-generated design. No Inter, Roboto, or system fonts. No purple, no indigo, no bright gradients. Commit to the editorial black/white/teal aesthetic with IBM Plex typography. Every component should feel deliberately designed — typewriter-inspired, not template-generated. Use Tailwind v4 `@theme` CSS variables for colour consistency. Black on warm white with the muted teal accent used sparingly for active states and primary CTAs only.
 ## Context7 Rule
 Always use Context7 MCP for library/API documentation when generating code that uses dnd-kit, Recharts, Supabase, Papa Parse, or any external library, without being asked.
 ## Agent Team Configuration

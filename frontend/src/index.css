@@ -5,69 +5,65 @@
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  /* Primary — Indigo */
-  --color-primary-50: #eef2ff;
-  --color-primary-100: #e0e7ff;
-  --color-primary-200: #c7d2fe;
-  --color-primary-300: #a5b4fc;
-  --color-primary-400: #818cf8;
-  --color-primary-500: #6366f1;
-  --color-primary-600: #4f46e5;
-  --color-primary-700: #4338ca;
-  --color-primary-800: #3730a3;
-  --color-primary-900: #312e81;
-  --color-primary-950: #1e1b4b;
+  /* Page */
+  --color-page: #FAFAF8;
 
-  /* Neutral — Slate */
-  --color-surface-50: #f8fafc;
-  --color-surface-100: #f1f5f9;
-  --color-surface-200: #e2e8f0;
-  --color-surface-300: #cbd5e1;
-  --color-surface-400: #94a3b8;
-  --color-surface-500: #64748b;
-  --color-surface-600: #475569;
-  --color-surface-700: #334155;
-  --color-surface-800: #1e293b;
-  --color-surface-900: #0f172a;
-  --color-surface-950: #020617;
+  /* Ink — primary text & dark fills */
+  --color-ink: #0E0D0D;
+  --color-ink-light: #1a1a1a;
+
+  /* Gray scale */
+  --color-gray-100: #f5f5f3;
+  --color-gray-200: #e5e5e3;
+  --color-gray-300: #d4d4d2;
+  --color-gray-400: #a1a1a0;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+
+  /* Accent — muted teal, used sparingly */
+  --color-accent: #2A9D8F;
+  --color-accent-light: #3ab5a6;
+  --color-accent-muted: rgba(42, 157, 143, 0.08);
 
   /* Semantic */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-
-  /* Glassmorphic card */
-  --color-glass: rgba(255, 255, 255, 0.7);
-  --color-glass-border: rgba(255, 255, 255, 0.2);
+  --color-success: #2A9D8F;
+  --color-warning: #e09f3e;
+  --color-danger: #c1292e;
 }
 
-/* Base styles */
+/* Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-surface-50);
-  color: var(--color-surface-900);
+  background-color: var(--color-page);
+  color: var(--color-ink);
   margin: 0;
   min-height: 100vh;
 }
 
-/* Tabular numbers for data */
+/* Tabular numbers for data displays */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
 
-/* Glassmorphic card utility */
-.glass-card {
-  background: var(--color-glass);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-glass-border);
-  border-radius: 12px;
-}
-
-/* Scrollbar styling */
+/* Scrollbar — minimal */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
@@ -75,10 +71,16 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-surface-300);
-  border-radius: 3px;
+  background: var(--color-gray-300);
+  border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-surface-400);
+  background: var(--color-gray-400);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-accent-muted);
+  color: var(--color-ink);
 }
