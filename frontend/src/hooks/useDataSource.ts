@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { parseFile } from '../engine/parser'
-import { detectSchema, generateProfile } from '../engine/profiler'
+import { detectSchema, generateProfile, inferFieldRole } from '../engine/profiler'
 import type {
   DataSchema, DataProfile, ColumnOverride, ColumnType,
   FieldRole, ChangeLogEntry, ChangeAction, CsvParseOptions, Delimiter,
@@ -112,7 +112,7 @@ export function useDataSource() {
     setState((p) => {
       const current = p.overrides[col]?.type ?? p.rawSchema?.columns.find((c) => c.name === col)?.type ?? 'string'
       if (current === newType) return p
-      const newRole: FieldRole = p.overrides[col]?.role ?? (newType === 'number' ? 'measure' : 'dimension')
+      const newRole: FieldRole = p.overrides[col]?.role ?? inferFieldRole(newType, col)
       return { ...p, overrides: { ...p.overrides, [col]: { ...p.overrides[col], type: newType, role: newRole } } }
     })
     addChange('change_type', col, '', newType)

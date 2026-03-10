@@ -7,8 +7,10 @@ import CsvOptionsPanel from '../components/data/CsvOptionsPanel'
 import ChangeLog from '../components/data/ChangeLog'
 import DataSourceSidebar from '../components/data/DataSourceSidebar'
 import AIReviewPanel from '../components/data/AIReviewPanel'
+import AdvancedStats from '../components/data/AdvancedStats'
 import type { DataSourceEntry } from '../components/data/DataSourceSidebar'
 import { useDataSource } from '../hooks/useDataSource'
+import { uploadFileToStorage, saveDataSource } from '../lib/datasource-storage'
 
 type Tab = 'schema' | 'preview' | 'metadata'
 
@@ -68,21 +70,51 @@ const DataPage: FC = () => {
   const ds = useDataSource()
   const [activeTab, setActiveTab] = useState<Tab>('schema')
   const [savedSources, setSavedSources] = useState<DataSourceEntry[]>([])
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const isDone = ds.stage === 'done' && ds.schema && ds.profile
   const isProcessing = ds.stage === 'parsing' || ds.stage === 'profiling'
 
-  const handleSave = () => {
-    if (!ds.schema) return
-    setSavedSources((prev) => {
-      if (prev.find((s) => s.name === ds.sourceName)) return prev
-      return [...prev, {
+  const handleSave = async () => {
+    if (!ds.schema || !ds.profile || !ds.file) return
+    setSaveStatus('saving')
+    setSaveError(null)
+
+    try {
+      // Upload file to Supabase Storage
+      const storagePath = `uploads/${Date.now()}_${ds.file.name}`
+      await uploadFileToStorage(ds.file, storagePath)
+
+      // Save metadata + schema + profile to Supabase
+      await saveDataSource({
         name: ds.sourceName,
-        fileType: ds.schema!.fileType,
-        columnCount: ds.schema!.columns.length,
-        rowCount: ds.schema!.rowCount,
-      }]
-    })
+        fileName: ds.file.name,
+        fileType: ds.schema.fileType,
+        fileSizeBytes: ds.schema.fileSizeBytes,
+        storagePath,
+        schema: ds.schema,
+        profile: ds.profile,
+      })
+
+      // Update sidebar
+      setSavedSources((prev) => {
+        if (prev.find((s) => s.name === ds.sourceName)) return prev
+        return [...prev, {
+          name: ds.sourceName,
+          fileType: ds.schema!.fileType,
+          columnCount: ds.schema!.columns.length,
+          rowCount: ds.schema!.rowCount,
+        }]
+      })
+
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Save failed')
+      setSaveStatus('error')
+      setTimeout(() => setSaveStatus('idle'), 3000)
+    }
   }
 
   const handleUploadAnother = () => {
@@ -164,6 +196,7 @@ const DataPage: FC = () => {
                   options={ds.csvOptions}
                   detectedDelimiter={ds.detectedDelimiter}
                   isXlsx={ds.schema!.fileType === 'xlsx'}
+                  file={ds.file}
                   onChange={(opts) => ds.reparse(opts)}
                 />
 
@@ -185,8 +218,26 @@ const DataPage: FC = () => {
                     <button onClick={handleUploadAnother} className="border border-gray-200 text-gray-500 font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-gray-900 hover:text-gray-900 transition-colors">
                       Upload Another
                     </button>
-                    <button onClick={handleSave} className="bg-gray-900 text-white font-mono text-[10px] uppercase tracking-wide px-6 py-2 hover:bg-gray-800 transition-colors">
-                      Save Data Source
+                    <button
+                      onClick={handleSave}
+                      disabled={saveStatus === 'saving'}
+                      className={`font-mono text-[10px] uppercase tracking-wide px-6 py-2 transition-colors ${
+                        saveStatus === 'saved'
+                          ? 'bg-accent text-white'
+                          : saveStatus === 'error'
+                          ? 'bg-danger text-white'
+                          : saveStatus === 'saving'
+                          ? 'bg-gray-400 text-white cursor-wait'
+                          : 'bg-gray-900 text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      {saveStatus === 'saving'
+                        ? 'Saving...'
+                        : saveStatus === 'saved'
+                        ? 'Saved'
+                        : saveStatus === 'error'
+                        ? saveError || 'Error'
+                        : 'Save Data Source'}
                     </button>
                   </div>
                 </div>
@@ -196,6 +247,8 @@ const DataPage: FC = () => {
                 {activeTab === 'metadata' && <MetadataGrid schema={ds.schema!} profile={ds.profile!} {...tabProps} />}
 
                 <ChangeLog entries={ds.changeLog} onRevert={ds.revertChange} />
+
+                <AdvancedStats profile={ds.profile!} />
               </>
             )}
           </div>

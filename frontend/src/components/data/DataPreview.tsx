@@ -17,7 +17,7 @@ type SortDir = 'asc' | 'desc' | null
 
 const DataPreview: FC<DataPreviewProps> = ({
   schema, rows, maxRows = 100, showHidden,
-  onRenameColumn, onChangeType, onChangeRole,
+  onRenameColumn, onChangeType, onChangeRole, onToggleVisibility,
 }) => {
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>(null)
@@ -103,8 +103,8 @@ const DataPreview: FC<DataPreviewProps> = ({
                 return (
                   <th
                     key={col.name}
-                    className={`text-left px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors select-none ${
-                      isHidden ? 'opacity-40' : ''
+                    className={`text-left py-2 cursor-pointer hover:bg-gray-100 select-none transition-all duration-200 ${
+                      isHidden ? 'opacity-30 px-1 max-w-[40px]' : 'px-3'
                     }`}
                     onClick={() => handleSort(col.name)}
                   >
@@ -162,6 +162,29 @@ const DataPreview: FC<DataPreviewProps> = ({
                               {sortDir === 'asc' ? '\u2191' : '\u2193'}
                             </span>
                           )}
+                          {/* Eye toggle */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onToggleVisibility(col.name)
+                            }}
+                            className="ml-auto text-gray-300 hover:text-gray-600 transition-colors p-0.5"
+                            title={isHidden ? 'Show column' : 'Hide column'}
+                          >
+                            {isHidden ? (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                              </svg>
+                            ) : (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                              </svg>
+                            )}
+                          </button>
                         </div>
                         {isRenamed && (
                           <span className="font-mono text-[9px] text-gray-400 tracking-wide">
@@ -188,15 +211,17 @@ const DataPreview: FC<DataPreviewProps> = ({
                   return (
                     <td
                       key={col.name}
-                      className={`px-3 py-2 truncate max-w-[200px] ${
+                      className={`py-2 truncate transition-all duration-200 ${
+                        col.hidden
+                          ? 'opacity-30 px-1 max-w-[40px] overflow-hidden'
+                          : 'px-3 max-w-[200px]'
+                      } ${
                         isNum
                           ? 'font-mono tabular-nums text-right text-ink'
                           : 'text-gray-600'
-                      } ${display === '\u2014' ? 'text-gray-300' : ''} ${
-                        col.hidden ? 'opacity-40' : ''
-                      }`}
+                      } ${display === '\u2014' ? 'text-gray-300' : ''}`}
                     >
-                      {display}
+                      {col.hidden ? '' : display}
                     </td>
                   )
                 })}

@@ -85,11 +85,42 @@ export function detectColumnType(
   return { type: 'string' }
 }
 
-function inferRole(type: ColumnType, uniqueRatio: number): FieldRole {
-  if (type === 'number') return 'measure'
+// Field names that indicate identifiers/codes, not aggregatable quantities
+const DIMENSION_NAME_PATTERNS = [
+  /\bno\.?\b/i,
+  /\bnum\.?\b/i,
+  /\bnumber\b/i,
+  /\bid\b/i,
+  /\bref\.?\b/i,
+  /\bcode\b/i,
+  /\bindex\b/i,
+  /\bkey\b/i,
+  /\bzip\b/i,
+  /\bpost\s?code\b/i,
+  /\bphone\b/i,
+  /\byear\b/i,
+  /\bmonth\b/i,
+  /\bday\b/i,
+  /\brank\b/i,
+]
+
+function isIdentifierName(name: string): boolean {
+  return DIMENSION_NAME_PATTERNS.some((p) => p.test(name))
+}
+
+export function inferFieldRole(type: ColumnType, name: string): FieldRole {
+  return inferRole(type, 0, name)
+}
+
+function inferRole(type: ColumnType, _uniqueRatio: number, name: string): FieldRole {
+  // Non-numeric types are always dimensions
   if (type === 'date') return 'dimension'
   if (type === 'boolean') return 'dimension'
-  return uniqueRatio > 0.5 ? 'dimension' : 'dimension'
+  if (type === 'string') return 'dimension'
+  // Numeric fields with identifier-like names are dimensions
+  if (type === 'number' && isIdentifierName(name)) return 'dimension'
+  // Only remaining numeric quantity fields are measures
+  return 'measure'
 }
 
 // ── Schema Detection ────────────────────────────────────────────
@@ -106,7 +137,7 @@ export function detectSchema(
     const nonEmpty = values.filter((v) => v.trim() !== '')
     const uniqueCount = new Set(nonEmpty).size
     const uniqueRatio = nonEmpty.length > 0 ? uniqueCount / nonEmpty.length : 0
-    const role = inferRole(type, uniqueRatio)
+    const role = inferRole(type, uniqueRatio, name)
     const sampleValues = [...new Set(nonEmpty)].slice(0, 5)
     const nullable = values.some((v) => v.trim() === '')
 
