@@ -1,21 +1,29 @@
 import type { FC } from 'react'
-import type { DataSchema, DataProfile } from '../../types/datasource'
+import type { DataSchema, DataProfile, ColumnType, FieldRole } from '../../types/datasource'
+import FieldRow, { formatStat } from './FieldRow'
 
 interface SchemaViewerProps {
   schema: DataSchema
   profile: DataProfile
+  showHidden: boolean
+  onToggleShowHidden: () => void
+  onRenameColumn: (originalName: string, displayName: string) => void
+  onChangeType: (columnName: string, type: ColumnType) => void
+  onChangeRole: (columnName: string, role: FieldRole) => void
+  onToggleVisibility: (columnName: string) => void
 }
 
-function formatStat(n: number): string {
-  if (Math.abs(n) >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
-  if (Math.abs(n) >= 1_000) return `${(n / 1_000).toFixed(1)}K`
-  if (Number.isInteger(n)) return String(n)
-  return n.toFixed(2)
-}
+const SchemaViewer: FC<SchemaViewerProps> = ({
+  schema, profile, showHidden, onToggleShowHidden,
+  onRenameColumn, onChangeType, onChangeRole, onToggleVisibility,
+}) => {
+  const hiddenCount = schema.columns.filter((c) => c.hidden).length
+  const visibleCols = showHidden
+    ? schema.columns
+    : schema.columns.filter((c) => !c.hidden)
 
-const SchemaViewer: FC<SchemaViewerProps> = ({ schema, profile }) => {
-  const dimensions = schema.columns.filter((c) => c.role === 'dimension')
-  const measures = schema.columns.filter((c) => c.role === 'measure')
+  const dimensions = visibleCols.filter((c) => c.role === 'dimension')
+  const measures = visibleCols.filter((c) => c.role === 'measure')
 
   return (
     <div className="space-y-6">
@@ -24,10 +32,7 @@ const SchemaViewer: FC<SchemaViewerProps> = ({ schema, profile }) => {
         {[
           { label: 'Rows', value: formatStat(schema.rowCount) },
           { label: 'Columns', value: String(schema.columns.length) },
-          {
-            label: 'Complete',
-            value: `${profile.qualitySummary.completenessPercent}%`,
-          },
+          { label: 'Complete', value: `${profile.qualitySummary.completenessPercent}%` },
           { label: 'Duplicates', value: formatStat(profile.duplicateRowCount) },
         ].map((item) => (
           <div key={item.label} className="bg-white p-4">
@@ -41,6 +46,17 @@ const SchemaViewer: FC<SchemaViewerProps> = ({ schema, profile }) => {
         ))}
       </div>
 
+      {/* Show hidden toggle */}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={onToggleShowHidden}
+          className="font-mono text-[10px] uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {showHidden ? 'Hide hidden fields' : `Show ${hiddenCount} hidden field${hiddenCount > 1 ? 's' : ''}`}
+        </button>
+      )}
+
       {/* Dimensions */}
       {dimensions.length > 0 && (
         <div className="border border-gray-200 bg-white">
@@ -50,47 +66,17 @@ const SchemaViewer: FC<SchemaViewerProps> = ({ schema, profile }) => {
             </span>
           </div>
           <div className="divide-y divide-gray-100">
-            {dimensions.map((col) => {
-              const p = profile.columns[col.name]
-              return (
-                <div
-                  key={col.name}
-                  className="flex items-center justify-between px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`font-mono text-[9px] uppercase px-1.5 py-0.5 ${
-                        col.type === 'date'
-                          ? 'text-gray-500 bg-gray-100'
-                          : col.type === 'boolean'
-                            ? 'text-gray-500 bg-gray-100'
-                            : 'text-gray-500 bg-gray-100'
-                      }`}
-                    >
-                      {col.type}
-                    </span>
-                    <span className="text-sm text-ink">{col.name}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {p?.type === 'categorical' && (
-                      <span className="font-mono text-[10px] text-gray-400 tabular-nums">
-                        {p.uniqueCount} unique
-                      </span>
-                    )}
-                    {p?.type === 'date' && (
-                      <span className="font-mono text-[10px] text-gray-400 tabular-nums">
-                        {(p as import('../../types/datasource').DateProfile).earliest} → {(p as import('../../types/datasource').DateProfile).latest}
-                      </span>
-                    )}
-                    {p && p.nullPercent > 0 && (
-                      <span className="font-mono text-[10px] text-danger tabular-nums">
-                        {p.nullPercent}% null
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+            {dimensions.map((col) => (
+              <FieldRow
+                key={col.name}
+                col={col}
+                profile={profile}
+                onRename={onRenameColumn}
+                onChangeType={onChangeType}
+                onChangeRole={onChangeRole}
+                onToggleVisibility={onToggleVisibility}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -104,40 +90,17 @@ const SchemaViewer: FC<SchemaViewerProps> = ({ schema, profile }) => {
             </span>
           </div>
           <div className="divide-y divide-gray-100">
-            {measures.map((col) => {
-              const p = profile.columns[col.name]
-              const np = p?.type === 'numeric' ? p : null
-              return (
-                <div
-                  key={col.name}
-                  className="flex items-center justify-between px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 text-accent bg-accent/8">
-                      num
-                    </span>
-                    <span className="text-sm text-ink">{col.name}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {np && (
-                      <span className="font-mono text-[10px] text-gray-400 tabular-nums">
-                        {formatStat(np.min)} — {formatStat(np.max)}
-                      </span>
-                    )}
-                    {np && (
-                      <span className="font-mono text-[10px] text-gray-400 tabular-nums">
-                        μ {formatStat(np.mean)}
-                      </span>
-                    )}
-                    {p && p.nullPercent > 0 && (
-                      <span className="font-mono text-[10px] text-danger tabular-nums">
-                        {p.nullPercent}% null
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+            {measures.map((col) => (
+              <FieldRow
+                key={col.name}
+                col={col}
+                profile={profile}
+                onRename={onRenameColumn}
+                onChangeType={onChangeType}
+                onChangeRole={onChangeRole}
+                onToggleVisibility={onToggleVisibility}
+              />
+            ))}
           </div>
         </div>
       )}
@@ -160,18 +123,15 @@ const SchemaViewer: FC<SchemaViewerProps> = ({ schema, profile }) => {
                   key={`${c.col1}-${c.col2}`}
                   className="flex items-center justify-between px-4 py-2"
                 >
-                  <span className="text-sm text-gray-600">
+                  <span className="font-mono text-sm text-gray-600">
                     {c.col1} × {c.col2}
                   </span>
                   <span
                     className={`font-mono text-xs tabular-nums ${
-                      Math.abs(c.correlation) > 0.7
-                        ? 'text-ink font-medium'
-                        : 'text-gray-400'
+                      Math.abs(c.correlation) > 0.7 ? 'text-ink font-medium' : 'text-gray-400'
                     }`}
                   >
-                    {c.correlation > 0 ? '+' : ''}
-                    {c.correlation.toFixed(2)}
+                    {c.correlation > 0 ? '+' : ''}{c.correlation.toFixed(2)}
                   </span>
                 </div>
               ))}

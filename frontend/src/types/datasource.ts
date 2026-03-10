@@ -3,11 +3,13 @@ export type FieldRole = 'dimension' | 'measure'
 
 export interface ColumnSchema {
   name: string
+  displayName?: string
   type: ColumnType
   role: FieldRole
   dateFormat?: string
   nullable: boolean
   sampleValues: string[]
+  hidden?: boolean
 }
 
 export interface DataSchema {
@@ -15,6 +17,46 @@ export interface DataSchema {
   rowCount: number
   fileType: 'csv' | 'xlsx'
   fileSizeBytes: number
+}
+
+// ── Column Overrides ────────────────────────────────────────────
+export interface ColumnOverride {
+  displayName?: string
+  type?: ColumnType
+  role?: FieldRole
+  hidden?: boolean
+}
+
+// ── Change Log ──────────────────────────────────────────────────
+export type ChangeAction =
+  | 'rename'
+  | 'change_type'
+  | 'change_role'
+  | 'toggle_visibility'
+
+export interface ChangeLogEntry {
+  id: string
+  timestamp: number
+  action: ChangeAction
+  column: string
+  from: string
+  to: string
+}
+
+// ── CSV Parse Options ───────────────────────────────────────────
+export type Delimiter = ',' | '\t' | ';' | '|'
+export type Encoding = 'UTF-8' | 'Latin-1' | 'Windows-1252'
+
+export interface CsvParseOptions {
+  headerRow: number
+  delimiter: Delimiter
+  encoding: Encoding
+}
+
+export const DEFAULT_CSV_OPTIONS: CsvParseOptions = {
+  headerRow: 1,
+  delimiter: ',',
+  encoding: 'UTF-8',
 }
 
 export interface NumericProfile {
