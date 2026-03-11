@@ -3,10 +3,12 @@ import Header from './Header'
 import Sidebar from './Sidebar'
 import ProjectsPage from '../../pages/ProjectsPage'
 import DataPage from '../../pages/DataPage'
+import ChatPage from '../../pages/ChatPage'
 
 const pages: Record<string, FC> = {
   Projects: ProjectsPage,
   Data: DataPage,
+  Chat: ChatPage,
 }
 
 const AppLayout: FC = () => {

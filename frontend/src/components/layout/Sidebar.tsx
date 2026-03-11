@@ -15,6 +15,10 @@ const sidebarConfig: Record<string, Array<{ label: string; count: number }>> = {
     { label: 'All Sources', count: 0 },
     { label: 'Recent Uploads', count: 0 },
   ],
+  Chat: [
+    { label: 'Conversations', count: 0 },
+    { label: 'Recent', count: 0 },
+  ],
   Dashboards: [
     { label: 'Published', count: 0 },
     { label: 'Drafts', count: 0 },

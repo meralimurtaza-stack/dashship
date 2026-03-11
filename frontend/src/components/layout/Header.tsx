@@ -6,7 +6,7 @@ interface HeaderProps {
   onNavChange: (nav: string) => void
 }
 
-const navItems = ['Projects', 'Data', 'Dashboards', 'Settings']
+const navItems = ['Projects', 'Data', 'Chat', 'Dashboards', 'Settings']
 
 const ShipLogo: FC = () => (
   <svg
