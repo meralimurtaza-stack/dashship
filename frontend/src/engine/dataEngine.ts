@@ -121,27 +121,36 @@ export function processSheet(
   sheet: Sheet,
   calculatedFields?: CalculatedField[]
 ): ProcessSheetResult {
+  console.log(`[dataEngine] processSheet "${sheet.name}" (${sheet.markType}) — input: ${data.length} rows`)
+
   // Check cache
   const dataHash = hashData(data)
   const cacheKey = buildCacheKey(dataHash, sheet, calculatedFields)
   const cached = getCached(cacheKey)
-  if (cached) return cached
+  if (cached) {
+    console.log(`[dataEngine]   → cache hit, returning ${cached.rows.length} rows`)
+    return cached
+  }
 
   // 1. Apply calculated fields
   let rows = applyCalculatedFields(data, calculatedFields ?? [])
+  console.log(`[dataEngine]   1. After calc fields: ${rows.length} rows`)
 
   // 2. Apply filters
   rows = applyFilters(rows, sheet.filters)
+  console.log(`[dataEngine]   2. After filters (${sheet.filters.length}): ${rows.length} rows`)
 
   // 3. Extract dimensions and measures from sheet encoding
   const dimensions = extractDimensions(sheet)
   const measureSpecs = extractMeasures(sheet)
   const measureNames = measureSpecs.map((m) => m.alias ?? m.field)
+  console.log(`[dataEngine]   3. Dimensions: [${dimensions}], Measures: [${measureNames}]`)
 
   // 4. Aggregate (if there are dimensions or measures to aggregate)
   if (dimensions.length > 0 || measureSpecs.length > 0) {
     const aggregated = aggregate(rows, dimensions, measureSpecs)
     rows = flattenAggregateResults(aggregated)
+    console.log(`[dataEngine]   4. After aggregation: ${rows.length} groups`)
   }
 
   // 5. Sort
@@ -152,6 +161,14 @@ export function processSheet(
   // 6. Limit
   if (sheet.config.limit) {
     rows = limitRows(rows, sheet.config.limit)
+    console.log(`[dataEngine]   6. After limit (${sheet.config.limit}): ${rows.length} rows`)
+  }
+
+  if (rows.length > 0) {
+    console.log(`[dataEngine]   → output keys: [${Object.keys(rows[0])}]`)
+    console.log(`[dataEngine]   → first row:`, rows[0])
+  } else {
+    console.warn(`[dataEngine]   → WARNING: 0 output rows for "${sheet.name}"`)
   }
 
   const result: ProcessSheetResult = {

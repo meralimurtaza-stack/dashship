@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import type { DataSchema, DataProfile, DataSource } from '../types/datasource'
+import { parseFile } from '../engine/parser'
 
 /**
  * Supabase table: data_sources
@@ -73,6 +74,32 @@ export async function saveDataSource(params: {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   }
+}
+
+// ── Download & Parse Rows ────────────────────────────────────────
+
+export async function downloadDataSourceRows(
+  storagePath: string,
+  fileName: string
+): Promise<Record<string, unknown>[]> {
+  console.log('[datasource-storage] Downloading file from:', storagePath)
+
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .download(storagePath)
+
+  if (error) throw new Error(`Download failed: ${error.message}`)
+  if (!data) throw new Error('Download returned empty data')
+
+  console.log('[datasource-storage] Downloaded blob:', data.size, 'bytes')
+
+  // Convert Blob to File (parser expects File)
+  const file = new File([data], fileName, { type: data.type })
+  const result = await parseFile(file)
+
+  console.log('[datasource-storage] Parsed rows:', result.rows.length, 'headers:', result.headers)
+
+  return result.rows
 }
 
 export async function listDataSources(): Promise<DataSource[]> {

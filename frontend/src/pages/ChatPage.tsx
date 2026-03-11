@@ -1,129 +1,34 @@
-import { useState, useEffect, useRef, useMemo, type FC } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, type FC } from 'react'
 import ChatMessageComponent from '../components/chat/ChatMessage'
 import ChatInput from '../components/chat/ChatInput'
 import ConversationStarters from '../components/chat/ConversationStarters'
 import DataContextPanel from '../components/chat/DataContextPanel'
+import SourceSelector from '../components/chat/SourceSelector'
+import GenerateButton from '../components/chat/GenerateButton'
 import { useChat } from '../hooks/useChat'
-import { listDataSources } from '../lib/datasource-storage'
+import { listDataSources, downloadDataSourceRows } from '../lib/datasource-storage'
+import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
 import type { DataSource } from '../types/datasource'
 import type { ChatDataContext } from '../types/chat'
 
-// ── Data Source Selector ────────────────────────────────────────
+// ── Props ────────────────────────────────────────────────────────
 
-const SourceSelector: FC<{
-  sources: DataSource[]
-  loading: boolean
-  onSelect: (source: DataSource) => void
-}> = ({ sources, loading, onSelect }) => {
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="space-y-4 text-center">
-          <div className="flex items-center gap-3 justify-center">
-            <div className="w-2 h-2 bg-gray-900 animate-pulse" />
-            <span className="font-mono text-xs uppercase tracking-widest text-gray-500">
-              Loading data sources...
-            </span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (sources.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="max-w-md text-center space-y-4 px-6">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
-            No Data Sources
-          </p>
-          <h2 className="font-mono text-2xl font-semibold text-ink leading-tight">
-            Upload data first.
-          </h2>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Go to the Data tab to upload a CSV or Excel file. Once saved, you
-            can start planning your dashboard here.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="max-w-lg w-full space-y-6 px-6">
-        <div className="space-y-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
-            Plan Dashboard
-          </p>
-          <h2 className="font-mono text-2xl font-semibold text-ink leading-tight">
-            Choose a data source.
-          </h2>
-          <p className="text-sm text-gray-500 leading-relaxed">
-            Select a dataset to start planning your dashboard with AI.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          {sources.map((source) => {
-            const dims = source.schema.columns.filter(
-              (c) => c.role === 'dimension'
-            ).length
-            const meas = source.schema.columns.filter(
-              (c) => c.role === 'measure'
-            ).length
-
-            return (
-              <button
-                key={source.id}
-                onClick={() => onSelect(source)}
-                className="w-full text-left border border-gray-200 bg-white px-4 py-3 hover:border-gray-900 transition-colors group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-mono text-sm font-medium text-ink">
-                      {source.name}
-                    </p>
-                    <p className="font-mono text-[10px] text-gray-400 mt-1 tabular-nums">
-                      {source.schema.rowCount.toLocaleString()} rows &middot;{' '}
-                      {dims}D {meas}M &middot;{' '}
-                      {source.fileType.toUpperCase()}
-                    </p>
-                  </div>
-                  <svg
-                    className="w-4 h-4 text-gray-300 group-hover:text-gray-900 transition-colors"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                    />
-                  </svg>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    </div>
-  )
+interface ChatPageProps {
+  onDashboardGenerated?: (dashboard: GeneratedDashboard, data: Record<string, unknown>[]) => void
 }
 
 // ── Main Chat Page ──────────────────────────────────────────────
 
-const ChatPage: FC = () => {
+const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
   const [sources, setSources] = useState<DataSource[]>([])
   const [loadingSources, setLoadingSources] = useState(true)
   const [selectedSource, setSelectedSource] = useState<DataSource | null>(null)
   const [contextPanelOpen, setContextPanelOpen] = useState(true)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // Build data context from selected source
   const dataContext: ChatDataContext | null = useMemo(() => {
     if (!selectedSource) return null
     return {
@@ -145,7 +50,6 @@ const ChatPage: FC = () => {
   const { messages, isStreaming, sendMessage, stopStreaming, clearMessages } =
     useChat(dataContext)
 
-  // Load data sources from Supabase
   useEffect(() => {
     let cancelled = false
     async function load() {
@@ -153,18 +57,15 @@ const ChatPage: FC = () => {
         const data = await listDataSources()
         if (!cancelled) setSources(data)
       } catch {
-        // Silently fail — user just sees empty state
+        // Silently fail
       } finally {
         if (!cancelled) setLoadingSources(false)
       }
     }
     load()
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
-  // Auto-scroll to latest message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -173,70 +74,98 @@ const ChatPage: FC = () => {
     setSelectedSource(null)
     clearMessages()
     setContextPanelOpen(true)
+    setGenerateError(null)
   }
 
-  // No source selected — show selector
+  const buildSummary = useCallback((): string => {
+    return messages
+      .map((m) => `${m.role === 'user' ? 'User' : 'Captain'}: ${m.content}`)
+      .join('\n\n')
+  }, [messages])
+
+  const handleGenerate = useCallback(async () => {
+    if (!dataContext || !selectedSource || isGenerating) return
+    setIsGenerating(true)
+    setGenerateError(null)
+
+    try {
+      // 1. Generate dashboard structure from Claude
+      const summary = buildSummary()
+      console.log('[ChatPage] Generating dashboard...')
+      const result = await generateDashboard(dataContext, summary)
+      console.log('[ChatPage] Dashboard generated:', result.dashboard.sheets.length, 'sheets')
+      if (result.warnings.length > 0) {
+        console.warn('[ChatPage] Generation warnings:', result.warnings)
+      }
+
+      // 2. Download and parse the actual data from Supabase Storage
+      console.log('[ChatPage] Loading data from:', selectedSource.storagePath)
+      const rows = await downloadDataSourceRows(
+        selectedSource.storagePath,
+        selectedSource.fileName
+      )
+      console.log('[ChatPage] Data loaded:', rows.length, 'rows')
+      if (rows.length > 0) {
+        console.log('[ChatPage] Sample row keys:', Object.keys(rows[0]))
+        console.log('[ChatPage] First row:', rows[0])
+      }
+
+      // 3. Log sheet field names vs actual data columns for debugging
+      const dataColumns = rows.length > 0 ? new Set(Object.keys(rows[0])) : new Set<string>()
+      for (const sheet of result.dashboard.sheets) {
+        const sheetFields: string[] = []
+        const enc = sheet.encoding
+        if (enc.columns) sheetFields.push(enc.columns.field)
+        if (enc.rows) sheetFields.push(enc.rows.field)
+        if (enc.color) sheetFields.push(enc.color.field)
+        const missing = sheetFields.filter((f) => !dataColumns.has(f))
+        if (missing.length > 0) {
+          console.warn(`[ChatPage] Sheet "${sheet.name}" references missing fields:`, missing)
+        }
+      }
+
+      onDashboardGenerated?.(result.dashboard, rows)
+    } catch (err) {
+      console.error('[ChatPage] Generation failed:', err)
+      setGenerateError((err as Error).message)
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [dataContext, selectedSource, isGenerating, buildSummary, onDashboardGenerated])
+
   if (!selectedSource || !dataContext) {
     return (
       <div className="h-full flex flex-col">
-        <SourceSelector
-          sources={sources}
-          loading={loadingSources}
-          onSelect={setSelectedSource}
-        />
+        <SourceSelector sources={sources} loading={loadingSources} onSelect={setSelectedSource} />
       </div>
     )
   }
 
   const hasMessages = messages.length > 0
+  const canGenerate = hasMessages && !isStreaming
 
   return (
     <div className="h-full flex">
-      {/* Chat area */}
-      <div
-        className={`flex-1 min-w-0 flex flex-col ${
-          contextPanelOpen ? '' : 'max-w-full'
-        }`}
-      >
-        {/* Chat header */}
+      <div className={`flex-1 min-w-0 flex flex-col ${contextPanelOpen ? '' : 'max-w-full'}`}>
+        {/* Header */}
         <div className="px-5 py-3 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleBack}
-              className="p-1 hover:opacity-60 transition-opacity"
-              aria-label="Back to sources"
-            >
-              <svg
-                className="w-4 h-4 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-                />
+            <button onClick={handleBack} className="p-1 hover:opacity-60 transition-opacity" aria-label="Back to sources">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
               </svg>
             </button>
             <div>
-              <p className="font-mono text-xs font-medium text-ink">
-                {dataContext.sourceName}
-              </p>
+              <p className="font-mono text-xs font-medium text-ink">{dataContext.sourceName}</p>
               <p className="font-mono text-[10px] text-gray-400 tabular-nums">
-                {dataContext.rowCount.toLocaleString()} rows &middot;{' '}
-                {dataContext.columns.length} fields
+                {dataContext.rowCount.toLocaleString()} rows &middot; {dataContext.columns.length} fields
               </p>
             </div>
           </div>
-
           <div className="flex items-center gap-2">
             {hasMessages && (
               <button
-                onClick={() => {
-                  clearMessages()
-                }}
+                onClick={() => { clearMessages(); setGenerateError(null) }}
                 className="font-mono text-[10px] uppercase tracking-wide text-gray-400 hover:text-gray-900 px-3 py-1.5 transition-colors"
               >
                 New Chat
@@ -255,20 +184,12 @@ const ChatPage: FC = () => {
 
         {/* Messages or starters */}
         {!hasMessages ? (
-          <ConversationStarters
-            dataContext={dataContext}
-            onSend={sendMessage}
-          />
+          <ConversationStarters dataContext={dataContext} onSend={sendMessage} />
         ) : (
           <div className="flex-1 overflow-y-auto px-5 py-6">
             <div className="max-w-2xl mx-auto space-y-6">
               {messages.map((msg, i) => {
-                // Only the last assistant message gets interactive calc cards
-                const isLastAssistant =
-                  msg.role === 'assistant' &&
-                  !isStreaming &&
-                  i === messages.length - 1
-
+                const isLastAssistant = msg.role === 'assistant' && !isStreaming && i === messages.length - 1
                 return (
                   <ChatMessageComponent
                     key={msg.id}
@@ -283,26 +204,29 @@ const ChatPage: FC = () => {
           </div>
         )}
 
+        {/* Generate button */}
+        {canGenerate && (
+          <div className="shrink-0 px-5 pb-2">
+            <div className="max-w-2xl mx-auto flex items-center gap-3">
+              <GenerateButton isGenerating={isGenerating} disabled={!canGenerate} onClick={handleGenerate} />
+              {generateError && (
+                <p className="font-mono text-[10px] text-danger">{generateError}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="shrink-0 px-5 pb-4 pt-2">
           <div className="max-w-2xl mx-auto">
-            <ChatInput
-              onSend={sendMessage}
-              disabled={!dataContext}
-              isStreaming={isStreaming}
-              onStop={stopStreaming}
-            />
+            <ChatInput onSend={sendMessage} disabled={!dataContext} isStreaming={isStreaming} onStop={stopStreaming} />
           </div>
         </div>
       </div>
 
-      {/* Data context panel */}
       {contextPanelOpen && (
         <div className="w-72 shrink-0">
-          <DataContextPanel
-            dataContext={dataContext}
-            onCollapse={() => setContextPanelOpen(false)}
-          />
+          <DataContextPanel dataContext={dataContext} onCollapse={() => setContextPanelOpen(false)} />
         </div>
       )}
     </div>
