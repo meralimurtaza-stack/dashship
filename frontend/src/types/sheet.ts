@@ -13,7 +13,7 @@ export interface FieldBinding {
 
 export interface SheetFilter {
   field: string
-  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains'
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'contains' | 'between'
   value: string | number | string[]
 }
 
