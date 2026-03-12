@@ -4,21 +4,34 @@ import Sidebar from './Sidebar'
 import ProjectsPage from '../../pages/ProjectsPage'
 import DataPage from '../../pages/DataPage'
 import ChatPage from '../../pages/ChatPage'
-import DashboardPage from '../../pages/DashboardPage'
+import EditorPage from '../../pages/EditorPage'
 import type { GeneratedDashboard } from '../../lib/generate-api'
+import type { ColumnSchema } from '../../types/datasource'
+import type { ChatMessage, ChatDataContext } from '../../types/chat'
+
+interface DashboardContext {
+  dashboard: GeneratedDashboard
+  data: Record<string, unknown>[]
+  columns: ColumnSchema[]
+  dataContext: ChatDataContext | null
+  chatMessages: ChatMessage[]
+}
 
 const AppLayout: FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [activeNav, setActiveNav] = useState('Projects')
 
-  // Shared dashboard state between Chat and Dashboards pages
-  const [generatedDashboard, setGeneratedDashboard] = useState<GeneratedDashboard | null>(null)
-  const [dashboardData, setDashboardData] = useState<Record<string, unknown>[]>([])
+  const [dashCtx, setDashCtx] = useState<DashboardContext | null>(null)
 
   const handleDashboardGenerated = useCallback(
-    (dashboard: GeneratedDashboard, data: Record<string, unknown>[]) => {
-      setGeneratedDashboard(dashboard)
-      setDashboardData(data)
+    (
+      dashboard: GeneratedDashboard,
+      data: Record<string, unknown>[],
+      columns: ColumnSchema[],
+      dataContext: ChatDataContext | null,
+      chatMessages: ChatMessage[]
+    ) => {
+      setDashCtx({ dashboard, data, columns, dataContext, chatMessages })
       setActiveNav('Dashboards')
     },
     []
@@ -37,10 +50,37 @@ const AppLayout: FC = () => {
       case 'Chat':
         return <ChatPage onDashboardGenerated={handleDashboardGenerated} />
       case 'Dashboards':
+        if (!dashCtx) {
+          return (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="max-w-md text-center space-y-4 px-6">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+                  Dashboards
+                </p>
+                <h2 className="font-mono text-2xl font-semibold text-ink leading-tight">
+                  No dashboard yet.
+                </h2>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  Chat with Captain to plan your analysis, then generate a dashboard.
+                </p>
+                <button
+                  onClick={handleBackToChat}
+                  className="inline-flex items-center gap-2 bg-gray-900 text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-gray-800 transition-colors mt-2"
+                  style={{ borderRadius: 2 }}
+                >
+                  Start Planning
+                </button>
+              </div>
+            </div>
+          )
+        }
         return (
-          <DashboardPage
-            dashboard={generatedDashboard}
-            data={dashboardData}
+          <EditorPage
+            dashboard={dashCtx.dashboard}
+            data={dashCtx.data}
+            columns={dashCtx.columns}
+            dataContext={dashCtx.dataContext}
+            chatMessages={dashCtx.chatMessages}
             onBackToChat={handleBackToChat}
           />
         )

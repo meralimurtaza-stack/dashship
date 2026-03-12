@@ -9,12 +9,19 @@ import { useChat } from '../hooks/useChat'
 import { listDataSources, downloadDataSourceRows } from '../lib/datasource-storage'
 import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
 import type { DataSource } from '../types/datasource'
-import type { ChatDataContext } from '../types/chat'
+import type { ChatMessage, ChatDataContext } from '../types/chat'
+import type { ColumnSchema } from '../types/datasource'
 
 // ── Props ────────────────────────────────────────────────────────
 
 interface ChatPageProps {
-  onDashboardGenerated?: (dashboard: GeneratedDashboard, data: Record<string, unknown>[]) => void
+  onDashboardGenerated?: (
+    dashboard: GeneratedDashboard,
+    data: Record<string, unknown>[],
+    columns: ColumnSchema[],
+    dataContext: ChatDataContext | null,
+    chatMessages: ChatMessage[]
+  ) => void
 }
 
 // ── Main Chat Page ──────────────────────────────────────────────
@@ -124,7 +131,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
         }
       }
 
-      onDashboardGenerated?.(result.dashboard, rows)
+      const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
+      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages)
     } catch (err) {
       console.error('[ChatPage] Generation failed:', err)
       setGenerateError((err as Error).message)
