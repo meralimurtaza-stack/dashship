@@ -11,6 +11,7 @@ import DashboardCanvas from '../components/editor/DashboardCanvas'
 import CaptainPanel from '../components/editor/CaptainPanel'
 import ResizeHandle from '../components/editor/ResizeHandle'
 import SheetEditor from '../components/sheet-editor/SheetEditor'
+import PublishModal from '../components/publish/PublishModal'
 
 interface EditorPageProps {
   dashboard: GeneratedDashboard
@@ -42,6 +43,7 @@ const EditorPage: FC<EditorPageProps> = ({
   const [chatPanelWidth, setChatPanelWidth] = useState(350)
   const [activeField, setActiveField] = useState<string | null>(null)
   const [isEditingName, setIsEditingName] = useState(false)
+  const [showPublishModal, setShowPublishModal] = useState(false)
 
   // ── DnD handlers (fields panel → canvas is informational only for now) ──
 
@@ -183,6 +185,16 @@ const EditorPage: FC<EditorPageProps> = ({
             </svg>
             Captain
           </button>
+          <button
+            onClick={() => setShowPublishModal(true)}
+            className="flex items-center gap-1.5 px-4 py-1.5 font-mono text-[10px] uppercase tracking-wide bg-gray-900 text-white border border-gray-900 hover:bg-gray-800 transition-colors"
+            style={{ borderRadius: 2 }}
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+            </svg>
+            Publish
+          </button>
         </div>
       </div>
 
@@ -246,6 +258,17 @@ const EditorPage: FC<EditorPageProps> = ({
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Publish Modal */}
+      {showPublishModal && (
+        <PublishModal
+          dashboardName={state.dashboardName}
+          sheets={state.sheets}
+          layout={state.layout}
+          data={data}
+          onClose={() => setShowPublishModal(false)}
+        />
+      )}
     </div>
   )
 }

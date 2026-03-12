@@ -6,6 +6,9 @@ class Settings(BaseSettings):
     supabase_key: str = ""
     supabase_service_role_key: str = ""
     anthropic_api_key: str = ""
+    resend_api_key: str = ""
+    resend_from_email: str = "DashShip <reports@dashship.io>"
+    app_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
