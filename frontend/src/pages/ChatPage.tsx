@@ -4,8 +4,10 @@ import ChatInput from '../components/chat/ChatInput'
 import ConversationStarters from '../components/chat/ConversationStarters'
 import DataContextPanel from '../components/chat/DataContextPanel'
 import DataChoiceCards from '../components/chat/DataChoiceCards'
-import GenerateButton from '../components/chat/GenerateButton'
+import PlanPanel from '../components/plan/PlanPanel'
 import { useChatContext } from '../contexts/ChatContext'
+import { usePlanSpec } from '../hooks/usePlanSpec'
+import { specToDashboard } from '../utils/spec-to-dashboard'
 import { listDataSources, downloadDataSourceRows } from '../lib/datasource-storage'
 import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
 import { saveDashboard } from '../lib/dashboard-storage'
@@ -14,6 +16,7 @@ import { detectSchema, generateProfile } from '../engine/profiler'
 import type { DataSource } from '../types/datasource'
 import type { ChatMessage, ChatDataContext } from '../types/chat'
 import type { ColumnSchema } from '../types/datasource'
+import type { InsightData, InsightBarItem } from '../utils/insight-parser'
 
 // ── Props ────────────────────────────────────────────────────────
 
@@ -27,16 +30,17 @@ interface ChatPageProps {
     dashboardId?: string
   ) => void
   initialMessage?: string | null
+  dashboardId?: string | null
 }
 
 // ── Main Chat Page ──────────────────────────────────────────────
 
-const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) => {
+const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, dashboardId }) => {
   const [selectedSource, setSelectedSource] = useState<DataSource | null>(null)
   const [contextPanelOpen, setContextPanelOpen] = useState(true)
+  const [planPanelOpen, setPlanPanelOpen] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
-  const [fieldWarnings, setFieldWarnings] = useState<string[]>([])
   const [dataChoiceLoading, setDataChoiceLoading] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -59,8 +63,43 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
     }
   }, [selectedSource])
 
-  const { messages, isStreaming, sendMessage, stopStreaming, clearMessages } =
+  // Plan spec state
+  const { spec, applyDelta, fieldWarnings: planFieldWarnings, isValid, reset: resetSpec } = usePlanSpec(dashboardId ?? null)
+
+  // Initialize data profile on spec when data context becomes available
+  const profileInitRef = useRef(false)
+  useEffect(() => {
+    if (!dataContext || profileInitRef.current) return
+    profileInitRef.current = true
+    resetSpec({
+      ...spec,
+      dataProfile: {
+        source: dataContext.sourceName,
+        rows: dataContext.rowCount,
+        fields: dataContext.columns.map(c => ({
+          name: c.name,
+          type: c.type,
+          subtype: c.role,
+        })),
+      },
+    })
+    // Only run when dataContext first becomes available
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataContext])
+
+  const { messages, isStreaming, sendMessage, stopStreaming, clearMessages, lastDeltas } =
     useChatContext()
+
+  // Apply deltas from Captain responses
+  const appliedDeltasRef = useRef<object | null>(null)
+  useEffect(() => {
+    if (lastDeltas.length > 0 && lastDeltas !== appliedDeltasRef.current) {
+      appliedDeltasRef.current = lastDeltas
+      for (const delta of lastDeltas) {
+        applyDelta(delta)
+      }
+    }
+  }, [lastDeltas, applyDelta])
 
   // Auto-select source if only one exists
   useEffect(() => {
@@ -160,27 +199,15 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
     }
   }, [sendMessage])
 
-  // ── Generate ──────────────────────────────────────────────────
+  // ── Generate from plan spec ────────────────────────────────────
 
-  const buildSummary = useCallback((): string => {
-    return messages
-      .map((m) => `${m.role === 'user' ? 'User' : 'Captain'}: ${m.content}`)
-      .join('\n\n')
-  }, [messages])
-
-  const handleGenerate = useCallback(async () => {
+  const handlePlanGenerate = useCallback(async () => {
     if (!dataContext || !selectedSource || isGenerating) return
     setIsGenerating(true)
     setGenerateError(null)
-    setFieldWarnings([])
 
     try {
-      const summary = buildSummary()
-      const result = await generateDashboard(dataContext, summary)
-
-      if (result.warnings.length > 0) {
-        setFieldWarnings(result.warnings)
-      }
+      const dashboardConfig = specToDashboard(spec)
 
       // Download and parse the actual data
       let rows: Record<string, unknown>[] = []
@@ -190,8 +217,70 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
 
       const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
 
+      // Set dataSourceId on each sheet
+      const sheets = dashboardConfig.sheets.map((s) => ({
+        ...s,
+        dataSourceId: selectedSource.id,
+        projectId: '',
+      }))
+
+      const dashboard: GeneratedDashboard = {
+        name: dashboardConfig.name,
+        sheets: sheets as unknown as GeneratedDashboard['sheets'],
+        layout: dashboardConfig.layout,
+      }
+
       // Save as draft
-      let dashboardId: string | undefined
+      let savedId: string | undefined
+      try {
+        const saved = await saveDashboard({
+          dataSourceId: selectedSource.id,
+          name: dashboardConfig.name,
+          sheets: sheets as unknown as GeneratedDashboard['sheets'],
+          layout: dashboardConfig.layout,
+          data: rows,
+          chatMessages: messages,
+          dataContext,
+        })
+        savedId = saved.id
+      } catch (err) {
+        console.warn('[ChatPage] Failed to save draft:', err)
+      }
+
+      onDashboardGenerated?.(dashboard, rows, columns, dataContext, messages, savedId)
+    } catch (err) {
+      console.error('[ChatPage] Generation failed:', err)
+      setGenerateError((err as Error).message)
+    } finally {
+      setIsGenerating(false)
+    }
+  }, [dataContext, selectedSource, isGenerating, spec, onDashboardGenerated, messages])
+
+  // ── Legacy generate (fallback when no plan spec) ───────────────
+
+  const buildSummary = useCallback((): string => {
+    return messages
+      .map((m) => `${m.role === 'user' ? 'User' : 'Captain'}: ${m.content}`)
+      .join('\n\n')
+  }, [messages])
+
+  const handleLegacyGenerate = useCallback(async () => {
+    if (!dataContext || !selectedSource || isGenerating) return
+    setIsGenerating(true)
+    setGenerateError(null)
+
+    try {
+      const summary = buildSummary()
+      const result = await generateDashboard(dataContext, summary)
+
+      let rows: Record<string, unknown>[] = []
+      if (selectedSource.storagePath) {
+        rows = await downloadDataSourceRows(selectedSource.storagePath, selectedSource.fileName)
+      }
+
+      const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
+
+      let savedDashboardId: string | undefined
       try {
         const saved = await saveDashboard({
           dataSourceId: selectedSource.id,
@@ -202,12 +291,12 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
           chatMessages: messages,
           dataContext,
         })
-        dashboardId = saved.id
+        savedDashboardId = saved.id
       } catch (err) {
         console.warn('[ChatPage] Failed to save draft:', err)
       }
 
-      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages, dashboardId)
+      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages, savedDashboardId)
     } catch (err) {
       console.error('[ChatPage] Generation failed:', err)
       setGenerateError((err as Error).message)
@@ -216,12 +305,58 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
     }
   }, [dataContext, selectedSource, isGenerating, buildSummary, onDashboardGenerated, messages])
 
+  // ── Pin insight to plan spec ─────────────────────────────────────
+
+  const handlePinInsight = useCallback((insight: InsightData) => {
+    const id = `insight-${Date.now()}`
+    if (insight.type === 'kpi') {
+      applyDelta({
+        action: 'add_sheet',
+        sheet: {
+          id,
+          intent: insight.title || 'KPI',
+          chartType: 'kpi',
+          metrics: (insight.data as { label: string; value: string }[]).map(d => ({
+            label: d.label,
+            field: d.label,
+            aggregation: 'sum',
+          })),
+        },
+      })
+    } else if (insight.type === 'bar') {
+      const items = insight.data as InsightBarItem[]
+      applyDelta({
+        action: 'add_sheet',
+        sheet: {
+          id,
+          intent: insight.title || 'Bar chart',
+          chartType: 'bar',
+          x: { field: 'category', type: 'dimension' },
+          y: { field: items[0]?.label || 'value', type: 'measure', agg: 'sum' },
+        },
+      })
+    } else if (insight.type === 'line') {
+      applyDelta({
+        action: 'add_sheet',
+        sheet: {
+          id,
+          intent: insight.title || 'Trend line',
+          chartType: 'line',
+          x: { field: 'date', type: 'dimension' },
+          y: { field: 'value', type: 'measure', agg: 'sum' },
+        },
+      })
+    }
+  }, [applyDelta])
+
   const hasMessages = messages.length > 0
-  const canGenerate = hasMessages && !isStreaming && !!dataContext
+  const canLegacyGenerate = hasMessages && !isStreaming && !!dataContext
+  const hasPlanContent = spec.sheets.length > 0 || spec.calculatedFields.length > 0 || spec.businessRules.length > 0
+  const showPlanPanel = planPanelOpen && hasPlanContent
 
   return (
     <div className="h-full flex">
-      <div className={`flex-1 min-w-0 flex flex-col ${contextPanelOpen ? '' : 'max-w-full'}`}>
+      <div className={`flex-1 min-w-0 flex flex-col ${contextPanelOpen || showPlanPanel ? '' : 'max-w-full'}`}>
         {/* Header */}
         <div className="px-5 py-3 border-b border-ds-border bg-ds-surface flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -242,15 +377,27 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {hasPlanContent && (
+              <button
+                onClick={() => setPlanPanelOpen(!planPanelOpen)}
+                className={`font-mono text-[10px] uppercase tracking-wide px-3 py-1.5 border transition-colors ${
+                  planPanelOpen
+                    ? 'text-ds-accent border-ds-accent bg-ds-accent/[0.04]'
+                    : 'text-ds-text-dim border-ds-border hover:border-ds-accent hover:text-ds-text'
+                }`}
+              >
+                Plan
+              </button>
+            )}
             {hasMessages && (
               <button
-                onClick={() => { clearMessages(); setGenerateError(null); setFieldWarnings([]) }}
+                onClick={() => { clearMessages(); setGenerateError(null) }}
                 className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 transition-colors"
               >
                 New Chat
               </button>
             )}
-            {!contextPanelOpen && dataContext && (
+            {!contextPanelOpen && dataContext && !showPlanPanel && (
               <button
                 onClick={() => setContextPanelOpen(true)}
                 className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 border border-ds-border hover:border-ds-accent transition-colors"
@@ -284,6 +431,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
                     message={msg}
                     isStreaming={isStreaming && i === messages.length - 1}
                     onCalcAction={isLastAssistant ? sendMessage : undefined}
+                    onPinInsight={isLastAssistant ? handlePinInsight : undefined}
                   />
                 )
               })}
@@ -302,47 +450,18 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
           </div>
         )}
 
-        {/* Field warnings */}
-        {fieldWarnings.length > 0 && (
-          <div className="shrink-0 px-5 pb-2">
-            <div className="max-w-2xl mx-auto">
-              <div
-                className="border px-4 py-3 space-y-2"
-                style={{ background: 'rgba(184,134,11,0.06)', borderColor: 'rgba(184,134,11,0.2)' }}
-              >
-                <p className="font-mono text-[11px] uppercase tracking-wide text-ds-warning">
-                  {fieldWarnings.length} field issue{fieldWarnings.length > 1 ? 's' : ''} detected
-                </p>
-                <ul className="space-y-1">
-                  {fieldWarnings.map((w, i) => (
-                    <li key={i} className="font-sans text-xs text-ds-text-muted">{w}</li>
-                  ))}
-                </ul>
-                <div className="flex gap-3 pt-1">
-                  <button
-                    onClick={() => setFieldWarnings([])}
-                    className="font-mono text-[10px] uppercase tracking-wide text-ds-text-muted border border-ds-border px-3 py-1.5 hover:border-ds-accent hover:text-ds-text transition-colors"
-                  >
-                    Continue anyway
-                  </button>
-                  <button
-                    onClick={() => { setFieldWarnings([]); handleGenerate() }}
-                    className="font-mono text-[10px] uppercase tracking-wide bg-ds-accent text-white px-3 py-1.5 hover:bg-ds-accent-hover transition-colors"
-                  >
-                    Fix and regenerate
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Generate button */}
-        {canGenerate && (
+        {/* Legacy generate button (when no plan spec, fallback) */}
+        {canLegacyGenerate && !hasPlanContent && (
           <div className="shrink-0 px-5 pb-2">
             <div className="max-w-2xl mx-auto">
               <div className="flex items-center gap-3">
-                <GenerateButton isGenerating={isGenerating} disabled={!canGenerate} onClick={handleGenerate} />
+                <button
+                  onClick={handleLegacyGenerate}
+                  disabled={isGenerating}
+                  className="bg-ds-accent text-white font-mono text-xs font-medium px-5 py-2.5 hover:bg-ds-accent-hover transition-colors disabled:opacity-40"
+                >
+                  {isGenerating ? 'Generating…' : 'Generate dashboard'}
+                </button>
                 {!isGenerating && !generateError && (
                   <span className="font-mono text-[10px] text-ds-text-dim flex items-center gap-1">
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -367,7 +486,22 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
         </div>
       </div>
 
-      {contextPanelOpen && dataContext && (
+      {/* Plan panel — right sidebar */}
+      {showPlanPanel && (
+        <div className="w-80 shrink-0">
+          <PlanPanel
+            spec={spec}
+            fieldWarnings={planFieldWarnings}
+            isValid={isValid}
+            onApplyDelta={applyDelta}
+            onGenerate={handlePlanGenerate}
+            isGenerating={isGenerating}
+          />
+        </div>
+      )}
+
+      {/* Data context panel — only when plan panel is hidden */}
+      {contextPanelOpen && dataContext && !showPlanPanel && (
         <div className="w-72 shrink-0">
           <DataContextPanel dataContext={dataContext} onCollapse={() => setContextPanelOpen(false)} />
         </div>

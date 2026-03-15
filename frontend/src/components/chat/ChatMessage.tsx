@@ -1,11 +1,14 @@
 import { type FC } from 'react'
 import type { ChatMessage as ChatMessageType } from '../../types/chat'
 import Markdown from './Markdown'
+import InsightCard from './InsightCard'
+import { parseInsights, type InsightData } from '../../utils/insight-parser'
 
 interface ChatMessageProps {
   message: ChatMessageType
   isStreaming?: boolean
   onCalcAction?: (action: string) => void
+  onPinInsight?: (insight: InsightData) => void
 }
 
 const CaptainWheel: FC = () => (
@@ -24,7 +27,46 @@ const CaptainWheel: FC = () => (
   </svg>
 )
 
-const ChatMessage: FC<ChatMessageProps> = ({ message, isStreaming, onCalcAction }) => {
+const AssistantContent: FC<{
+  content: string
+  onCalcAction?: (action: string) => void
+  onPinInsight?: (insight: InsightData) => void
+}> = ({ content, onCalcAction, onPinInsight }) => {
+  const { cleanText, insights } = parseInsights(content)
+
+  if (insights.length === 0) {
+    return <Markdown content={content} onCalcAction={onCalcAction} />
+  }
+
+  // Split content on __INSIGHT_N__ placeholders and interleave InsightCards
+  const parts = cleanText.split(/(__INSIGHT_\d+__)/)
+  return (
+    <div className="space-y-3">
+      {parts.map((part, i) => {
+        const insightMatch = part.match(/^__INSIGHT_(\d+)__$/)
+        if (insightMatch) {
+          const idx = parseInt(insightMatch[1], 10)
+          const insight = insights[idx]
+          if (insight) {
+            return (
+              <InsightCard
+                key={`insight-${i}`}
+                insight={insight}
+                onPin={onPinInsight ? () => onPinInsight(insight) : undefined}
+              />
+            )
+          }
+          return null
+        }
+        const trimmed = part.trim()
+        if (!trimmed) return null
+        return <Markdown key={`text-${i}`} content={trimmed} onCalcAction={onCalcAction} />
+      })}
+    </div>
+  )
+}
+
+const ChatMessage: FC<ChatMessageProps> = ({ message, isStreaming, onCalcAction, onPinInsight }) => {
   const isUser = message.role === 'user'
 
   if (isUser) {
@@ -49,7 +91,7 @@ const ChatMessage: FC<ChatMessageProps> = ({ message, isStreaming, onCalcAction 
           </span>
         </div>
         {message.content ? (
-          <Markdown content={message.content} onCalcAction={onCalcAction} />
+          <AssistantContent content={message.content} onCalcAction={onCalcAction} onPinInsight={onPinInsight} />
         ) : isStreaming ? (
           <div className="flex items-center gap-2">
             <div className="flex gap-1">

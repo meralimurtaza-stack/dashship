@@ -9,24 +9,26 @@ function buildEncoding(sheet: SheetSpec) {
   // For kpi type: use first metric's field
   if (sheet.chartType === 'kpi' && sheet.metrics?.length) {
     return {
-      columns: null,
-      rows: { field: sheet.metrics[0].field, type: 'measure', aggregation: sheet.metrics[0].aggregation || 'sum' },
-      color: null, size: null, label: null, tooltip: [], detail: [],
+      rows: { field: sheet.metrics[0].field, type: 'measure' as const, aggregation: (sheet.metrics[0].aggregation || 'sum') as 'sum' },
+      tooltip: [] as [],
+      detail: [] as [],
     }
   }
   // For table type: columns become the visible fields
   if (sheet.chartType === 'table') {
     return {
-      columns: sheet.columns?.map(c => ({ field: c, type: 'dimension', aggregation: 'none' })) || [],
-      rows: null, color: null, size: null, label: null, tooltip: [], detail: [],
+      columns: sheet.columns?.map(c => ({ field: c, type: 'dimension' as const, aggregation: 'none' as const })),
+      tooltip: [] as [],
+      detail: [] as [],
     }
   }
   // For standard charts:
   return {
-    columns: sheet.x ? { field: sheet.x.field, type: sheet.x.type, aggregation: sheet.x.agg || 'none' } : null,
-    rows: sheet.y ? { field: sheet.y.field, type: sheet.y.type, aggregation: sheet.y.agg || 'sum' } : null,
-    color: sheet.color ? { field: sheet.color.field, type: sheet.color.type, aggregation: sheet.color.agg || 'none' } : null,
-    size: null, label: null, tooltip: [], detail: [],
+    columns: sheet.x ? { field: sheet.x.field, type: sheet.x.type, aggregation: (sheet.x.agg || 'none') as 'none' } : undefined,
+    rows: sheet.y ? { field: sheet.y.field, type: sheet.y.type, aggregation: (sheet.y.agg || 'sum') as 'sum' } : undefined,
+    color: sheet.color ? { field: sheet.color.field, type: sheet.color.type, aggregation: (sheet.color.agg || 'none') as 'none' } : undefined,
+    tooltip: [] as [],
+    detail: [] as [],
   }
 }
 
@@ -39,7 +41,7 @@ function buildConfig(sheet: SheetSpec) {
     areaFill: sheet.config?.areaFill || false,
     curveType: sheet.config?.curveType || 'monotone',
     donut: sheet.config?.donut || false,
-    sort: sheet.sort || null,
+    sort: sheet.sort || undefined,
   }
 }
 

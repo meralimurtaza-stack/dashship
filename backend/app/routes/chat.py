@@ -82,6 +82,22 @@ After your natural language response, include one or more plan_delta blocks:
 {"action": "add_business_rule", "rule": {"name": "Alert thresholds", "rules": [{"status": "on_track", "condition": "ratio < 1.5", "action": "none"}]}}
 </plan_delta>
 
+## Inline insights
+
+When answering data questions during planning, you can embed compact visualizations
+in your response using insight tags:
+
+<insight type="kpi" data='[{"label":"Total Revenue","value":"$663K","delta":"+18%","deltaDir":"up"},{"label":"Orders","value":"892","delta":"+5%","deltaDir":"up"}]' />
+
+<insight type="bar" data='[{"label":"North","value":241000},{"label":"South","value":109000}]' title="Revenue by region" />
+
+Use these when the user asks a data question and a visual would help them understand
+the answer. The insight is rendered inline in the chat as a compact card.
+
+Only use insights when you have enough context from the data profile to provide
+realistic example values. If the data profile doesn't contain enough information
+to populate the insight, describe the chart in text instead.
+
 ## Current plan
 
 {current_plan_json}
