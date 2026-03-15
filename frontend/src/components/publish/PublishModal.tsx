@@ -92,7 +92,7 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheet
     } finally {
       setPublishing(false)
     }
-  }, [slug, dashboardName, accessLevel, password, allowedEmails, branding, embedEnabled, sheets, layout, data])
+  }, [slug, dashboardName, accessLevel, password, allowedEmails, branding, embedEnabled, sheets, layout, data, dashboardId, onClose, onPublished])
 
   const handleCopy = useCallback(async (type: 'url' | 'embed') => {
     const text = type === 'url' ? getViewUrl(publishedSlug || slug) : getEmbedCode(publishedSlug || slug)
