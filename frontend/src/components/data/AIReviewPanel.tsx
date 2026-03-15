@@ -18,16 +18,16 @@ interface AIReviewPanelProps {
 // ── Skeleton Card ───────────────────────────────────────────────
 
 const SkeletonCard: FC = () => (
-  <div className="border border-gray-200 bg-white p-4 animate-pulse">
+  <div className="border border-ds-border bg-ds-surface p-4 animate-pulse">
     <div className="flex items-center gap-2 mb-3">
-      <div className="h-3 w-12 bg-gray-100 rounded-sm" />
-      <div className="h-3 w-20 bg-gray-100 rounded-sm" />
+      <div className="h-3 w-12 bg-ds-surface-alt rounded-sm" />
+      <div className="h-3 w-20 bg-ds-surface-alt rounded-sm" />
     </div>
-    <div className="h-3 w-full bg-gray-100 rounded-sm mb-2" />
-    <div className="h-3 w-3/4 bg-gray-100 rounded-sm mb-4" />
+    <div className="h-3 w-full bg-ds-surface-alt rounded-sm mb-2" />
+    <div className="h-3 w-3/4 bg-ds-surface-alt rounded-sm mb-4" />
     <div className="flex gap-2">
-      <div className="h-6 w-16 bg-gray-100 rounded-sm" />
-      <div className="h-6 w-16 bg-gray-100 rounded-sm" />
+      <div className="h-6 w-16 bg-ds-surface-alt rounded-sm" />
+      <div className="h-6 w-16 bg-ds-surface-alt rounded-sm" />
     </div>
   </div>
 )
@@ -84,17 +84,17 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
   const allReviewed = status === 'done' && suggestions.length === 0
 
   return (
-    <div className={`border-l border-gray-200 bg-page transition-all duration-300 ${collapsed ? 'w-12' : 'w-80'} flex-shrink-0 flex flex-col`}>
+    <div className={`border-l border-ds-border bg-ds-bg transition-all duration-300 ${collapsed ? 'w-12' : 'w-80'} flex-shrink-0 flex flex-col`}>
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-gray-200">
+      <div className="p-4 flex items-center justify-between border-b border-ds-border">
         {!collapsed && (
-          <h2 className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+          <h2 className="micro-label">
             AI Review
           </h2>
         )}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-gray-400 hover:text-gray-900 transition-colors p-1"
+          className="text-ds-text-dim hover:text-ds-text transition-colors p-1"
           title={collapsed ? 'Expand panel' : 'Collapse panel'}
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -113,8 +113,8 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
           {status === 'loading' && (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-1.5 bg-accent animate-pulse rounded-full" />
-                <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+                <div className="w-1.5 h-1.5 bg-ds-accent animate-pulse" />
+                <span className="micro-label">
                   Analysing your data...
                 </span>
               </div>
@@ -127,10 +127,10 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
           {/* Error */}
           {status === 'error' && (
             <div className="space-y-3">
-              <p className="font-mono text-[10px] text-gray-400">{error}</p>
+              <p className="font-mono text-[10px] text-ds-text-dim">{error}</p>
               <button
                 onClick={analyse}
-                className="border border-gray-200 text-gray-500 font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-gray-900 hover:text-gray-900 transition-colors w-full"
+                className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors w-full"
               >
                 Retry
               </button>
@@ -140,7 +140,7 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
           {/* Suggestion Cards */}
           {status === 'done' && suggestions.length > 0 && (
             <>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+              <p className="micro-label mb-1">
                 {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''}
               </p>
               {suggestions.map((s) => (
@@ -157,12 +157,12 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
           {/* All Reviewed */}
           {allReviewed && (
             <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <p className="font-mono text-xs text-gray-400 text-center">
+              <p className="font-mono text-xs text-ds-text-dim text-center">
                 All suggestions reviewed.
               </p>
               <button
                 onClick={analyse}
-                className="border border-gray-200 text-gray-500 font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-gray-900 hover:text-gray-900 transition-colors"
+                className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors"
               >
                 Re-analyse
               </button>

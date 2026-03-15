@@ -26,21 +26,21 @@ const SidebarItem: FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`w-full text-left px-3 py-3 border-b border-gray-100 transition-colors ${
-      isActive ? 'bg-gray-50 border-l-2 border-l-gray-900' : 'hover:bg-gray-50'
+    className={`w-full text-left px-3 py-3 border-b border-ds-border transition-colors ${
+      isActive ? 'bg-ds-surface-alt border-l-2 border-l-ds-accent' : 'hover:bg-ds-surface-alt'
     }`}
   >
     <div className="flex items-center gap-2">
-      <span className="font-mono text-[9px] uppercase tracking-widest text-gray-400 shrink-0">
+      <span className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim shrink-0">
         {fileType}
       </span>
-      <span className="font-mono text-xs text-ink truncate">{name}</span>
+      <span className="font-mono text-xs text-ds-text truncate">{name}</span>
     </div>
     <div className="flex items-center gap-3 mt-1">
-      <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+      <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
         {columnCount} cols
       </span>
-      <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+      <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
         {rowCount.toLocaleString()} rows
       </span>
     </div>
@@ -50,9 +50,9 @@ const SidebarItem: FC<{
 const DataSourceSidebar: FC<DataSourceSidebarProps> = ({
   sources, activeName, currentSource, onSelectSource, onUploadAnother,
 }) => (
-  <div className="w-56 border-r border-gray-200 bg-white shrink-0">
-    <div className="px-3 py-4 border-b border-gray-200">
-      <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+  <div className="w-56 border-r border-ds-border bg-ds-surface shrink-0">
+    <div className="px-3 py-4 border-b border-ds-border">
+      <span className="micro-label">
         Data Sources
       </span>
     </div>
@@ -83,7 +83,7 @@ const DataSourceSidebar: FC<DataSourceSidebarProps> = ({
     <button
       type="button"
       onClick={onUploadAnother}
-      className="w-full px-3 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+      className="w-full px-3 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-ds-text-dim hover:text-ds-text-muted hover:bg-ds-surface-alt transition-colors"
     >
       + Upload another
     </button>

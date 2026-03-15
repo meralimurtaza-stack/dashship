@@ -70,22 +70,53 @@ interface DashboardLayout {
   }>;
 }
 ```
-## Design System
-- **Typography**: IBM Plex Sans (body), IBM Plex Mono (headlines, labels, numbers, data)
-- **Labels**: font-mono, text-[10px] or text-xs, uppercase, tracking-widest
-- **Page background**: #FAFAF8 (warm off-white, `bg-page`)
-- **Cards**: bg-white, 1px solid border-gray-200, NO border-radius (or 2px max), no shadows (0 1px 3px rgba(0,0,0,0.04) max)
-- **Primary text**: #0E0D0D (`text-ink`)
-- **Secondary text**: gray-400 to gray-500
-- **Accent**: #2A9D8F (muted teal) — use SPARINGLY, only for primary CTAs and active states
-- **Buttons primary**: bg-gray-900 text-white, font-mono text-xs uppercase tracking-wide, px-6 py-3, no border-radius or 2px max
-- **Buttons secondary**: border border-gray-900 text-gray-900, hover:bg-gray-900 hover:text-white
-- **Navigation**: pill-style (bg-gray-100 rounded-full p-1, active: bg-gray-900 text-white rounded-full)
-- **Numbers**: Always tabular-nums, font-mono
-- **Formatting**: £536.7K not £536700, conditional colouring (red low, green high)
-- **Loading**: Skeleton screens, never spinners
-- **Empty states**: Editorial, generous whitespace, large monospace text
-- **Aesthetic**: Editorial, typewriter-inspired, black/white with purposeful whitespace. Inspired by midday.ai / Fictional Spaces. No indigo, no purple, no bright colours.
+## Design System — "The Broadsheet Terminal"
+Two design systems coexist: the DashShip app (warm cream, IBM Plex Mono headlines, zero radius) and published dashboards (white, system sans-serif, rounded corners).
+
+### App Colours (--ds-* tokens)
+- **Page background**: #ECEAE4 (`bg-ds-bg`) — warm cream canvas
+- **Surface**: #FAFAF6 (`bg-ds-surface`) — cards, panels
+- **Surface alt**: #F4F2EC (`bg-ds-surface-alt`) — hover, alternating rows
+- **Primary text**: #141210 (`text-ds-text`)
+- **Secondary text**: #6D6860 (`text-ds-text-muted`)
+- **Dim text**: #A19D94 (`text-ds-text-dim`) — placeholders, hints
+- **Accent**: #1C3360 (`bg-ds-accent`) — deep ink-blue, CTAs, active states, logo
+- **Accent hover**: #152A50 (`bg-ds-accent-hover`)
+- **Success**: #2E7D5B (`text-ds-success`) — positive deltas, LIVE badges
+- **Warning**: #B8860B (`text-ds-warning`)
+- **Error**: #C1403D (`text-ds-error`) — errors, destructive
+- **Borders**: #D7D3C9 (`border-ds-border`), #C7C2B5 (`border-ds-border-strong`)
+- **Gold**: #C8963E (`text-ds-gold`) — highlight accent, used sparingly
+
+### Chart Colours (4-colour Economist-grade)
+- #1C3360 (ink-blue), #141210 (near-black), #8D8981 (warm grey), #C8963E (gold)
+
+### Published Dashboard Colours (--pub-* tokens)
+- White bg, system sans-serif, rounded corners (6px), subtle shadows OK
+- #FFFFFF, #FAFAFA, #1A1A1A, #888888, #BBBBBB, #EDEDEB
+
+### Typography
+- **IBM Plex Mono**: headings, nav items, labels, data values, buttons, logo "DashShip_", input placeholders
+- **IBM Plex Sans**: body text, descriptions, chat messages, sidebar project names, form values
+- Weight: 400 (regular) default, 500 (medium) for headings/active nav/buttons. NEVER 600/700.
+- **Published dashboards**: system sans-serif only, no IBM Plex Mono
+
+### Components
+- **Cards**: bg-ds-surface, 1px solid border-ds-border, zero border-radius, no shadows
+- **Buttons primary**: bg-ds-accent text-white font-mono text-xs tracking-wider, zero radius
+- **Buttons secondary**: border border-ds-border-strong text-ds-text, zero radius
+- **Micro-labels** (the DashShip fingerprint): `.micro-label` class — Plex Mono 9px uppercase tracking 0.08em, text-ds-text-dim
+- **Navigation tabs**: underline style (not pills), active = font-medium + 2.5px bottom border in ds-accent
+- **Inputs**: border-ds-border-strong, zero radius, focus border = ds-accent, no ring
+- **Logo**: ink-blue square (22x22, zero radius) with white "D" + "DashShip_" in Plex Mono medium
+
+### What NOT to use
+- No teal (#2A9D8F), no indigo, no bright gradients
+- No `rounded-*` on cards/containers/panels (zero radius in the app)
+- No `shadow-*` on cards
+- No glassmorphic effects (no backdrop-blur)
+- No Inter font
+- No bold (600/700) weights
 ## Code Conventions
 - Functional components with hooks only, no class components
 - All styling via Tailwind CSS utility classes, no inline styles or CSS modules
@@ -94,7 +125,7 @@ interface DashboardLayout {
 - Custom hooks for data fetching and state management
 - Proper TypeScript types for all props and state
 ## Frontend Aesthetics
-Avoid generic AI-generated design. No Inter, Roboto, or system fonts. No purple, no indigo, no bright gradients. Commit to the editorial black/white/teal aesthetic with IBM Plex typography. Every component should feel deliberately designed — typewriter-inspired, not template-generated. Use Tailwind v4 `@theme` CSS variables for colour consistency. Black on warm white with the muted teal accent used sparingly for active states and primary CTAs only.
+"The Broadsheet Terminal" — editorial authority delivered through monospace precision. The app feels like a premium financial terminal built by someone who writes SQL for a living. Warm cream canvas (#ECEAE4), ink-blue accent (#1C3360), IBM Plex Mono headlines, zero border-radius on cards. No Inter font, no teal, no indigo, no purple, no bright gradients, no glassmorphic effects, no box shadows. Use Tailwind v4 `@theme` CSS variables with `--color-ds-*` tokens. Published dashboards use a separate clean system-sans design with `--color-pub-*` tokens.
 ## Context7 Rule
 Always use Context7 MCP for library/API documentation when generating code that uses dnd-kit, Recharts, Supabase, Papa Parse, or any external library, without being asked.
 ## Agent Team Configuration

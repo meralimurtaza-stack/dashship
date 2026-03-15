@@ -27,12 +27,12 @@ function renderInline(text: string): (string | JSX.Element)[] {
       parts.push(text.slice(lastIdx, match.index))
     }
     if (match[1]) {
-      parts.push(<strong key={key++} className="font-semibold text-ink">{match[2]}</strong>)
+      parts.push(<strong key={key++} className="font-medium text-ds-text">{match[2]}</strong>)
     } else if (match[3]) {
       parts.push(<em key={key++} className="italic">{match[4]}</em>)
     } else if (match[5]) {
       parts.push(
-        <code key={key++} className="font-mono text-[0.85em] bg-gray-100 px-1.5 py-0.5 text-ink">
+        <code key={key++} className="font-mono text-[0.85em] bg-ds-surface-alt px-1.5 py-0.5 text-ds-text">
           {match[6]}
         </code>
       )
@@ -175,14 +175,14 @@ const CalcCard: FC<{
   const { name, formula, description } = parseCalcLine(raw)
 
   return (
-    <div className="flex items-start justify-between gap-3 bg-white border border-gray-200 p-3">
+    <div className="flex items-start justify-between gap-3 bg-ds-surface border border-ds-border p-3">
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-sm font-semibold text-ink truncate">{name}</p>
-        <p className="font-mono text-xs text-gray-500 mt-0.5">
-          <span className="text-gray-400">= </span>{formula}
+        <p className="font-mono text-sm font-medium text-ds-text truncate">{name}</p>
+        <p className="font-mono text-xs text-ds-text-muted mt-0.5">
+          <span className="text-ds-text-dim">= </span>{formula}
         </p>
         {description && (
-          <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{description}</p>
+          <p className="text-[11px] text-ds-text-dim mt-1 leading-relaxed">{description}</p>
         )}
       </div>
       {(onApprove || onEdit) && (
@@ -190,7 +190,7 @@ const CalcCard: FC<{
           {onApprove && (
             <button
               onClick={() => onApprove(`Approve: ${name} = ${formula}`)}
-              className="font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+              className="font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors"
             >
               Approve
             </button>
@@ -198,7 +198,7 @@ const CalcCard: FC<{
           {onEdit && (
             <button
               onClick={() => onEdit(`Edit: ${name}`)}
-              className="font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-gray-900 transition-colors"
+              className="font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 border border-ds-border text-ds-text-muted hover:border-ds-accent hover:text-ds-text transition-colors"
             >
               Edit
             </button>
@@ -222,10 +222,10 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
             const Tag = block.level === 1 ? 'h3' : block.level === 2 ? 'h4' : 'h5'
             const classes =
               block.level === 1
-                ? 'font-mono text-sm font-semibold text-ink'
+                ? 'font-mono text-sm font-medium text-ds-text'
                 : block.level === 2
-                ? 'font-mono text-xs font-semibold text-ink'
-                : 'font-mono text-xs font-medium text-gray-600'
+                ? 'font-mono text-xs font-medium text-ds-text'
+                : 'font-mono text-xs font-medium text-ds-text-muted'
             return (
               <Tag key={idx} className={classes}>
                 {renderInline(block.content)}
@@ -237,9 +237,9 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
             return (
               <pre
                 key={idx}
-                className="bg-gray-100 border border-gray-200 px-4 py-3 overflow-x-auto"
+                className="bg-ds-surface-alt border border-ds-border px-4 py-3 overflow-x-auto"
               >
-                <code className="font-mono text-xs text-ink leading-relaxed">
+                <code className="font-mono text-xs text-ds-text leading-relaxed">
                   {block.content}
                 </code>
               </pre>
@@ -261,7 +261,7 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
                   {onCalcAction && (
                     <button
                       onClick={() => onCalcAction('Approve all calculated fields')}
-                      className="w-full font-mono text-[10px] uppercase tracking-wide px-4 py-2.5 bg-gray-900 text-white hover:bg-gray-800 transition-colors mt-1"
+                      className="w-full font-mono text-[10px] uppercase tracking-wide px-4 py-2.5 bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors mt-1"
                     >
                       Approve All
                     </button>
@@ -273,7 +273,7 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
               return (
                 <ol key={idx} className="list-decimal list-inside space-y-1">
                   {block.items?.map((item, j) => (
-                    <li key={j} className="text-sm text-gray-600 leading-relaxed">
+                    <li key={j} className="text-sm text-ds-text-muted leading-relaxed">
                       {renderInline(item)}
                     </li>
                   ))}
@@ -283,7 +283,7 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
             return (
               <ul key={idx} className="list-disc list-inside space-y-1">
                 {block.items?.map((item, j) => (
-                  <li key={j} className="text-sm text-gray-600 leading-relaxed">
+                  <li key={j} className="text-sm text-ds-text-muted leading-relaxed">
                     {renderInline(item)}
                   </li>
                 ))}
@@ -293,7 +293,7 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
 
           case 'paragraph':
             return (
-              <p key={idx} className="text-sm text-gray-600 leading-relaxed">
+              <p key={idx} className="text-sm text-ds-text-muted leading-relaxed">
                 {renderInline(block.content)}
               </p>
             )

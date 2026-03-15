@@ -8,6 +8,7 @@ import GenerateButton from '../components/chat/GenerateButton'
 import { useChat } from '../hooks/useChat'
 import { listDataSources, downloadDataSourceRows } from '../lib/datasource-storage'
 import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
+import { saveDashboard } from '../lib/dashboard-storage'
 import type { DataSource } from '../types/datasource'
 import type { ChatMessage, ChatDataContext } from '../types/chat'
 import type { ColumnSchema } from '../types/datasource'
@@ -20,13 +21,15 @@ interface ChatPageProps {
     data: Record<string, unknown>[],
     columns: ColumnSchema[],
     dataContext: ChatDataContext | null,
-    chatMessages: ChatMessage[]
+    chatMessages: ChatMessage[],
+    dashboardId?: string
   ) => void
+  initialMessage?: string | null
 }
 
 // ── Main Chat Page ──────────────────────────────────────────────
 
-const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
+const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) => {
   const [sources, setSources] = useState<DataSource[]>([])
   const [loadingSources, setLoadingSources] = useState(true)
   const [selectedSource, setSelectedSource] = useState<DataSource | null>(null)
@@ -76,6 +79,15 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Auto-send initial message from Home page
+  const [initialSent, setInitialSent] = useState(false)
+  useEffect(() => {
+    if (initialMessage && !initialSent && selectedSource && dataContext && !isStreaming && messages.length === 0) {
+      setInitialSent(true)
+      sendMessage(initialMessage)
+    }
+  }, [initialMessage, initialSent, selectedSource, dataContext, isStreaming, messages.length, sendMessage])
 
   const handleBack = () => {
     setSelectedSource(null)
@@ -132,7 +144,23 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
       }
 
       const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
-      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages)
+
+      // Save as draft
+      let dashboardId: string | undefined
+      try {
+        const saved = await saveDashboard({
+          dataSourceId: selectedSource.id,
+          name: result.dashboard.name,
+          sheets: result.dashboard.sheets,
+          layout: result.dashboard.layout,
+          data: rows,
+        })
+        dashboardId = saved.id
+      } catch (err) {
+        console.warn('[ChatPage] Failed to save draft:', err)
+      }
+
+      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages, dashboardId)
     } catch (err) {
       console.error('[ChatPage] Generation failed:', err)
       setGenerateError((err as Error).message)
@@ -156,16 +184,16 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
     <div className="h-full flex">
       <div className={`flex-1 min-w-0 flex flex-col ${contextPanelOpen ? '' : 'max-w-full'}`}>
         {/* Header */}
-        <div className="px-5 py-3 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
+        <div className="px-5 py-3 border-b border-ds-border bg-ds-surface flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={handleBack} className="p-1 hover:opacity-60 transition-opacity" aria-label="Back to sources">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-ds-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
               </svg>
             </button>
             <div>
-              <p className="font-mono text-xs font-medium text-ink">{dataContext.sourceName}</p>
-              <p className="font-mono text-[10px] text-gray-400 tabular-nums">
+              <p className="font-mono text-xs font-medium text-ds-text">{dataContext.sourceName}</p>
+              <p className="font-mono text-[10px] text-ds-text-dim tabular-nums">
                 {dataContext.rowCount.toLocaleString()} rows &middot; {dataContext.columns.length} fields
               </p>
             </div>
@@ -174,7 +202,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
             {hasMessages && (
               <button
                 onClick={() => { clearMessages(); setGenerateError(null) }}
-                className="font-mono text-[10px] uppercase tracking-wide text-gray-400 hover:text-gray-900 px-3 py-1.5 transition-colors"
+                className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 transition-colors"
               >
                 New Chat
               </button>
@@ -182,7 +210,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
             {!contextPanelOpen && (
               <button
                 onClick={() => setContextPanelOpen(true)}
-                className="font-mono text-[10px] uppercase tracking-wide text-gray-400 hover:text-gray-900 px-3 py-1.5 border border-gray-200 hover:border-gray-900 transition-colors"
+                className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 border border-ds-border hover:border-ds-accent transition-colors"
               >
                 Data
               </button>
@@ -212,13 +240,23 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated }) => {
           </div>
         )}
 
-        {/* Generate button */}
+        {/* Generate button — clear next step */}
         {canGenerate && (
           <div className="shrink-0 px-5 pb-2">
-            <div className="max-w-2xl mx-auto flex items-center gap-3">
-              <GenerateButton isGenerating={isGenerating} disabled={!canGenerate} onClick={handleGenerate} />
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center gap-3">
+                <GenerateButton isGenerating={isGenerating} disabled={!canGenerate} onClick={handleGenerate} />
+                {!isGenerating && !generateError && (
+                  <span className="font-mono text-[10px] text-ds-text-dim flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                    </svg>
+                    Next step
+                  </span>
+                )}
+              </div>
               {generateError && (
-                <p className="font-mono text-[10px] text-danger">{generateError}</p>
+                <p className="font-mono text-[10px] text-ds-error mt-2">{generateError}</p>
               )}
             </div>
           </div>

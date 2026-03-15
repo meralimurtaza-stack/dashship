@@ -22,26 +22,25 @@ const DraggableField: FC<{
       {...attributes}
       className={`
         flex items-center gap-2 px-3 py-1.5 text-xs font-mono cursor-grab active:cursor-grabbing
-        border border-transparent hover:border-gray-200 transition-colors select-none
+        border border-transparent hover:border-ds-border transition-colors select-none
         ${isDragging ? 'opacity-40' : ''}
       `}
-      style={{ borderRadius: 2 }}
     >
       <span
         className={`
           w-1.5 h-1.5 shrink-0
-          ${isMeasure ? 'bg-accent' : 'bg-gray-400'}
+          ${isMeasure ? 'bg-ds-accent' : 'bg-ds-text-dim'}
         `}
         style={{ borderRadius: 1 }}
       />
-      <span className="truncate text-ink">{field.displayName || field.name}</span>
+      <span className="truncate text-ds-text">{field.displayName || field.name}</span>
       {isCalculated && (
-        <span className="ml-auto text-[9px] font-mono uppercase tracking-widest text-accent bg-accent-muted px-1.5 py-0.5" style={{ borderRadius: 2 }}>
+        <span className="ml-auto text-[9px] font-mono uppercase tracking-widest text-ds-accent bg-ds-accent-glow px-1.5 py-0.5">
           fx
         </span>
       )}
       {isMeasure && !isCalculated && (
-        <span className="ml-auto text-[9px] text-gray-400">#</span>
+        <span className="ml-auto text-[9px] text-ds-text-dim">#</span>
       )}
     </div>
   )
@@ -92,10 +91,10 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
   )
 
   return (
-    <div className="h-full flex flex-col bg-white border-r border-gray-200">
+    <div className="h-full flex flex-col bg-ds-surface border-r border-ds-border">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-2">
+      <div className="px-4 py-3 border-b border-ds-border">
+        <p className="micro-label mb-2">
           Fields
         </p>
         <input
@@ -103,8 +102,7 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search fields..."
-          className="w-full px-3 py-1.5 text-xs font-mono bg-gray-100 border-0 outline-none focus:bg-white focus:ring-1 focus:ring-gray-300 placeholder:text-gray-400 transition-colors"
-          style={{ borderRadius: 2 }}
+          className="w-full px-3 py-1.5 text-xs font-mono bg-ds-surface-alt border-0 outline-none focus:bg-ds-surface focus:ring-1 focus:ring-ds-border-strong placeholder:text-ds-text-dim transition-colors"
         />
       </div>
 
@@ -113,7 +111,7 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
         {/* Dimensions */}
         {dimensions.length > 0 && (
           <div className="mb-3">
-            <p className="px-4 py-1 font-mono text-[9px] uppercase tracking-widest text-gray-400">
+            <p className="px-4 py-1 font-mono text-[9px] uppercase tracking-widest text-ds-text-dim">
               Dimensions
             </p>
             {dimensions.map((f) => (
@@ -125,7 +123,7 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
         {/* Measures */}
         {measures.length > 0 && (
           <div className="mb-3">
-            <p className="px-4 py-1 font-mono text-[9px] uppercase tracking-widest text-gray-400">
+            <p className="px-4 py-1 font-mono text-[9px] uppercase tracking-widest text-ds-text-dim">
               Measures
             </p>
             {measures.map((f) => (
@@ -137,7 +135,7 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
         {/* Calculated Fields */}
         {calcSchemas.length > 0 && (
           <div className="mb-3">
-            <p className="px-4 py-1 font-mono text-[9px] uppercase tracking-widest text-gray-400">
+            <p className="px-4 py-1 font-mono text-[9px] uppercase tracking-widest text-ds-text-dim">
               Calculated
             </p>
             {calcSchemas.map((f) => (
@@ -147,7 +145,7 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
         )}
 
         {dimensions.length === 0 && measures.length === 0 && calcSchemas.length === 0 && (
-          <p className="px-4 py-8 text-xs text-gray-400 text-center">
+          <p className="px-4 py-8 text-xs text-ds-text-dim text-center">
             No fields match.
           </p>
         )}
@@ -155,11 +153,10 @@ const FieldsPanel: FC<FieldsPanelProps> = ({
 
       {/* Add Calculated Field */}
       {onAddCalculatedField && (
-        <div className="px-4 py-3 border-t border-gray-200">
+        <div className="px-4 py-3 border-t border-ds-border">
           <button
             onClick={onAddCalculatedField}
-            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-mono uppercase tracking-wide text-gray-500 border border-dashed border-gray-300 hover:border-gray-900 hover:text-gray-900 transition-colors"
-            style={{ borderRadius: 2 }}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-mono uppercase tracking-wide text-ds-text-muted border border-dashed border-ds-border-strong hover:border-ds-accent hover:text-ds-text transition-colors"
           >
             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />

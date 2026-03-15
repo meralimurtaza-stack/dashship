@@ -78,13 +78,13 @@ const DataPreview: FC<DataPreviewProps> = ({
   }, [rows, maxRows, sortCol, sortDir])
 
   return (
-    <div className="border border-gray-200 bg-white overflow-hidden">
+    <div className="border border-ds-border bg-ds-surface overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ds-border">
+        <span className="micro-label">
           Data Grid
         </span>
-        <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+        <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
           {Math.min(maxRows, rows.length)} of {rows.length} rows
         </span>
       </div>
@@ -93,7 +93,7 @@ const DataPreview: FC<DataPreviewProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-ds-border">
               {visibleCols.map((col) => {
                 const display = col.displayName || col.name
                 const isRenamed = !!col.displayName && col.displayName !== col.name
@@ -103,7 +103,7 @@ const DataPreview: FC<DataPreviewProps> = ({
                 return (
                   <th
                     key={col.name}
-                    className={`text-left py-2 cursor-pointer hover:bg-gray-100 select-none transition-all duration-200 ${
+                    className={`text-left py-2 cursor-pointer hover:bg-ds-surface-alt select-none transition-all duration-200 ${
                       isHidden ? 'opacity-30 px-1 max-w-[40px]' : 'px-3'
                     }`}
                     onClick={() => handleSort(col.name)}
@@ -121,9 +121,9 @@ const DataPreview: FC<DataPreviewProps> = ({
                             if (e.key === 'Escape') setEditingCol(null)
                           }}
                           onClick={(e) => e.stopPropagation()}
-                          className="font-mono text-[10px] uppercase tracking-widest text-ink bg-transparent border-b border-gray-900 outline-none py-0.5 w-full min-w-[60px]"
+                          className="font-mono text-[10px] uppercase tracking-widest text-ds-text bg-transparent border-b border-ds-accent outline-none py-0.5 w-full min-w-[60px]"
                         />
-                        <span className="font-mono text-[9px] text-gray-400 tracking-wide">
+                        <span className="font-mono text-[9px] text-ds-text-dim tracking-wide">
                           {col.name}
                         </span>
                       </div>
@@ -138,7 +138,7 @@ const DataPreview: FC<DataPreviewProps> = ({
                             onChange={(t) => onChangeType(col.name, t)}
                             size="sm"
                           />
-                          <span className="font-mono text-[10px] uppercase tracking-widest text-ink truncate">
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-ds-text truncate">
                             {display}
                           </span>
                           <span
@@ -151,14 +151,14 @@ const DataPreview: FC<DataPreviewProps> = ({
                             }}
                             className={`font-mono text-[9px] uppercase px-1 py-0.5 cursor-pointer hover:opacity-80 ${
                               col.role === 'measure'
-                                ? 'text-accent bg-accent/8'
-                                : 'text-gray-400 bg-gray-100'
+                                ? 'text-ds-accent bg-ds-accent-glow'
+                                : 'text-ds-text-dim bg-ds-surface-alt'
                             }`}
                           >
                             {col.role === 'measure' ? 'M' : 'D'}
                           </span>
                           {sortCol === col.name && (
-                            <span className="text-[10px] text-gray-400">
+                            <span className="text-[10px] text-ds-text-dim">
                               {sortDir === 'asc' ? '\u2191' : '\u2193'}
                             </span>
                           )}
@@ -169,7 +169,7 @@ const DataPreview: FC<DataPreviewProps> = ({
                               e.stopPropagation()
                               onToggleVisibility(col.name)
                             }}
-                            className="ml-auto text-gray-300 hover:text-gray-600 transition-colors p-0.5"
+                            className="ml-auto text-ds-text-dim hover:text-ds-text-muted transition-colors p-0.5"
                             title={isHidden ? 'Show column' : 'Hide column'}
                           >
                             {isHidden ? (
@@ -187,7 +187,7 @@ const DataPreview: FC<DataPreviewProps> = ({
                           </button>
                         </div>
                         {isRenamed && (
-                          <span className="font-mono text-[9px] text-gray-400 tracking-wide">
+                          <span className="font-mono text-[9px] text-ds-text-dim tracking-wide">
                             {col.name}
                           </span>
                         )}
@@ -202,7 +202,7 @@ const DataPreview: FC<DataPreviewProps> = ({
             {sortedRows.map((row, i) => (
               <tr
                 key={i}
-                className="border-b border-gray-100 hover:bg-gray-100/50 transition-colors"
+                className="border-b border-ds-border hover:bg-ds-surface-alt/50 transition-colors"
               >
                 {visibleCols.map((col) => {
                   const val = row[col.name]
@@ -217,9 +217,9 @@ const DataPreview: FC<DataPreviewProps> = ({
                           : 'px-3 max-w-[200px]'
                       } ${
                         isNum
-                          ? 'font-mono tabular-nums text-right text-ink'
-                          : 'text-gray-600'
-                      } ${display === '\u2014' ? 'text-gray-300' : ''}`}
+                          ? 'font-mono tabular-nums text-right text-ds-text'
+                          : 'text-ds-text-muted'
+                      } ${display === '\u2014' ? 'text-ds-text-dim' : ''}`}
                     >
                       {col.hidden ? '' : display}
                     </td>

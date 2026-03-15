@@ -28,16 +28,15 @@ const MessageBubble: FC<{ message: ChatMessage; isStreaming?: boolean }> = ({
         className={`
           max-w-[90%] px-3 py-2 text-xs leading-relaxed
           ${isUser
-            ? 'bg-gray-900 text-white'
-            : 'bg-white border border-gray-200 text-ink'}
+            ? 'bg-ds-accent text-white'
+            : 'bg-ds-surface border border-ds-border text-ds-text'}
         `}
-        style={{ borderRadius: 2 }}
       >
         {!isUser && !message.content && isStreaming && (
           <div className="flex gap-1 py-1">
-            <span className="w-1 h-1 bg-gray-300 rounded-full animate-pulse" />
-            <span className="w-1 h-1 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-            <span className="w-1 h-1 bg-gray-300 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+            <span className="w-1 h-1 bg-ds-text-dim animate-pulse" />
+            <span className="w-1 h-1 bg-ds-text-dim animate-pulse" style={{ animationDelay: '150ms' }} />
+            <span className="w-1 h-1 bg-ds-text-dim animate-pulse" style={{ animationDelay: '300ms' }} />
           </div>
         )}
         {message.content && (
@@ -99,16 +98,16 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white border-l border-gray-200">
+    <div className="h-full flex flex-col bg-ds-surface border-l border-ds-border">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-ds-border flex items-center gap-2">
         <div className="w-5 h-5 flex items-center justify-center">
-          <svg className="w-4 h-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-4 h-4 text-ds-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
             <circle cx="12" cy="12" r="3" />
             <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0-2.83-2.83M9.76 9.76 6.93 6.93" />
           </svg>
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+        <span className="micro-label">
           Captain
         </span>
       </div>
@@ -117,7 +116,7 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {allMessages.length === 0 && (
           <div className="py-6 text-center space-y-3">
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-ds-text-dim leading-relaxed">
               Ask Captain to modify your dashboard. Try a quick command:
             </p>
             <div className="flex flex-wrap gap-1.5 justify-center">
@@ -125,8 +124,7 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
                 <button
                   key={cmd}
                   onClick={() => handleQuickCommand(cmd)}
-                  className="px-2.5 py-1 text-[10px] font-mono border border-gray-200 text-gray-500 hover:border-gray-900 hover:text-ink transition-colors"
-                  style={{ borderRadius: 2 }}
+                  className="px-2.5 py-1 text-[10px] font-mono border border-ds-border text-ds-text-muted hover:border-ds-accent hover:text-ds-text transition-colors"
                 >
                   {cmd}
                 </button>
@@ -145,7 +143,7 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
       </div>
 
       {/* Input */}
-      <div className="px-3 py-3 border-t border-gray-200">
+      <div className="px-3 py-3 border-t border-ds-border">
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
@@ -154,15 +152,13 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
             onKeyDown={handleKeyDown}
             placeholder="Ask Captain..."
             rows={1}
-            className="flex-1 resize-none px-3 py-2 text-xs font-mono bg-gray-50 border border-gray-200 outline-none focus:border-gray-400 placeholder:text-gray-300 transition-colors"
-            style={{ borderRadius: 2 }}
+            className="flex-1 resize-none px-3 py-2 text-xs font-mono bg-ds-surface-alt border border-ds-border outline-none focus:border-ds-accent placeholder:text-ds-text-dim transition-colors"
             disabled={isStreaming}
           />
           {isStreaming ? (
             <button
               onClick={stopStreaming}
-              className="px-3 py-2 text-xs font-mono uppercase tracking-wide text-gray-500 border border-gray-200 hover:border-danger hover:text-danger transition-colors shrink-0"
-              style={{ borderRadius: 2 }}
+              className="px-3 py-2 text-xs font-mono uppercase tracking-wide text-ds-text-muted border border-ds-border hover:border-ds-error hover:text-ds-error transition-colors shrink-0"
             >
               Stop
             </button>
@@ -170,8 +166,7 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="px-3 py-2 bg-gray-900 text-white text-xs font-mono uppercase tracking-wide hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
-              style={{ borderRadius: 2 }}
+              className="px-3 py-2 bg-ds-accent text-white text-xs font-mono uppercase tracking-wide hover:bg-ds-accent-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
             >
               Send
             </button>

@@ -41,27 +41,27 @@ const SuggestionCard: FC<SuggestionCardProps> = ({ suggestion, onApply, onDismis
 
   return (
     <div
-      className={`border border-gray-200 bg-white p-4 transition-all duration-200 ${
+      className={`border border-ds-border bg-ds-surface p-4 transition-all duration-200 ${
         leaving ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
       }`}
     >
       {/* Tag + Column */}
       <div className="flex items-center gap-2 mb-2">
-        <span className="font-mono text-[9px] uppercase tracking-widest text-gray-400 bg-gray-100 px-2 py-0.5">
+        <span className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim bg-ds-surface-alt px-2 py-0.5">
           {label}
         </span>
-        <span className="font-mono text-[10px] text-gray-400 truncate">
+        <span className="font-mono text-[10px] text-ds-text-dim truncate">
           {suggestion.column}
         </span>
       </div>
 
       {/* What */}
-      <p className="font-mono text-xs text-ink leading-relaxed mb-1">
+      <p className="font-mono text-xs text-ds-text leading-relaxed mb-1">
         {description}
       </p>
 
       {/* Why */}
-      <p className="text-[11px] text-gray-500 leading-relaxed mb-3">
+      <p className="text-[11px] text-ds-text-muted leading-relaxed mb-3">
         {suggestion.reason}
       </p>
 
@@ -69,13 +69,13 @@ const SuggestionCard: FC<SuggestionCardProps> = ({ suggestion, onApply, onDismis
       <div className="flex items-center gap-2">
         <button
           onClick={handleApply}
-          className="bg-accent text-white font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:opacity-90 transition-opacity"
+          className="bg-ds-accent text-white font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:opacity-90 transition-opacity"
         >
           Apply
         </button>
         <button
           onClick={handleDismiss}
-          className="border border-gray-200 text-gray-400 font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:border-gray-400 hover:text-gray-600 transition-colors"
+          className="border border-ds-border text-ds-text-dim font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:border-ds-border-strong hover:text-ds-text-muted transition-colors"
         >
           Dismiss
         </button>

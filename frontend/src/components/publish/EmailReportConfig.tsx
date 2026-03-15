@@ -84,8 +84,7 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
           onChange={(e) => setRecipients(e.target.value)}
           placeholder="email@example.com (one per line)"
           rows={3}
-          className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors resize-none"
-          style={{ borderRadius: 2 }}
+          className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors resize-none"
         />
       </FieldGroup>
 
@@ -100,10 +99,9 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
                 onClick={() => setFrequency(f)}
                 className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide border transition-colors ${
                   frequency === f
-                    ? 'bg-gray-900 text-white border-gray-900'
-                    : 'text-gray-500 border-gray-200 hover:border-gray-900 hover:text-ink'
+                    ? 'bg-ds-accent text-white border-ds-accent'
+                    : 'text-ds-text-muted border-ds-border hover:border-ds-accent hover:text-ds-text'
                 }`}
-                style={{ borderRadius: 2 }}
               >
                 {f}
               </button>
@@ -114,12 +112,11 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
           <div className="flex gap-3">
             {frequency === 'weekly' && (
               <div className="flex-1">
-                <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block mb-1">Day</label>
+                <label className="micro-label block mb-1">Day</label>
                 <select
                   value={dayOfWeek}
                   onChange={(e) => setDayOfWeek(Number(e.target.value))}
-                  className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors appearance-none"
-                  style={{ borderRadius: 2 }}
+                  className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors appearance-none"
                 >
                   {DAYS_OF_WEEK.map((d, i) => (
                     <option key={i} value={i}>{d}</option>
@@ -129,12 +126,11 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
             )}
             {frequency === 'monthly' && (
               <div className="flex-1">
-                <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block mb-1">Day of Month</label>
+                <label className="micro-label block mb-1">Day of Month</label>
                 <select
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                  className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors appearance-none"
-                  style={{ borderRadius: 2 }}
+                  className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors appearance-none"
                 >
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
                     <option key={d} value={d}>{d}</option>
@@ -143,15 +139,14 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
               </div>
             )}
             <div className="flex-1">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block mb-1">
+              <label className="micro-label block mb-1">
                 Time (UTC)
               </label>
               <input
                 type="time"
                 value={timeUtc}
                 onChange={(e) => setTimeUtc(e.target.value)}
-                className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-                style={{ borderRadius: 2 }}
+                className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
               />
             </div>
           </div>
@@ -167,10 +162,9 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
               onClick={() => setFormat(f)}
               className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide border transition-colors ${
                 format === f
-                  ? 'bg-gray-900 text-white border-gray-900'
-                  : 'text-gray-500 border-gray-200 hover:border-gray-900 hover:text-ink'
+                  ? 'bg-ds-accent text-white border-ds-accent'
+                  : 'text-ds-text-muted border-ds-border hover:border-ds-accent hover:text-ds-text'
               }`}
-              style={{ borderRadius: 2 }}
             >
               {f === 'html' ? 'HTML Email' : 'PDF Attachment'}
             </button>
@@ -183,15 +177,14 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-          style={{ borderRadius: 2 }}
+          className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
         />
       </FieldGroup>
 
       {/* Enable Toggle */}
       <label className="flex items-center gap-3 cursor-pointer">
         <div
-          className={`relative w-9 h-5 transition-colors ${enabled ? 'bg-gray-900' : 'bg-gray-200'}`}
+          className={`relative w-9 h-5 transition-colors ${enabled ? 'bg-ds-accent' : 'bg-ds-border'}`}
           style={{ borderRadius: 10 }}
           onClick={() => setEnabled(!enabled)}
         >
@@ -200,27 +193,25 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
             style={{ borderRadius: 8, transform: enabled ? 'translateX(18px)' : 'translateX(2px)' }}
           />
         </div>
-        <span className="font-mono text-xs text-gray-600">Schedule enabled</span>
+        <span className="font-mono text-xs text-ds-text-muted">Schedule enabled</span>
       </label>
 
       {/* Error */}
-      {error && <p className="font-mono text-xs text-danger">{error}</p>}
+      {error && <p className="font-mono text-xs text-ds-error">{error}</p>}
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2">
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-          style={{ borderRadius: 2 }}
+          className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors disabled:opacity-50"
         >
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save Schedule'}
         </button>
         <button
           onClick={handleSendTest}
           disabled={sendingTest}
-          className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-gray-600 border border-gray-200 hover:border-gray-900 hover:text-ink transition-colors disabled:opacity-50"
-          style={{ borderRadius: 2 }}
+          className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-ds-text-muted border border-ds-border hover:border-ds-accent hover:text-ds-text transition-colors disabled:opacity-50"
         >
           {sendingTest ? 'Sending...' : testSent ? 'Test Sent' : 'Send Test'}
         </button>
@@ -231,7 +222,7 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
 
 const FieldGroup: FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div>
-    <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-2">{label}</p>
+    <p className="micro-label mb-2">{label}</p>
     {children}
   </div>
 )

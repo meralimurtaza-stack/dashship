@@ -18,7 +18,7 @@ const SkeletonBar: FC<{ width: string; height: string; delay?: string }> = ({
   delay = '0s',
 }) => (
   <div
-    className="bg-gray-100 animate-pulse"
+    className="bg-ds-surface-alt animate-pulse"
     style={{ width, height, animationDelay: delay }}
   />
 )
@@ -45,10 +45,10 @@ const LoadingSkeleton: FC = () => (
 
 const EmptyState: FC<{ message?: string }> = ({ message }) => (
   <div className="flex flex-col items-center justify-center py-16 px-6">
-    <p className="font-mono text-2xl font-semibold text-gray-300 mb-2">
+    <p className="font-mono text-2xl font-medium text-ds-text-dim mb-2">
       No data
     </p>
-    <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+    <p className="micro-label">
       {message ?? 'Add fields to visualise your data'}
     </p>
   </div>
@@ -67,16 +67,15 @@ const ChartWrapper: FC<ChartWrapperProps> = ({
 }) => {
   return (
     <div
-      className={`bg-white border border-gray-200 overflow-hidden ${className}`}
-      style={{ borderRadius: 2 }}
+      className={`bg-ds-surface border border-ds-border overflow-hidden ${className}`}
     >
       {title && (
         <div className="px-5 pt-4 pb-2">
-          <h3 className="font-mono text-[10px] uppercase tracking-widest text-gray-400 leading-none">
+          <h3 className="micro-label leading-none">
             {title}
           </h3>
           {subtitle && (
-            <p className="font-mono text-[10px] text-gray-400 mt-1">
+            <p className="font-mono text-[10px] text-ds-text-dim mt-1">
               {subtitle}
             </p>
           )}

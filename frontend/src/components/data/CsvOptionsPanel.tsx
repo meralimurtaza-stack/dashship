@@ -40,17 +40,17 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
   }, [file, expanded])
 
   return (
-    <div className="border border-gray-200 bg-white">
+    <div className="border border-ds-border bg-ds-surface">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
       >
-        <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+        <span className="micro-label">
           Import Options
         </span>
         <svg
-          className={`w-3 h-3 text-gray-400 transition-transform duration-150 ${
+          className={`w-3 h-3 text-ds-text-dim transition-transform duration-150 ${
             expanded ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -62,14 +62,14 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-gray-100 space-y-4">
+        <div className="px-4 pb-4 pt-1 border-t border-ds-border space-y-4">
           {/* Raw row preview */}
           {rawRows.length > 0 && (
             <div className="space-y-1.5">
-              <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+              <span className="micro-label">
                 Raw file preview
               </span>
-              <div className="overflow-x-auto border border-gray-100">
+              <div className="overflow-x-auto border border-ds-border">
                 <table className="w-full text-[11px]">
                   <tbody>
                     {rawRows.map((row, rowIdx) => {
@@ -78,16 +78,16 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                       return (
                         <tr
                           key={rowIdx}
-                          className={`border-b border-gray-100 transition-colors ${
+                          className={`border-b border-ds-border transition-colors ${
                             isHeader
-                              ? 'bg-gray-900 text-white'
+                              ? 'bg-ds-accent text-white'
                               : isSkipped
-                              ? 'bg-gray-50 text-gray-300 line-through'
+                              ? 'bg-ds-surface-alt text-ds-text-dim line-through'
                               : ''
                           }`}
                         >
                           <td className={`px-2 py-1 font-mono tabular-nums w-8 text-right ${
-                            isHeader ? 'text-gray-400' : 'text-gray-300'
+                            isHeader ? 'text-ds-text-dim' : 'text-ds-text-dim'
                           }`}>
                             {rowIdx + 1}
                           </td>
@@ -102,7 +102,7 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                             </td>
                           ))}
                           {row.length > 8 && (
-                            <td className="px-2 py-1 text-gray-400 font-mono">
+                            <td className="px-2 py-1 text-ds-text-dim font-mono">
                               +{row.length - 8}
                             </td>
                           )}
@@ -112,7 +112,7 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                   </tbody>
                 </table>
               </div>
-              <p className="font-mono text-[9px] text-gray-300">
+              <p className="font-mono text-[9px] text-ds-text-dim">
                 Dark row = headers. Crossed-out rows above are skipped.
               </p>
             </div>
@@ -122,7 +122,7 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
           <div className={`grid gap-6 ${isXlsx ? 'grid-cols-1 max-w-[200px]' : 'grid-cols-3'}`}>
             {/* Header Row — always shown */}
             <div className="space-y-1.5">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block">
+              <label className="micro-label block">
                 Header row
               </label>
               <input
@@ -140,9 +140,9 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                     onChange({ headerRow: options.headerRow })
                   }
                 }}
-                className="w-full border border-gray-200 px-3 py-2 font-mono text-sm text-ink outline-none focus:border-gray-900 transition-colors tabular-nums"
+                className="w-full border border-ds-border px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors tabular-nums"
               />
-              <p className="font-mono text-[9px] text-gray-300 tracking-wide">
+              <p className="font-mono text-[9px] text-ds-text-dim tracking-wide">
                 Row {options.headerRow} = headers, data from row {options.headerRow + 1}
               </p>
             </div>
@@ -152,10 +152,10 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
               <>
                 {/* Delimiter */}
                 <div className="space-y-1.5">
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block">
+                  <label className="micro-label block">
                     Delimiter
                     {detectedDelimiter && (
-                      <span className="normal-case tracking-normal ml-1 text-gray-300">
+                      <span className="normal-case tracking-normal ml-1 text-ds-text-dim">
                         (detected: {detectedDelimiter === '\t' ? '\\t' : detectedDelimiter})
                       </span>
                     )}
@@ -163,7 +163,7 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                   <select
                     value={options.delimiter}
                     onChange={(e) => onChange({ delimiter: e.target.value as Delimiter })}
-                    className="w-full border border-gray-200 px-3 py-2 font-mono text-sm text-ink outline-none focus:border-gray-900 transition-colors bg-white"
+                    className="w-full border border-ds-border px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors bg-ds-surface"
                   >
                     {DELIMITERS.map((d) => (
                       <option key={d.value} value={d.value}>
@@ -175,13 +175,13 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
 
                 {/* Encoding */}
                 <div className="space-y-1.5">
-                  <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block">
+                  <label className="micro-label block">
                     Encoding
                   </label>
                   <select
                     value={options.encoding}
                     onChange={(e) => onChange({ encoding: e.target.value as Encoding })}
-                    className="w-full border border-gray-200 px-3 py-2 font-mono text-sm text-ink outline-none focus:border-gray-900 transition-colors bg-white"
+                    className="w-full border border-ds-border px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors bg-ds-surface"
                   >
                     {ENCODINGS.map((enc) => (
                       <option key={enc} value={enc}>
@@ -198,7 +198,7 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
             <button
               type="button"
               onClick={() => onChange(options)}
-              className="border border-gray-900 text-gray-900 font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:bg-gray-900 hover:text-white transition-colors"
+              className="border border-ds-accent text-ds-text font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:bg-ds-accent hover:text-white transition-colors"
             >
               Re-parse
             </button>

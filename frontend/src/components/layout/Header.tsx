@@ -1,43 +1,49 @@
-import type { FC } from 'react'
+import { useState, useRef, useEffect, type FC } from 'react'
 
 interface HeaderProps {
   onToggleSidebar: () => void
-  activeNav: string
-  onNavChange: (nav: string) => void
+  breadcrumbs?: Array<{ label: string; onClick?: () => void }>
+  onNavigate?: (page: string) => void
 }
 
-const navItems = ['Projects', 'Data', 'Chat', 'Dashboards', 'Settings']
-
-const ShipLogo: FC = () => (
-  <svg
-    width="26"
-    height="24"
-    viewBox="0 0 26 24"
-    fill="none"
-    className="shrink-0"
-  >
-    <path
-      d="M2 18 L6 20 Q13 22, 20 20 L24 18 L22 16 L4 16 Z"
-      fill="currentColor"
-    />
-    <rect x="11" y="4" width="2" height="12" fill="currentColor" />
-    <path d="M13 4 L13 14 L22 14 Z" fill="currentColor" opacity="0.75" />
-    <path d="M13 4 L13 2 L17 3 L13 4" fill="currentColor" />
-  </svg>
+const DashShipLogo: FC = () => (
+  <div className="flex items-center gap-2 shrink-0">
+    {/* Ink-blue square with white D */}
+    <div className="w-[22px] h-[22px] bg-ds-accent flex items-center justify-center shrink-0">
+      <span className="font-mono text-[10px] font-medium text-white leading-none">D</span>
+    </div>
+    <span className="font-mono font-medium text-sm text-ds-text">
+      DashShip_
+    </span>
+  </div>
 )
 
-const Header: FC<HeaderProps> = ({ onToggleSidebar, activeNav, onNavChange }) => {
+const Header: FC<HeaderProps> = ({ onToggleSidebar, breadcrumbs, onNavigate }) => {
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showMenu) return
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [showMenu])
+
   return (
-    <header className="h-14 border-b border-gray-200 bg-white/95 backdrop-blur-md flex items-center justify-between px-5 sticky top-0 z-30">
-      {/* Left: hamburger + logo */}
-      <div className="flex items-center gap-4">
+    <header className="h-14 border-b border-ds-border bg-ds-surface flex items-center justify-between px-5 sticky top-0 z-30">
+      {/* Left: hamburger + logo + breadcrumbs */}
+      <div className="flex items-center gap-4 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-1 hover:opacity-60 transition-opacity"
+          className="p-1 hover:opacity-60 transition-opacity shrink-0"
           aria-label="Toggle sidebar"
         >
           <svg
-            className="w-[18px] h-[18px] text-ink"
+            className="w-[18px] h-[18px] text-ds-text"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -51,38 +57,77 @@ const Header: FC<HeaderProps> = ({ onToggleSidebar, activeNav, onNavChange }) =>
           </svg>
         </button>
 
-        <div className="flex items-center gap-2 text-ink">
-          <ShipLogo />
-          <span className="font-mono font-semibold text-sm tracking-tight">
-            DashShip
-          </span>
-        </div>
+        <button
+          onClick={() => onNavigate?.('Home')}
+          className="hover:opacity-70 transition-opacity shrink-0"
+        >
+          <DashShipLogo />
+        </button>
+
+        {/* Breadcrumbs */}
+        {breadcrumbs && breadcrumbs.length > 0 && (
+          <div className="flex items-center gap-1.5 min-w-0">
+            {breadcrumbs.map((crumb, i) => (
+              <div key={i} className="flex items-center gap-1.5 min-w-0">
+                <span className="text-ds-text-dim text-xs shrink-0">/</span>
+                {crumb.onClick ? (
+                  <button
+                    onClick={crumb.onClick}
+                    className="font-mono text-xs text-ds-text-muted hover:text-ds-text transition-colors truncate max-w-[160px]"
+                  >
+                    {crumb.label}
+                  </button>
+                ) : (
+                  <span className="font-mono text-xs text-ds-text font-medium truncate max-w-[160px]">
+                    {crumb.label}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Center: pill navigation */}
-      <nav className="hidden md:flex items-center bg-gray-100 rounded-full p-1">
-        {navItems.map((item) => (
-          <button
-            key={item}
-            onClick={() => onNavChange(item)}
-            className={`px-4 py-1.5 font-mono text-[11px] uppercase tracking-widest transition-all ${
-              activeNav === item
-                ? 'bg-gray-900 text-white rounded-full'
-                : 'text-gray-500 hover:text-gray-900 rounded-full'
-            }`}
-          >
-            {item}
-          </button>
-        ))}
-      </nav>
+      {/* Right: nav links + avatar */}
+      <div className="flex items-center gap-5">
+        <nav className="flex items-center gap-4">
+          <span className="font-sans text-xs text-ds-text-muted cursor-pointer hover:text-ds-text transition-colors">Product</span>
+          <span className="font-sans text-xs text-ds-text-muted cursor-pointer hover:text-ds-text transition-colors">Pricing</span>
+          <span className="font-sans text-xs text-ds-text-muted cursor-pointer hover:text-ds-text transition-colors">Docs</span>
+        </nav>
 
-      {/* Right: avatar */}
-      <div className="flex items-center">
-        <button className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors">
-          <span className="font-mono text-[10px] font-medium text-gray-600">
-            U
-          </span>
-        </button>
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu((prev) => !prev)}
+            className="w-7 h-7 border border-ds-border-strong flex items-center justify-center hover:border-ds-accent transition-colors"
+          >
+            <span className="font-mono text-[10px] font-medium text-ds-text-muted">
+              U
+            </span>
+          </button>
+
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-2 w-44 bg-ds-surface border border-ds-border py-1 animate-fadeIn z-50">
+              <button
+                onClick={() => { onNavigate?.('Settings'); setShowMenu(false) }}
+                className="w-full text-left px-4 py-2 font-mono text-xs text-ds-text-muted hover:bg-ds-surface-alt hover:text-ds-text transition-colors"
+              >
+                Settings
+              </button>
+              <button
+                className="w-full text-left px-4 py-2 font-mono text-xs text-ds-text-muted hover:bg-ds-surface-alt hover:text-ds-text transition-colors"
+              >
+                API Keys
+              </button>
+              <div className="border-t border-ds-border my-1" />
+              <button
+                className="w-full text-left px-4 py-2 font-mono text-xs text-ds-text-dim hover:bg-ds-surface-alt hover:text-ds-text transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )

@@ -102,6 +102,19 @@ export async function downloadDataSourceRows(
   return result.rows
 }
 
+export async function deleteDataSource(id: string, storagePath: string): Promise<void> {
+  // Delete file from storage
+  await supabase.storage.from(BUCKET).remove([storagePath])
+
+  // Delete metadata from table
+  const { error } = await supabase
+    .from('data_sources')
+    .delete()
+    .eq('id', id)
+
+  if (error) throw new Error(`Delete failed: ${error.message}`)
+}
+
 export async function listDataSources(): Promise<DataSource[]> {
   const { data, error } = await supabase
     .from('data_sources')

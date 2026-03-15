@@ -1,44 +1,40 @@
-// ── Monochrome Color Palette ─────────────────────────────────────
+// ── Economist-grade 4-Colour Palette ─────────────────────────────
 
 export const CHART_COLORS = [
-  '#0E0D0D', // ink
-  '#525252', // gray-600
-  '#2A9D8F', // accent teal
-  '#a1a1a0', // gray-400
-  '#737373', // gray-500
-  '#d4d4d2', // gray-300
-  '#404040', // gray-700
-  '#e09f3e', // warning amber
+  '#1C3360', // ink-blue — primary
+  '#141210', // near-black — secondary
+  '#8D8981', // warm grey — tertiary
+  '#C8963E', // gold — highlight
 ] as const
 
-export const ACCENT = '#2A9D8F'
-export const INK = '#0E0D0D'
-export const GRID_COLOR = '#e5e5e3'
-export const AXIS_COLOR = '#a1a1a0'
-export const TOOLTIP_BORDER = '#e5e5e3'
+export const ACCENT = '#1C3360'
+export const INK = '#141210'
+export const GRID_COLOR = '#D7D3C9'
+export const AXIS_COLOR = '#A19D94'
+export const TOOLTIP_BORDER = '#D7D3C9'
 
 // ── Shared Recharts Style Props ──────────────────────────────────
 
 export const AXIS_TICK_STYLE = {
   fontFamily: '"IBM Plex Mono", monospace',
   fontSize: 10,
-  fill: '#a1a1a0',
+  fill: '#A19D94',
 } as const
 
 export const TOOLTIP_STYLE = {
   contentStyle: {
-    background: '#fff',
-    border: '1px solid #e5e5e3',
-    borderRadius: 2,
+    background: '#FAFAF6',
+    border: '1px solid #D7D3C9',
+    borderRadius: 0,
     padding: '8px 12px',
     fontFamily: '"IBM Plex Mono", monospace',
     fontSize: 11,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    boxShadow: 'none',
   },
   labelStyle: {
     fontFamily: '"IBM Plex Mono", monospace',
     fontSize: 10,
-    color: '#a1a1a0',
+    color: '#A19D94',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.05em',
     marginBottom: 4,
@@ -46,10 +42,10 @@ export const TOOLTIP_STYLE = {
   itemStyle: {
     fontFamily: '"IBM Plex Mono", monospace',
     fontSize: 12,
-    color: '#0E0D0D',
+    color: '#141210',
     padding: '1px 0',
   },
-  cursor: { fill: 'rgba(0,0,0,0.03)' },
+  cursor: { fill: 'rgba(28,51,96,0.04)' },
 } as const
 
 export const ANIMATION_DURATION = 300

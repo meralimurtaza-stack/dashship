@@ -1,6 +1,4 @@
-<svg width="32" height="32" viewBox="0 0 26 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M2 18 L6 20 Q13 22, 20 20 L24 18 L22 16 L4 16 Z" fill="#0E0D0D"/>
-  <rect x="11" y="4" width="2" height="12" fill="#0E0D0D"/>
-  <path d="M13 4 L13 14 L22 14 Z" fill="#0E0D0D" opacity="0.75"/>
-  <path d="M13 4 L13 2 L17 3 L13 4" fill="#0E0D0D"/>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" fill="#1C3360"/>
+  <text x="16" y="22" text-anchor="middle" fill="white" font-family="'IBM Plex Mono', monospace" font-weight="700" font-size="18">D</text>
 </svg>

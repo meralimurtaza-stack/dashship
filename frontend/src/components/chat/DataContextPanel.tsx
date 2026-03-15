@@ -9,14 +9,14 @@ interface DataContextPanelProps {
 const FieldPill: FC<{ name: string; type: string }> = ({ name, type }) => {
   const typeColor =
     type === 'number'
-      ? 'text-accent'
+      ? 'text-ds-accent'
       : type === 'date'
-        ? 'text-gray-600'
-        : 'text-gray-500'
+        ? 'text-ds-text-muted'
+        : 'text-ds-text-muted'
 
   return (
-    <div className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 transition-colors group">
-      <span className="font-mono text-xs text-ink truncate">{name}</span>
+    <div className="flex items-center justify-between py-1.5 px-2 hover:bg-ds-surface-alt transition-colors group">
+      <span className="font-mono text-xs text-ds-text truncate">{name}</span>
       <span className={`font-mono text-[10px] uppercase tracking-wide ${typeColor}`}>
         {type}
       </span>
@@ -40,10 +40,10 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
   }
 
   return (
-    <div className="h-full border-l border-gray-200 bg-white flex flex-col">
+    <div className="h-full border-l border-ds-border bg-ds-surface flex flex-col">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-200 flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+      <div className="px-4 py-4 border-b border-ds-border flex items-center justify-between">
+        <p className="micro-label">
           Data Context
         </p>
         <button
@@ -52,7 +52,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
           aria-label="Collapse panel"
         >
           <svg
-            className="w-4 h-4 text-gray-400"
+            className="w-4 h-4 text-ds-text-dim"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -68,24 +68,24 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
       </div>
 
       {/* Source info */}
-      <div className="px-4 py-4 border-b border-gray-200 space-y-3">
-        <h3 className="font-mono text-sm font-semibold text-ink truncate">
+      <div className="px-4 py-4 border-b border-ds-border space-y-3">
+        <h3 className="font-mono text-sm font-medium text-ds-text truncate">
           {dataContext.sourceName}
         </h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <p className="micro-label">
               Rows
             </p>
-            <p className="font-mono text-sm font-medium text-ink tabular-nums mt-0.5">
+            <p className="font-mono text-sm font-medium text-ds-text tabular-nums mt-0.5">
               {dataContext.rowCount.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <p className="micro-label">
               Fields
             </p>
-            <p className="font-mono text-sm font-medium text-ink tabular-nums mt-0.5">
+            <p className="font-mono text-sm font-medium text-ds-text tabular-nums mt-0.5">
               {dataContext.columns.length}
             </p>
           </div>
@@ -97,11 +97,11 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
         {/* Dimensions */}
         <button
           onClick={() => toggleSection('dimensions')}
-          className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 border-b border-ds-border hover:bg-ds-surface-alt transition-colors"
         >
           <div className="flex items-center gap-2">
             <svg
-              className={`w-3 h-3 text-gray-400 transition-transform ${
+              className={`w-3 h-3 text-ds-text-dim transition-transform ${
                 expandedSection === 'dimensions' ? 'rotate-90' : ''
               }`}
               fill="currentColor"
@@ -113,16 +113,16 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <span className="micro-label">
               Dimensions
             </span>
           </div>
-          <span className="font-mono text-[10px] text-gray-300 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {dimensions.length}
           </span>
         </button>
         {expandedSection === 'dimensions' && (
-          <div className="px-2 py-1 border-b border-gray-100">
+          <div className="px-2 py-1 border-b border-ds-border">
             {dimensions.map((col) => (
               <FieldPill
                 key={col.name}
@@ -136,11 +136,11 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
         {/* Measures */}
         <button
           onClick={() => toggleSection('measures')}
-          className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 border-b border-ds-border hover:bg-ds-surface-alt transition-colors"
         >
           <div className="flex items-center gap-2">
             <svg
-              className={`w-3 h-3 text-gray-400 transition-transform ${
+              className={`w-3 h-3 text-ds-text-dim transition-transform ${
                 expandedSection === 'measures' ? 'rotate-90' : ''
               }`}
               fill="currentColor"
@@ -152,16 +152,16 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <span className="micro-label">
               Measures
             </span>
           </div>
-          <span className="font-mono text-[10px] text-gray-300 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {measures.length}
           </span>
         </button>
         {expandedSection === 'measures' && (
-          <div className="px-2 py-1 border-b border-gray-100">
+          <div className="px-2 py-1 border-b border-ds-border">
             {measures.map((col) => (
               <FieldPill
                 key={col.name}
@@ -174,8 +174,8 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
       </div>
 
       {/* Chart types reference */}
-      <div className="px-4 py-3 border-t border-gray-200">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-2">
+      <div className="px-4 py-3 border-t border-ds-border">
+        <p className="micro-label mb-2">
           Supported Charts
         </p>
         <div className="flex flex-wrap gap-1.5">
@@ -183,7 +183,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
             (chart) => (
               <span
                 key={chart}
-                className="font-mono text-[10px] text-gray-500 bg-gray-100 px-2 py-0.5"
+                className="font-mono text-[10px] text-ds-text-muted bg-ds-surface-alt px-2 py-0.5"
               >
                 {chart}
               </span>

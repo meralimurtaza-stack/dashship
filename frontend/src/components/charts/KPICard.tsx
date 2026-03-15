@@ -37,7 +37,7 @@ const Delta: FC<{ current: number; previous: number; label?: string }> = ({
       {!isNeutral && (
         <span
           className={`text-xs font-mono tabular-nums font-medium ${
-            isPositive ? 'text-accent' : 'text-danger'
+            isPositive ? 'text-ds-accent' : 'text-ds-error'
           }`}
         >
           {isPositive ? '\u2191' : '\u2193'}
@@ -45,12 +45,12 @@ const Delta: FC<{ current: number; previous: number; label?: string }> = ({
         </span>
       )}
       {isNeutral && (
-        <span className="text-xs font-mono tabular-nums text-gray-400">
+        <span className="text-xs font-mono tabular-nums text-ds-text-dim">
           0.0%
         </span>
       )}
       {label && (
-        <span className="text-[10px] font-mono text-gray-400">
+        <span className="text-[10px] font-mono text-ds-text-dim">
           {label}
         </span>
       )}
@@ -92,9 +92,9 @@ const Sparkline: FC<{ data: number[] }> = ({ data }) => {
 
 const KPISkeleton: FC = () => (
   <div className="p-5 space-y-3">
-    <div className="h-2.5 w-20 bg-gray-100 animate-pulse" />
-    <div className="h-8 w-28 bg-gray-100 animate-pulse" style={{ animationDelay: '0.1s' }} />
-    <div className="h-2 w-16 bg-gray-100 animate-pulse" style={{ animationDelay: '0.2s' }} />
+    <div className="h-2.5 w-20 bg-ds-surface-alt animate-pulse" />
+    <div className="h-8 w-28 bg-ds-surface-alt animate-pulse" style={{ animationDelay: '0.1s' }} />
+    <div className="h-2 w-16 bg-ds-surface-alt animate-pulse" style={{ animationDelay: '0.2s' }} />
   </div>
 )
 
@@ -110,7 +110,7 @@ const KPICard: FC<KPICardProps> = ({
 }) => {
   if (loading) {
     return (
-      <div className="bg-white border border-gray-200" style={{ borderRadius: 2 }}>
+      <div className="bg-ds-surface border border-ds-border">
         <KPISkeleton />
       </div>
     )
@@ -121,12 +121,12 @@ const KPICard: FC<KPICardProps> = ({
     : formatCompact(value)
 
   return (
-    <div className="bg-white border border-gray-200" style={{ borderRadius: 2 }}>
+    <div className="bg-ds-surface border border-ds-border">
       <div className="p-5">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 leading-none">
+        <p className="micro-label leading-none">
           {label}
         </p>
-        <p className="font-mono text-3xl font-semibold text-ink tabular-nums mt-2 leading-none">
+        <p className="font-mono text-3xl font-medium text-ds-text tabular-nums mt-2 leading-none">
           {formattedValue}
         </p>
         {comparison && (

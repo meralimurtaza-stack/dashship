@@ -56,10 +56,10 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center">
+      <div className="min-h-screen bg-pub-bg font-pub-sans flex items-center justify-center">
         <div className="space-y-4 text-center">
-          <div className="w-48 h-3 bg-gray-200 mx-auto" style={{ borderRadius: 2 }} />
-          <div className="w-32 h-3 bg-gray-100 mx-auto" style={{ borderRadius: 2 }} />
+          <div className="w-48 h-3 bg-pub-border mx-auto" style={{ borderRadius: 6 }} />
+          <div className="w-32 h-3 bg-pub-surface mx-auto" style={{ borderRadius: 6 }} />
         </div>
       </div>
     )
@@ -69,11 +69,11 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center">
+      <div className="min-h-screen bg-pub-bg font-pub-sans flex items-center justify-center">
         <div className="max-w-md text-center space-y-4 px-6">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">Error</p>
-          <h1 className="font-mono text-2xl font-semibold text-ink">Dashboard not found</h1>
-          <p className="text-sm text-gray-500">{error}</p>
+          <p className="font-pub-sans text-[10px] text-pub-text-muted">Error</p>
+          <h1 className="font-pub-sans text-2xl font-semibold text-pub-text">Dashboard not found</h1>
+          <p className="text-sm text-pub-text-muted">{error}</p>
         </div>
       </div>
     )
@@ -83,16 +83,16 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
 
   if (needsAuth) {
     return (
-      <div className="min-h-screen bg-page flex items-center justify-center">
+      <div className="min-h-screen bg-pub-bg font-pub-sans flex items-center justify-center">
         <div className="max-w-sm w-full px-6 space-y-6">
           <div className="text-center space-y-2">
-            <div className="w-10 h-10 mx-auto bg-gray-100 flex items-center justify-center" style={{ borderRadius: 2 }}>
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 mx-auto bg-pub-surface flex items-center justify-center" style={{ borderRadius: 6 }}>
+              <svg className="w-5 h-5 text-pub-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
               </svg>
             </div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">Protected</p>
-            <h1 className="font-mono text-lg font-semibold text-ink">Enter password to view</h1>
+            <p className="font-pub-sans text-[10px] text-pub-text-muted">Protected</p>
+            <h1 className="font-pub-sans text-lg font-medium text-pub-text">Enter password to view</h1>
           </div>
 
           <div className="space-y-3">
@@ -102,16 +102,16 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
               placeholder="Password"
-              className="w-full px-4 py-3 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-              style={{ borderRadius: 2 }}
+              className="w-full px-4 py-3 font-pub-sans text-sm text-pub-text bg-white border border-pub-border focus:border-pub-text outline-none transition-colors"
+              style={{ borderRadius: 4 }}
               autoFocus
             />
-            {authError && <p className="font-mono text-xs text-danger">{authError}</p>}
+            {authError && <p className="font-pub-sans text-xs text-ds-error">{authError}</p>}
             <button
               onClick={handleAuth}
               disabled={authenticating || !password.trim()}
-              className="w-full px-4 py-3 font-mono text-xs uppercase tracking-wide bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50"
-              style={{ borderRadius: 2 }}
+              className="w-full px-4 py-3 font-pub-sans text-xs bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors disabled:opacity-50"
+              style={{ borderRadius: 4 }}
             >
               {authenticating ? 'Verifying...' : 'View Dashboard'}
             </button>
@@ -132,7 +132,7 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
 
   return (
     <div
-      className="min-h-screen bg-page"
+      className="min-h-screen bg-pub-bg font-pub-sans"
       style={{ fontFamily: branding.fontFamily ? `"${branding.fontFamily}", sans-serif` : undefined }}
     >
       {/* Google Font link */}
@@ -143,7 +143,7 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
       {/* Header — not shown in embed mode */}
       {!embed && (
         <header
-          className="border-b border-gray-200 bg-white"
+          className="border-b border-pub-border bg-white"
           style={{ borderColor: branding.primaryColor ? `${branding.primaryColor}10` : undefined }}
         >
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -156,8 +156,8 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
                 />
               )}
               <h1
-                className="font-mono text-base font-semibold"
-                style={{ color: branding.primaryColor || '#0E0D0D' }}
+                className="font-pub-sans text-base font-semibold"
+                style={{ color: branding.primaryColor || '#1A1A1A' }}
               >
                 {dashboard.dashboardName}
               </h1>
@@ -177,11 +177,11 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
 
       {/* Powered by DashShip footer */}
       {branding.poweredByDashShip && !embed && (
-        <footer className="border-t border-gray-200 bg-white mt-12">
+        <footer className="border-t border-pub-border bg-white mt-12">
           <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-center">
-            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <p className="font-pub-sans text-[10px] text-[#BCBCBC]">
               Powered by{' '}
-              <span className="text-gray-600 font-semibold">DashShip</span>
+              <span className="text-[#BCBCBC] font-medium">DashShip</span>
             </p>
           </div>
         </footer>

@@ -9,7 +9,7 @@ interface ChatMessageProps {
 }
 
 const CaptainWheel: FC = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-gray-400">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-ds-text-dim">
     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={1.5} />
     <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth={1.5} />
     <circle cx="12" cy="12" r="1.5" fill="currentColor" />
@@ -30,7 +30,7 @@ const ChatMessage: FC<ChatMessageProps> = ({ message, isStreaming, onCalcAction 
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] bg-gray-900 text-white px-4 py-3">
+        <div className="max-w-[80%] bg-ds-accent text-white px-4 py-3">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">
             {message.content}
           </p>
@@ -44,7 +44,7 @@ const ChatMessage: FC<ChatMessageProps> = ({ message, isStreaming, onCalcAction 
       <div className="max-w-[85%]">
         <div className="flex items-center gap-2 mb-2">
           <CaptainWheel />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+          <span className="micro-label">
             Captain
           </span>
         </div>
@@ -53,9 +53,9 @@ const ChatMessage: FC<ChatMessageProps> = ({ message, isStreaming, onCalcAction 
         ) : isStreaming ? (
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              <div className="w-1.5 h-1.5 bg-gray-400 animate-pulse" />
-              <div className="w-1.5 h-1.5 bg-gray-300 animate-pulse [animation-delay:150ms]" />
-              <div className="w-1.5 h-1.5 bg-gray-200 animate-pulse [animation-delay:300ms]" />
+              <div className="w-1.5 h-1.5 bg-ds-text-dim animate-pulse" />
+              <div className="w-1.5 h-1.5 bg-ds-border-strong animate-pulse [animation-delay:150ms]" />
+              <div className="w-1.5 h-1.5 bg-ds-border animate-pulse [animation-delay:300ms]" />
             </div>
           </div>
         ) : null}

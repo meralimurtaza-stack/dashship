@@ -27,22 +27,22 @@ const ChangeLog: FC<ChangeLogProps> = ({ entries, onRevert }) => {
   if (entries.length === 0) return null
 
   return (
-    <div className="border border-gray-200 bg-white">
+    <div className="border border-ds-border bg-ds-surface">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
       >
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+          <span className="micro-label">
             Change Log
           </span>
-          <span className="font-mono text-[10px] text-gray-300 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {entries.length}
           </span>
         </div>
         <svg
-          className={`w-3 h-3 text-gray-400 transition-transform duration-150 ${
+          className={`w-3 h-3 text-ds-text-dim transition-transform duration-150 ${
             expanded ? 'rotate-180' : ''
           }`}
           fill="none"
@@ -54,19 +54,19 @@ const ChangeLog: FC<ChangeLogProps> = ({ entries, onRevert }) => {
       </button>
 
       {expanded && (
-        <div className="divide-y divide-gray-100 border-t border-gray-100">
+        <div className="divide-y divide-ds-border border-t border-ds-border">
           {[...entries].reverse().map((entry) => (
             <div
               key={entry.id}
               className="flex items-center justify-between px-4 py-2.5"
             >
-              <span className="font-mono text-[11px] text-gray-600">
+              <span className="font-mono text-[11px] text-ds-text-muted">
                 {formatEntry(entry)}
               </span>
               <button
                 type="button"
                 onClick={() => onRevert(entry.id)}
-                className="font-mono text-[10px] uppercase tracking-wide text-gray-400 hover:text-gray-900 transition-colors px-2 py-1 hover:bg-gray-100"
+                className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text transition-colors px-2 py-1 hover:bg-ds-surface-alt"
               >
                 Undo
               </button>

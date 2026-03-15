@@ -78,8 +78,8 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
         disabled={isLoading}
         className={`w-full border border-dashed p-10 text-center transition-colors cursor-pointer ${
           isDragging
-            ? 'border-gray-900 bg-gray-100'
-            : 'border-gray-300 hover:border-gray-900'
+            ? 'border-ds-accent bg-ds-surface-alt'
+            : 'border-ds-border-strong hover:border-ds-accent'
         } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
       >
         <input
@@ -91,9 +91,9 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
         />
 
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border border-gray-300 flex items-center justify-center">
+          <div className="w-10 h-10 border border-ds-border-strong flex items-center justify-center">
             <svg
-              className="w-4 h-4 text-gray-400"
+              className="w-4 h-4 text-ds-text-dim"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -108,10 +108,10 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
           </div>
 
           <div>
-            <p className="font-mono text-xs uppercase tracking-widest text-ink">
+            <p className="font-mono text-xs uppercase tracking-widest text-ds-text">
               {isLoading ? 'Processing...' : 'Drop file here'}
             </p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-ds-text-dim mt-1">
               CSV, TSV, or XLSX — up to 50 MB
             </p>
           </div>
@@ -119,20 +119,20 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
       </button>
 
       {error && (
-        <p className="font-mono text-xs text-danger">{error}</p>
+        <p className="font-mono text-xs text-ds-error">{error}</p>
       )}
 
       {selectedFile && !error && (
-        <div className="flex items-center justify-between border border-gray-200 bg-white px-4 py-3">
+        <div className="flex items-center justify-between border border-ds-border bg-ds-surface px-4 py-3">
           <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <span className="micro-label">
               {selectedFile.name.split('.').pop()}
             </span>
-            <span className="text-sm text-ink truncate max-w-xs">
+            <span className="text-sm text-ds-text truncate max-w-xs">
               {selectedFile.name}
             </span>
           </div>
-          <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {formatBytes(selectedFile.size)}
           </span>
         </div>

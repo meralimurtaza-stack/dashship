@@ -48,7 +48,7 @@ const ChatInput: FC<ChatInputProps> = ({
   }
 
   return (
-    <div className="border border-gray-200 bg-white">
+    <div className="border border-ds-border bg-ds-surface">
       <div className="flex items-end">
         <textarea
           ref={textareaRef}
@@ -58,13 +58,13 @@ const ChatInput: FC<ChatInputProps> = ({
           placeholder="Ask about your data..."
           disabled={disabled || isStreaming}
           rows={1}
-          className="flex-1 px-4 py-3 text-sm text-ink bg-transparent resize-none outline-none placeholder:text-gray-400 disabled:opacity-50 leading-relaxed"
+          className="flex-1 px-4 py-3 text-sm text-ds-text bg-transparent resize-none outline-none placeholder:text-ds-text-dim disabled:opacity-50 leading-relaxed"
         />
         <div className="px-3 py-2">
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="font-mono text-[10px] uppercase tracking-wide px-4 py-2 border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white transition-colors"
+              className="font-mono text-[10px] uppercase tracking-wide px-4 py-2 border border-ds-accent text-ds-accent hover:bg-ds-accent hover:text-white transition-colors"
             >
               Stop
             </button>
@@ -72,7 +72,7 @@ const ChatInput: FC<ChatInputProps> = ({
             <button
               onClick={handleSend}
               disabled={!value.trim() || disabled}
-              className="font-mono text-[10px] uppercase tracking-wide px-4 py-2 bg-gray-900 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-800 transition-colors"
+              className="font-mono text-[10px] uppercase tracking-wide px-4 py-2 bg-ds-accent text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-ds-accent-hover transition-colors"
             >
               Send
             </button>
@@ -80,7 +80,7 @@ const ChatInput: FC<ChatInputProps> = ({
         </div>
       </div>
       <div className="px-4 pb-2">
-        <p className="font-mono text-[10px] text-gray-300">
+        <p className="font-mono text-[10px] text-ds-text-dim">
           Enter to send · Shift+Enter for newline
         </p>
       </div>

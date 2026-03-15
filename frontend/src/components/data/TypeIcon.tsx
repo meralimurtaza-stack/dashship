@@ -42,8 +42,8 @@ const TypeIcon: FC<TypeIconProps> = ({ type, onChange, size = 'sm' }) => {
           e.stopPropagation()
           if (onChange) setOpen(!open)
         }}
-        className={`font-mono uppercase ${sizeClasses} border border-transparent hover:border-gray-300 transition-colors cursor-pointer ${
-          type === 'number' ? 'text-accent bg-accent/8' : 'text-gray-500 bg-gray-100'
+        className={`font-mono uppercase ${sizeClasses} border border-transparent hover:border-ds-border-strong transition-colors cursor-pointer ${
+          type === 'number' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
         }`}
         title={`Type: ${display.label}. Click to change.`}
       >
@@ -51,7 +51,7 @@ const TypeIcon: FC<TypeIconProps> = ({ type, onChange, size = 'sm' }) => {
       </button>
 
       {open && onChange && (
-        <div className="absolute top-full left-0 mt-1 z-50 border border-gray-200 bg-white shadow-sm min-w-[120px]">
+        <div className="absolute top-full left-0 mt-1 z-50 border border-ds-border bg-ds-surface min-w-[120px]">
           {(Object.keys(TYPE_DISPLAY) as ColumnType[]).map((t) => (
             <button
               key={t}
@@ -61,22 +61,22 @@ const TypeIcon: FC<TypeIconProps> = ({ type, onChange, size = 'sm' }) => {
                 onChange(t)
                 setOpen(false)
               }}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors ${
-                t === type ? 'bg-gray-50' : ''
+              className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-ds-surface-alt transition-colors ${
+                t === type ? 'bg-ds-surface-alt' : ''
               }`}
             >
               <span
                 className={`font-mono text-[9px] uppercase px-1.5 py-0.5 ${
-                  t === 'number' ? 'text-accent bg-accent/8' : 'text-gray-500 bg-gray-100'
+                  t === 'number' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
                 }`}
               >
                 {TYPE_DISPLAY[t].icon}
               </span>
-              <span className="font-mono text-[11px] text-gray-700">
+              <span className="font-mono text-[11px] text-ds-text-muted">
                 {TYPE_DISPLAY[t].label}
               </span>
               {t === type && (
-                <span className="ml-auto text-[10px] text-gray-400">\u2713</span>
+                <span className="ml-auto text-[10px] text-ds-text-dim">\u2713</span>
               )}
             </button>
           ))}

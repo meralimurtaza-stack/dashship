@@ -3,6 +3,7 @@ import type { Sheet, DashboardLayout } from '../../types/sheet'
 import { processSheet } from '../../engine/dataEngine'
 import type { CalculatedField } from '../../engine/formulaParser'
 import { KPICard, BarChart, LineChart, PieChart, ScatterPlot, DataTable, ChartWrapper } from '../charts'
+import ErrorBoundary from '../ui/ErrorBoundary'
 
 interface DashboardRendererProps {
   layout: DashboardLayout
@@ -152,24 +153,28 @@ const DashboardRenderer: FC<DashboardRendererProps> = ({
         gridTemplateRows: `repeat(${maxRow}, ${layout.rowHeight}px)`,
       }}
     >
-      {layout.items.map((item) => {
+      {layout.items.map((item, index) => {
         const sheet = sheetMap.get(item.sheetId)
         if (!sheet) return null
 
         return (
           <div
             key={item.sheetId}
+            className="min-w-0 animate-fadeIn"
             style={{
               gridColumn: `${item.x + 1} / span ${item.w}`,
               gridRow: `${item.y + 1} / span ${item.h}`,
+              animationDelay: `${index * 60}ms`,
+              animationFillMode: 'both',
             }}
-            className="min-w-0"
           >
-            <SheetChart
-              sheet={sheet}
-              data={data}
-              calculatedFields={calculatedFields}
-            />
+            <ErrorBoundary name={sheet.name}>
+              <SheetChart
+                sheet={sheet}
+                data={data}
+                calculatedFields={calculatedFields}
+              />
+            </ErrorBoundary>
           </div>
         )
       })}

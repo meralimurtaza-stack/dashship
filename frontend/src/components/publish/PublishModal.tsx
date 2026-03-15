@@ -3,9 +3,11 @@ import type { Sheet, DashboardLayout } from '../../types/sheet'
 import type { PublishConfig, AccessLevel, PublishBranding } from '../../types/publish'
 import { DEFAULT_BRANDING, FONT_PRESETS } from '../../types/publish'
 import { publishDashboard, getViewUrl, getEmbedCode } from '../../lib/publish-api'
+import { saveDashboard } from '../../lib/dashboard-storage'
 import EmailReportConfig from './EmailReportConfig'
 
 interface PublishModalProps {
+  dashboardId?: string
   dashboardName: string
   sheets: Sheet[]
   layout: DashboardLayout
@@ -21,7 +23,7 @@ function slugify(text: string): string {
     .slice(0, 60)
 }
 
-const PublishModal: FC<PublishModalProps> = ({ dashboardName, sheets, layout, data, onClose }) => {
+const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheets, layout, data, onClose }) => {
   const [activeTab, setActiveTab] = useState<'publish' | 'email'>('publish')
   const [slug, setSlug] = useState(() => slugify(dashboardName))
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('public')
@@ -61,6 +63,23 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardName, sheets, layout, da
       const result = await publishDashboard(config)
       setPublishedSlug(result.slug)
       setPublished(true)
+
+      // Update draft status to published
+      if (dashboardId) {
+        try {
+          await saveDashboard({
+            id: dashboardId,
+            name: dashboardName,
+            status: 'published',
+            sheets,
+            layout,
+            data,
+            publishedSlug: result.slug,
+          })
+        } catch {
+          // Non-critical — draft status update failed
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Publish failed')
     } finally {
@@ -78,20 +97,19 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardName, sheets, layout, da
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div
-        className="bg-white border border-gray-200 w-full max-w-2xl max-h-[90vh] flex flex-col"
-        style={{ borderRadius: 2 }}
+        className="bg-ds-surface border border-ds-border w-full max-w-2xl max-h-[90vh] flex flex-col animate-slideUp"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between shrink-0">
+        <div className="px-6 py-4 border-b border-ds-border flex items-center justify-between shrink-0">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+            <p className="micro-label">
               {published ? 'Published' : 'Publish Dashboard'}
             </p>
-            <h2 className="font-mono text-lg font-semibold text-ink mt-0.5">{dashboardName}</h2>
+            <h2 className="font-mono text-lg font-medium text-ds-text mt-0.5">{dashboardName}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-ink transition-colors"
+            className="p-1.5 text-ds-text-dim hover:text-ds-text transition-colors"
             aria-label="Close"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -106,10 +124,9 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardName, sheets, layout, da
             onClick={() => setActiveTab('publish')}
             className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
               activeTab === 'publish'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-500 hover:text-ink'
+                ? 'bg-ds-accent text-white'
+                : 'text-ds-text-muted hover:text-ds-text'
             }`}
-            style={{ borderRadius: 2 }}
           >
             Publish
           </button>
@@ -117,10 +134,9 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardName, sheets, layout, da
             onClick={() => setActiveTab('email')}
             className={`px-4 py-2 font-mono text-[10px] uppercase tracking-widest transition-colors ${
               activeTab === 'email'
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-500 hover:text-ink'
+                ? 'bg-ds-accent text-white'
+                : 'text-ds-text-muted hover:text-ds-text'
             }`}
-            style={{ borderRadius: 2 }}
           >
             Email Reports
           </button>
@@ -161,19 +177,17 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardName, sheets, layout, da
 
         {/* Footer */}
         {activeTab === 'publish' && !published && (
-          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between shrink-0">
+          <div className="px-6 py-4 border-t border-ds-border flex items-center justify-between shrink-0">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-gray-500 border border-gray-200 hover:border-gray-900 hover:text-ink transition-colors"
-              style={{ borderRadius: 2 }}
+              className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-ds-text-muted border border-ds-border hover:border-ds-accent hover:text-ds-text transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handlePublish}
               disabled={publishing}
-              className="px-6 py-2.5 font-mono text-xs uppercase tracking-wide bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ borderRadius: 2 }}
+              className="px-6 py-2.5 font-mono text-xs uppercase tracking-wide bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {publishing ? 'Publishing...' : 'Publish'}
             </button>
@@ -215,16 +229,15 @@ const PublishForm: FC<{
     {/* URL Slug */}
     <FieldGroup label="URL Slug">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-xs text-gray-400 shrink-0">/view/</span>
+        <span className="font-mono text-xs text-ds-text-dim shrink-0">/view/</span>
         <input
           value={slug}
           onChange={(e) => onSlugChange(e.target.value.replace(/[^a-z0-9-]/g, ''))}
-          className="flex-1 px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-          style={{ borderRadius: 2 }}
+          className="flex-1 px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
           placeholder="my-dashboard"
         />
       </div>
-      <p className="text-[10px] text-gray-400 font-mono mt-1 truncate">{previewUrl}</p>
+      <p className="text-[10px] text-ds-text-dim font-mono mt-1 truncate">{previewUrl}</p>
     </FieldGroup>
 
     {/* Access Level */}
@@ -236,10 +249,9 @@ const PublishForm: FC<{
             onClick={() => onAccessLevelChange(level)}
             className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide border transition-colors ${
               accessLevel === level
-                ? 'bg-gray-900 text-white border-gray-900'
-                : 'text-gray-500 border-gray-200 hover:border-gray-900 hover:text-ink'
+                ? 'bg-ds-accent text-white border-ds-accent'
+                : 'text-ds-text-muted border-ds-border hover:border-ds-accent hover:text-ds-text'
             }`}
-            style={{ borderRadius: 2 }}
           >
             {level === 'password' ? 'Password' : level === 'invited' ? 'Invite Only' : 'Public'}
           </button>
@@ -251,8 +263,7 @@ const PublishForm: FC<{
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}
           placeholder="Enter password..."
-          className="mt-2 w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-          style={{ borderRadius: 2 }}
+          className="mt-2 w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
         />
       )}
       {accessLevel === 'invited' && (
@@ -261,8 +272,7 @@ const PublishForm: FC<{
           onChange={(e) => onAllowedEmailsChange(e.target.value)}
           placeholder="email@example.com (one per line)"
           rows={3}
-          className="mt-2 w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors resize-none"
-          style={{ borderRadius: 2 }}
+          className="mt-2 w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors resize-none"
         />
       )}
     </FieldGroup>
@@ -272,21 +282,20 @@ const PublishForm: FC<{
       <div className="space-y-3">
         {/* Logo URL */}
         <div>
-          <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block mb-1">
+          <label className="micro-label block mb-1">
             Logo URL
           </label>
           <input
             value={branding.logoUrl || ''}
             onChange={(e) => onBrandingChange({ ...branding, logoUrl: e.target.value || undefined })}
             placeholder="https://..."
-            className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-            style={{ borderRadius: 2 }}
+            className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
           />
         </div>
 
         {/* Primary Color */}
         <div>
-          <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block mb-1">
+          <label className="micro-label block mb-1">
             Brand Color
           </label>
           <div className="flex items-center gap-2">
@@ -294,28 +303,25 @@ const PublishForm: FC<{
               type="color"
               value={branding.primaryColor || '#0E0D0D'}
               onChange={(e) => onBrandingChange({ ...branding, primaryColor: e.target.value })}
-              className="w-8 h-8 border border-gray-200 cursor-pointer p-0"
-              style={{ borderRadius: 2 }}
+              className="w-8 h-8 border border-ds-border cursor-pointer p-0"
             />
             <input
               value={branding.primaryColor || '#0E0D0D'}
               onChange={(e) => onBrandingChange({ ...branding, primaryColor: e.target.value })}
-              className="flex-1 px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors"
-              style={{ borderRadius: 2 }}
+              className="flex-1 px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
             />
           </div>
         </div>
 
         {/* Font */}
         <div>
-          <label className="font-mono text-[10px] uppercase tracking-widest text-gray-400 block mb-1">
+          <label className="micro-label block mb-1">
             Font
           </label>
           <select
             value={branding.fontFamily || 'IBM Plex Sans'}
             onChange={(e) => onBrandingChange({ ...branding, fontFamily: e.target.value })}
-            className="w-full px-3 py-2 font-mono text-sm text-ink bg-white border border-gray-200 focus:border-gray-900 outline-none transition-colors appearance-none"
-            style={{ borderRadius: 2 }}
+            className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors appearance-none"
           >
             {FONT_PRESETS.map((f) => (
               <option key={f.value} value={f.value}>{f.label}</option>
@@ -327,7 +333,7 @@ const PublishForm: FC<{
         <label className="flex items-center gap-3 cursor-pointer">
           <div
             className={`relative w-9 h-5 transition-colors ${
-              branding.poweredByDashShip ? 'bg-gray-900' : 'bg-gray-200'
+              branding.poweredByDashShip ? 'bg-ds-accent' : 'bg-ds-surface-alt'
             }`}
             style={{ borderRadius: 10 }}
             onClick={() => onBrandingChange({ ...branding, poweredByDashShip: !branding.poweredByDashShip })}
@@ -340,7 +346,7 @@ const PublishForm: FC<{
               }}
             />
           </div>
-          <span className="font-mono text-xs text-gray-600">Powered by DashShip footer</span>
+          <span className="font-mono text-xs text-ds-text-muted">Powered by DashShip footer</span>
         </label>
       </div>
     </FieldGroup>
@@ -350,7 +356,7 @@ const PublishForm: FC<{
       <label className="flex items-center gap-3 cursor-pointer">
         <div
           className={`relative w-9 h-5 transition-colors ${
-            embedEnabled ? 'bg-gray-900' : 'bg-gray-200'
+            embedEnabled ? 'bg-ds-accent' : 'bg-ds-surface-alt'
           }`}
           style={{ borderRadius: 10 }}
           onClick={() => onEmbedEnabledChange(!embedEnabled)}
@@ -363,12 +369,12 @@ const PublishForm: FC<{
             }}
           />
         </div>
-        <span className="font-mono text-xs text-gray-600">Allow iframe embedding</span>
+        <span className="font-mono text-xs text-ds-text-muted">Allow iframe embedding</span>
       </label>
     </FieldGroup>
 
     {error && (
-      <p className="font-mono text-xs text-danger">{error}</p>
+      <p className="font-mono text-xs text-ds-error">{error}</p>
     )}
   </>
 )
@@ -383,13 +389,13 @@ const PublishedSuccess: FC<{
 }> = ({ slug, embedEnabled, copied, onCopy }) => (
   <div className="space-y-6 py-4">
     <div className="text-center space-y-2">
-      <div className="w-12 h-12 mx-auto bg-gray-100 flex items-center justify-center" style={{ borderRadius: 2 }}>
-        <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="w-12 h-12 mx-auto bg-ds-surface-alt flex items-center justify-center">
+        <svg className="w-6 h-6 text-ds-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h3 className="font-mono text-base font-semibold text-ink">Dashboard Published</h3>
-      <p className="text-xs text-gray-500">Your dashboard is now live and accessible.</p>
+      <h3 className="font-mono text-base font-medium text-ds-text">Dashboard Published</h3>
+      <p className="text-xs text-ds-text-muted">Your dashboard is now live and accessible.</p>
     </div>
 
     {/* View URL */}
@@ -398,13 +404,11 @@ const PublishedSuccess: FC<{
         <input
           readOnly
           value={getViewUrl(slug)}
-          className="flex-1 px-3 py-2 font-mono text-xs text-gray-600 bg-gray-100 border border-gray-200 outline-none"
-          style={{ borderRadius: 2 }}
+          className="flex-1 px-3 py-2 font-mono text-xs text-ds-text-muted bg-ds-surface-alt border border-ds-border outline-none"
         />
         <button
           onClick={() => onCopy('url')}
-          className="px-3 py-2 font-mono text-xs uppercase tracking-wide bg-gray-900 text-white hover:bg-gray-800 transition-colors shrink-0"
-          style={{ borderRadius: 2 }}
+          className="px-3 py-2 font-mono text-xs uppercase tracking-wide bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors shrink-0"
         >
           {copied === 'url' ? 'Copied' : 'Copy'}
         </button>
@@ -419,13 +423,11 @@ const PublishedSuccess: FC<{
             readOnly
             value={getEmbedCode(slug)}
             rows={3}
-            className="flex-1 px-3 py-2 font-mono text-xs text-gray-600 bg-gray-100 border border-gray-200 outline-none resize-none"
-            style={{ borderRadius: 2 }}
+            className="flex-1 px-3 py-2 font-mono text-xs text-ds-text-muted bg-ds-surface-alt border border-ds-border outline-none resize-none"
           />
           <button
             onClick={() => onCopy('embed')}
-            className="px-3 py-2 font-mono text-xs uppercase tracking-wide bg-gray-900 text-white hover:bg-gray-800 transition-colors shrink-0"
-            style={{ borderRadius: 2 }}
+            className="px-3 py-2 font-mono text-xs uppercase tracking-wide bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors shrink-0"
           >
             {copied === 'embed' ? 'Copied' : 'Copy'}
           </button>
@@ -439,7 +441,7 @@ const PublishedSuccess: FC<{
 
 const FieldGroup: FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <div>
-    <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-2">{label}</p>
+    <p className="micro-label mb-2">{label}</p>
     {children}
   </div>
 )

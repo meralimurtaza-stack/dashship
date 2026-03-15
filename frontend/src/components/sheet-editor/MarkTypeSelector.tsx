@@ -13,7 +13,7 @@ const MARK_TYPES: Array<{ type: MarkType; label: string; icon: string }> = [
 ]
 
 const MarkIcon: FC<{ type: MarkType; active: boolean }> = ({ type, active }) => {
-  const cls = `w-4 h-4 ${active ? 'text-white' : 'text-gray-500'}`
+  const cls = `w-4 h-4 ${active ? 'text-white' : 'text-ds-text-muted'}`
 
   switch (type) {
     case 'bar':
@@ -75,7 +75,7 @@ interface MarkTypeSelectorProps {
 
 const MarkTypeSelector: FC<MarkTypeSelectorProps> = ({ value, onChange }) => {
   return (
-    <div className="flex items-center gap-0.5 p-0.5 bg-gray-100" style={{ borderRadius: 2 }}>
+    <div className="flex items-center gap-0.5 p-0.5 bg-ds-surface-alt">
       {MARK_TYPES.map(({ type, label }) => (
         <button
           key={type}
@@ -84,10 +84,9 @@ const MarkTypeSelector: FC<MarkTypeSelectorProps> = ({ value, onChange }) => {
             flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[10px] uppercase tracking-wide
             transition-colors
             ${value === type
-              ? 'bg-gray-900 text-white'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-white'}
+              ? 'bg-ds-accent text-white'
+              : 'text-ds-text-muted hover:text-ds-text hover:bg-ds-surface'}
           `}
-          style={{ borderRadius: 2 }}
           title={label}
         >
           <MarkIcon type={type} active={value === type} />

@@ -1,0 +1,21 @@
+Employee ID,Department,Role,Tenure Years,Salary,Performance Score,Satisfaction,Attrition,Gender,Location
+E001,Engineering,Senior Engineer,5,95000,4.2,8.1,No,Female,London
+E002,Engineering,Junior Engineer,1,55000,3.8,7.5,No,Male,London
+E003,Sales,Account Executive,3,72000,4.5,8.8,No,Female,Manchester
+E004,Marketing,Content Lead,4,68000,3.9,6.2,Yes,Male,London
+E005,Engineering,Staff Engineer,8,125000,4.7,9.1,No,Female,Remote
+E006,Sales,Sales Manager,6,88000,4.1,7.8,No,Male,Manchester
+E007,HR,HR Coordinator,2,52000,3.6,7.0,No,Female,London
+E008,Engineering,Junior Engineer,1,54000,3.2,5.5,Yes,Male,Remote
+E009,Marketing,Marketing Manager,5,82000,4.3,8.4,No,Female,London
+E010,Sales,Account Executive,2,65000,3.7,6.8,No,Male,Manchester
+E011,Engineering,Senior Engineer,4,92000,4.0,7.9,No,Male,London
+E012,Finance,Financial Analyst,3,70000,4.4,8.2,No,Female,London
+E013,Engineering,Tech Lead,7,115000,4.6,8.7,No,Male,Remote
+E014,Sales,Account Executive,1,58000,3.4,5.9,Yes,Female,Manchester
+E015,Marketing,Designer,2,62000,3.8,7.3,No,Male,London
+E016,HR,HR Manager,6,78000,4.1,8.0,No,Female,London
+E017,Engineering,Senior Engineer,3,90000,4.2,7.6,No,Male,Remote
+E018,Finance,Finance Manager,5,95000,4.5,8.5,No,Female,London
+E019,Sales,Sales Director,8,110000,4.8,9.0,No,Male,Manchester
+E020,Engineering,Junior Engineer,1,53000,3.1,4.8,Yes,Female,London

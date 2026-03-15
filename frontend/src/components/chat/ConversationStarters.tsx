@@ -51,13 +51,13 @@ const ConversationStarters: FC<ConversationStartersProps> = ({
     <div className="flex-1 flex items-center justify-center">
       <div className="max-w-lg w-full space-y-8 px-6">
         <div className="space-y-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+          <p className="micro-label">
             Start Planning
           </p>
-          <h2 className="font-mono text-2xl font-semibold text-ink leading-tight">
+          <h2 className="font-mono text-2xl font-medium text-ds-text leading-tight">
             What would you like to<br />build with this data?
           </h2>
-          <p className="text-sm text-gray-500 leading-relaxed">
+          <p className="text-sm text-ds-text-muted leading-relaxed">
             {dataContext.sourceName} &middot;{' '}
             <span className="tabular-nums font-mono">
               {dataContext.rowCount.toLocaleString()}
@@ -75,12 +75,12 @@ const ConversationStarters: FC<ConversationStartersProps> = ({
             <button
               key={starter.label}
               onClick={() => onSend(starter.message)}
-              className="text-left border border-gray-200 bg-white px-4 py-3 hover:border-gray-900 transition-colors group"
+              className="text-left border border-ds-border bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
             >
-              <p className="font-mono text-xs font-medium text-ink group-hover:text-gray-900">
+              <p className="font-mono text-xs font-medium text-ds-text group-hover:text-ds-text">
                 {starter.label}
               </p>
-              <p className="text-[11px] text-gray-400 mt-1 leading-relaxed line-clamp-2">
+              <p className="text-[11px] text-ds-text-dim mt-1 leading-relaxed line-clamp-2">
                 {starter.message}
               </p>
             </button>

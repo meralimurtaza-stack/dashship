@@ -53,22 +53,22 @@ const ScatterTooltipContent: FC<{
 
   return (
     <div
-      className="bg-white border border-gray-200 px-3 py-2"
-      style={{ borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+      className="bg-ds-surface border border-ds-border px-3 py-2"
+      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
     >
       {colorField && d[colorField] != null && (
-        <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400 mb-1">
+        <p className="micro-label mb-1">
           {String(d[colorField])}
         </p>
       )}
-      <p className="font-mono text-xs text-ink tabular-nums">
+      <p className="font-mono text-xs text-ds-text tabular-nums">
         {xField}: {autoFormat(d[xField])}
       </p>
-      <p className="font-mono text-xs text-ink tabular-nums">
+      <p className="font-mono text-xs text-ds-text tabular-nums">
         {yField}: {autoFormat(d[yField])}
       </p>
       {sizeField && d[sizeField] != null && (
-        <p className="font-mono text-xs text-gray-500 tabular-nums">
+        <p className="font-mono text-xs text-ds-text-muted tabular-nums">
           {sizeField}: {autoFormat(d[sizeField])}
         </p>
       )}

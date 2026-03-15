@@ -28,14 +28,13 @@ const FieldPill: FC<{
       className={`
         inline-flex items-center gap-1 px-2 py-1 text-[11px] font-mono
         border transition-colors cursor-default select-none
-        ${isMeasure ? 'bg-accent-muted border-accent/20 text-ink' : 'bg-gray-100 border-gray-200 text-ink'}
+        ${isMeasure ? 'bg-ds-accent-glow border-ds-accent/20 text-ds-text' : 'bg-ds-surface-alt border-ds-border text-ds-text'}
       `}
-      style={{ borderRadius: 2 }}
     >
       {isMeasure && binding.aggregation && binding.aggregation !== 'none' && (
         <button
           onClick={cycleAgg}
-          className="text-[9px] uppercase tracking-wide text-accent hover:text-accent-light font-semibold cursor-pointer"
+          className="text-[9px] uppercase tracking-wide text-ds-accent hover:opacity-80 font-medium cursor-pointer"
           title="Click to change aggregation"
         >
           {binding.aggregation}
@@ -44,7 +43,7 @@ const FieldPill: FC<{
       <span className="truncate max-w-[120px]">{binding.field}</span>
       <button
         onClick={onRemove}
-        className="ml-0.5 text-gray-400 hover:text-danger transition-colors"
+        className="ml-0.5 text-ds-text-dim hover:text-ds-error transition-colors"
         aria-label={`Remove ${binding.field}`}
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +111,7 @@ const ShelfDropZone: FC<ShelfDropZoneProps> = ({
 
   return (
     <div className="flex items-center gap-3 py-1.5">
-      <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400 w-16 shrink-0 text-right">
+      <span className="font-mono text-[10px] uppercase tracking-widest text-ds-text-dim w-16 shrink-0 text-right">
         {SHELF_LABELS[shelf]}
       </span>
       <div
@@ -120,9 +119,8 @@ const ShelfDropZone: FC<ShelfDropZoneProps> = ({
         className={`
           flex-1 min-h-[32px] flex items-center flex-wrap gap-1 px-2 py-1
           border border-dashed transition-colors
-          ${isOver ? 'border-accent bg-accent-muted' : 'border-gray-200 bg-gray-50'}
+          ${isOver ? 'border-ds-accent bg-ds-accent-glow' : 'border-ds-border bg-ds-surface-alt'}
         `}
-        style={{ borderRadius: 2 }}
       >
         {!isArray && binding && (
           <FieldPill
@@ -140,7 +138,7 @@ const ShelfDropZone: FC<ShelfDropZoneProps> = ({
           />
         ))}
         {!binding && (!isArray || !bindings?.length) && (
-          <span className="text-[10px] font-mono text-gray-300 select-none">
+          <span className="text-[10px] font-mono text-ds-text-dim select-none">
             Drop field here
           </span>
         )}

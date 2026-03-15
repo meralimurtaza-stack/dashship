@@ -10,8 +10,7 @@ const GenerateButton: FC<GenerateButtonProps> = ({ isGenerating, disabled, onCli
   if (isGenerating) {
     return (
       <div
-        className="flex items-center gap-3 bg-gray-900 text-white font-mono text-xs uppercase tracking-wide px-6 py-3"
-        style={{ borderRadius: 2 }}
+        className="flex items-center gap-3 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3"
       >
         <div className="flex items-center gap-1.5">
           <div className="w-1.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '0ms' }} />
@@ -27,8 +26,7 @@ const GenerateButton: FC<GenerateButtonProps> = ({ isGenerating, disabled, onCli
     <button
       onClick={onClick}
       disabled={disabled}
-      className="flex items-center gap-2 bg-gray-900 text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-gray-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      style={{ borderRadius: 2 }}
+      className="flex items-center gap-2 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-ds-accent-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path

@@ -28,15 +28,15 @@ const EditorFieldItem: FC<{
       {...attributes}
       className={`
         flex items-center gap-2 px-2 py-1 text-[11px] font-mono cursor-grab active:cursor-grabbing
-        hover:bg-gray-50 transition-colors select-none
+        hover:bg-ds-surface-alt transition-colors select-none
         ${isDragging ? 'opacity-40' : ''}
       `}
     >
       <span
-        className={`w-1.5 h-1.5 shrink-0 ${field.role === 'measure' ? 'bg-accent' : 'bg-gray-400'}`}
+        className={`w-1.5 h-1.5 shrink-0 ${field.role === 'measure' ? 'bg-ds-accent' : 'bg-ds-text-dim'}`}
         style={{ borderRadius: 1 }}
       />
-      <span className="truncate text-ink">{field.displayName || field.name}</span>
+      <span className="truncate text-ds-text">{field.displayName || field.name}</span>
     </div>
   )
 }
@@ -174,16 +174,16 @@ const SheetEditor: FC<SheetEditorProps> = ({
   )
 
   return (
-    <div className="fixed inset-0 z-50 bg-page flex flex-col">
+    <div className="fixed inset-0 z-50 bg-ds-bg flex flex-col">
       {/* Top bar */}
-      <div className="h-12 px-4 flex items-center justify-between border-b border-gray-200 bg-white shrink-0">
+      <div className="h-12 px-4 flex items-center justify-between border-b border-ds-border bg-ds-surface shrink-0">
         <div className="flex items-center gap-3">
           <button
             onClick={onDone}
             className="p-1 hover:opacity-60 transition-opacity"
             aria-label="Back to dashboard"
           >
-            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 text-ds-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
             </svg>
           </button>
@@ -201,7 +201,7 @@ const SheetEditor: FC<SheetEditorProps> = ({
                   if (tempName.trim()) onUpdate({ ...sheet, name: tempName.trim() })
                 }
               }}
-              className="font-mono text-sm font-semibold text-ink bg-transparent border-b border-gray-300 focus:border-gray-900 outline-none"
+              className="font-mono text-sm font-medium text-ds-text bg-transparent border-b border-ds-border-strong focus:border-ds-accent outline-none"
               autoFocus
             />
           ) : (
@@ -210,7 +210,7 @@ const SheetEditor: FC<SheetEditorProps> = ({
                 setTempName(sheet.name)
                 setNameEditing(true)
               }}
-              className="font-mono text-sm font-semibold text-ink hover:opacity-60 transition-opacity"
+              className="font-mono text-sm font-medium text-ds-text hover:opacity-60 transition-opacity"
             >
               {sheet.name}
             </button>
@@ -224,8 +224,7 @@ const SheetEditor: FC<SheetEditorProps> = ({
           />
           <button
             onClick={onDone}
-            className="bg-gray-900 text-white font-mono text-xs uppercase tracking-wide px-5 py-2 hover:bg-gray-800 transition-colors"
-            style={{ borderRadius: 2 }}
+            className="bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-5 py-2 hover:bg-ds-accent-hover transition-colors"
           >
             Done
           </button>
@@ -236,14 +235,14 @@ const SheetEditor: FC<SheetEditorProps> = ({
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 flex overflow-hidden">
           {/* Fields list */}
-          <div className="w-[180px] shrink-0 border-r border-gray-200 bg-white overflow-y-auto py-2">
-            <p className="px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-gray-400">
+          <div className="w-[180px] shrink-0 border-r border-ds-border bg-ds-surface overflow-y-auto py-2">
+            <p className="px-3 py-1 font-mono text-[9px] uppercase tracking-widest text-ds-text-dim">
               Dimensions
             </p>
             {dims.map((f) => (
               <EditorFieldItem key={f.name} field={f} />
             ))}
-            <p className="px-3 py-1 mt-2 font-mono text-[9px] uppercase tracking-widest text-gray-400">
+            <p className="px-3 py-1 mt-2 font-mono text-[9px] uppercase tracking-widest text-ds-text-dim">
               Measures
             </p>
             {meas.map((f) => (
@@ -254,7 +253,7 @@ const SheetEditor: FC<SheetEditorProps> = ({
           {/* Centre: shelves + preview */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Shelves bar */}
-            <div className="px-4 py-2 border-b border-gray-200 bg-white shrink-0">
+            <div className="px-4 py-2 border-b border-ds-border bg-ds-surface shrink-0">
               <div className="grid grid-cols-2 gap-x-6">
                 <ShelfDropZone shelf="columns" binding={sheet.encoding.columns} onUpdateBinding={(b) => updateShelf('columns', b)} />
                 <ShelfDropZone shelf="rows" binding={sheet.encoding.rows} onUpdateBinding={(b) => updateShelf('rows', b)} />
@@ -266,7 +265,7 @@ const SheetEditor: FC<SheetEditorProps> = ({
             </div>
 
             {/* Chart preview */}
-            <div className="flex-1 overflow-auto p-6 bg-page">
+            <div className="flex-1 overflow-auto p-6 bg-ds-bg">
               <div className="max-w-4xl mx-auto h-full min-h-[300px]">
                 <PreviewChart sheet={sheet} data={data} calculatedFields={calculatedFields} />
               </div>
@@ -280,8 +279,8 @@ const SheetEditor: FC<SheetEditorProps> = ({
         {/* Drag overlay */}
         <DragOverlay>
           {activeField && (
-            <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-mono bg-white border border-gray-300 shadow-sm" style={{ borderRadius: 2 }}>
-              <span className="w-1.5 h-1.5 bg-gray-400" style={{ borderRadius: 1 }} />
+            <div className="flex items-center gap-2 px-3 py-1.5 text-[11px] font-mono bg-ds-surface border border-ds-border-strong">
+              <span className="w-1.5 h-1.5 bg-ds-text-dim" style={{ borderRadius: 1 }} />
               {activeField}
             </div>
           )}

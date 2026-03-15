@@ -45,7 +45,7 @@ const ResizeHandle: FC<ResizeHandleProps> = ({ direction, onResize }) => {
     >
       <div
         className={`
-          absolute bg-gray-200 group-hover:bg-accent group-active:bg-accent
+          absolute bg-ds-border group-hover:bg-ds-accent group-active:bg-ds-accent
           transition-colors duration-150
           ${isH ? 'w-px h-full left-1/2 -translate-x-1/2' : 'h-px w-full top-1/2 -translate-y-1/2'}
         `}

@@ -3,6 +3,7 @@ import type { Sheet, DashboardLayout } from '../../types/sheet'
 import type { CalculatedField } from '../../engine/formulaParser'
 import { processSheet } from '../../engine/dataEngine'
 import { KPICard, BarChart, LineChart, PieChart, ScatterPlot, DataTable, ChartWrapper } from '../charts'
+import ErrorBoundary from '../ui/ErrorBoundary'
 
 interface DashboardCanvasProps {
   layout: DashboardLayout
@@ -147,14 +148,9 @@ const ChartCard: FC<{
   return (
     <div
       className={`
-        relative group bg-white border overflow-hidden transition-colors
-        ${isSelected ? 'border-accent ring-1 ring-accent/20' : 'border-gray-200 hover:border-gray-300'}
+        relative group bg-ds-surface border overflow-hidden transition-colors
+        ${isSelected ? 'border-ds-accent ring-1 ring-ds-accent/20' : 'border-ds-border hover:border-ds-border-strong'}
       `}
-      style={{
-        gridColumn: `${layoutItem.x + 1} / span ${layoutItem.w}`,
-        gridRow: `${layoutItem.y + 1} / span ${layoutItem.h}`,
-        borderRadius: 2,
-      }}
       onClick={(e) => {
         e.stopPropagation()
         onSelect()
@@ -170,8 +166,7 @@ const ChartCard: FC<{
           e.stopPropagation()
           onDelete()
         }}
-        className="absolute top-2 right-2 z-10 w-5 h-5 flex items-center justify-center bg-white border border-gray-200 text-gray-400 hover:text-danger hover:border-danger opacity-0 group-hover:opacity-100 transition-opacity"
-        style={{ borderRadius: 2 }}
+        className="absolute top-2 right-2 z-10 w-5 h-5 flex items-center justify-center bg-ds-surface border border-ds-border text-ds-text-dim hover:text-ds-error hover:border-ds-error opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label={`Delete ${sheet.name}`}
       >
         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +176,9 @@ const ChartCard: FC<{
 
       {/* Chart */}
       <div className="w-full h-full pointer-events-none">
-        <SheetChart sheet={sheet} data={data} calculatedFields={calculatedFields} />
+        <ErrorBoundary name={sheet.name}>
+          <SheetChart sheet={sheet} data={data} calculatedFields={calculatedFields} />
+        </ErrorBoundary>
       </div>
 
       {/* Resize handle */}
@@ -189,7 +186,7 @@ const ChartCard: FC<{
         onPointerDown={handleResizePointerDown}
         className="absolute bottom-0 right-0 w-4 h-4 cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity"
       >
-        <svg className="w-4 h-4 text-gray-300" viewBox="0 0 16 16" fill="currentColor">
+        <svg className="w-4 h-4 text-ds-text-dim" viewBox="0 0 16 16" fill="currentColor">
           <circle cx="12" cy="12" r="1.5" />
           <circle cx="8" cy="12" r="1.5" />
           <circle cx="12" cy="8" r="1.5" />
@@ -227,21 +224,20 @@ const DashboardCanvas: FC<DashboardCanvasProps> = ({
 
   if (sheets.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-page">
+      <div className="flex-1 flex items-center justify-center bg-ds-bg">
         <div className="text-center space-y-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+          <p className="micro-label">
             Canvas
           </p>
-          <h3 className="font-mono text-xl font-semibold text-ink">
+          <h3 className="font-mono text-xl font-medium text-ds-text">
             Empty dashboard
           </h3>
-          <p className="text-xs text-gray-500 max-w-xs">
+          <p className="text-xs text-ds-text-muted max-w-xs">
             Add charts using the button below or ask Captain to generate them.
           </p>
           <button
             onClick={onAddChart}
-            className="inline-flex items-center gap-1.5 bg-gray-900 text-white font-mono text-xs uppercase tracking-wide px-5 py-2.5 hover:bg-gray-800 transition-colors mt-2"
-            style={{ borderRadius: 2 }}
+            className="inline-flex items-center gap-1.5 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-5 py-2.5 hover:bg-ds-accent-hover transition-colors mt-2"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />
@@ -255,7 +251,7 @@ const DashboardCanvas: FC<DashboardCanvasProps> = ({
 
   return (
     <div
-      className="flex-1 overflow-auto bg-page p-6"
+      className="flex-1 overflow-auto bg-ds-bg p-6"
       onClick={() => onSelectSheet(null)}
     >
       {/* Grid */}
@@ -267,22 +263,32 @@ const DashboardCanvas: FC<DashboardCanvasProps> = ({
           gridTemplateRows: `repeat(${maxRow}, ${layout.rowHeight}px)`,
         }}
       >
-        {layout.items.map((item) => {
+        {layout.items.map((item, index) => {
           const sheet = sheetMap.get(item.sheetId)
           if (!sheet) return null
           return (
-            <ChartCard
+            <div
               key={item.sheetId}
-              sheet={sheet}
-              data={data}
-              calculatedFields={calculatedFields}
-              layoutItem={item}
-              isSelected={selectedSheetId === item.sheetId}
-              onSelect={() => onSelectSheet(item.sheetId)}
-              onEdit={() => onEditSheet(item.sheetId)}
-              onDelete={() => onDeleteSheet(item.sheetId)}
-              onResize={(w, h) => onResizeItem(item.sheetId, w, h)}
-            />
+              className="animate-fadeIn"
+              style={{
+                animationDelay: `${index * 60}ms`,
+                animationFillMode: 'both',
+                gridColumn: `${item.x + 1} / span ${item.w}`,
+                gridRow: `${item.y + 1} / span ${item.h}`,
+              }}
+            >
+              <ChartCard
+                sheet={sheet}
+                data={data}
+                calculatedFields={calculatedFields}
+                layoutItem={item}
+                isSelected={selectedSheetId === item.sheetId}
+                onSelect={() => onSelectSheet(item.sheetId)}
+                onEdit={() => onEditSheet(item.sheetId)}
+                onDelete={() => onDeleteSheet(item.sheetId)}
+                onResize={(w, h) => onResizeItem(item.sheetId, w, h)}
+              />
+            </div>
           )
         })}
       </div>
@@ -294,8 +300,7 @@ const DashboardCanvas: FC<DashboardCanvasProps> = ({
             e.stopPropagation()
             onAddChart()
           }}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono uppercase tracking-wide text-gray-400 border border-dashed border-gray-300 hover:border-gray-900 hover:text-gray-900 transition-colors"
-          style={{ borderRadius: 2 }}
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-mono uppercase tracking-wide text-ds-text-dim border border-dashed border-ds-border-strong hover:border-ds-accent hover:text-ds-text transition-colors"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" />

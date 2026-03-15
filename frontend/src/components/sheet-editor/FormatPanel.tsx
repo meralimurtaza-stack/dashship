@@ -10,7 +10,7 @@ interface FormatPanelProps {
 // ── Select Control ──────────────────────────────────────────────
 
 const ControlLabel: FC<{ children: React.ReactNode }> = ({ children }) => (
-  <label className="font-mono text-[9px] uppercase tracking-widest text-gray-400 block mb-1">
+  <label className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim block mb-1">
     {children}
   </label>
 )
@@ -26,8 +26,7 @@ const SelectControl: FC<{
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-2 py-1.5 text-xs font-mono bg-white border border-gray-200 outline-none focus:border-gray-400 appearance-none cursor-pointer"
-      style={{ borderRadius: 2 }}
+      className="w-full px-2 py-1.5 text-xs font-mono bg-ds-surface border border-ds-border outline-none focus:border-ds-accent appearance-none cursor-pointer"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>{o.label}</option>
@@ -44,19 +43,19 @@ const ToggleControl: FC<{
   onChange: (checked: boolean) => void
 }> = ({ label, checked, onChange }) => (
   <label className="flex items-center justify-between py-1 cursor-pointer group">
-    <span className="font-mono text-[10px] uppercase tracking-wide text-gray-500 group-hover:text-ink transition-colors">
+    <span className="font-mono text-[10px] uppercase tracking-wide text-ds-text-muted group-hover:text-ds-text transition-colors">
       {label}
     </span>
     <button
       onClick={() => onChange(!checked)}
       className={`
         w-7 h-4 rounded-full transition-colors relative
-        ${checked ? 'bg-accent' : 'bg-gray-200'}
+        ${checked ? 'bg-ds-accent' : 'bg-ds-border'}
       `}
     >
       <span
         className={`
-          absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform shadow-sm
+          absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform
           ${checked ? 'left-3.5' : 'left-0.5'}
         `}
       />
@@ -79,8 +78,7 @@ const NumberControl: FC<{
       value={value ?? ''}
       placeholder={placeholder}
       onChange={(e) => onChange(e.target.value ? Number(e.target.value) : undefined)}
-      className="w-full px-2 py-1.5 text-xs font-mono bg-white border border-gray-200 outline-none focus:border-gray-400 tabular-nums"
-      style={{ borderRadius: 2 }}
+      className="w-full px-2 py-1.5 text-xs font-mono bg-ds-surface border border-ds-border outline-none focus:border-ds-accent tabular-nums"
       min={0}
     />
   </div>
@@ -126,9 +124,9 @@ const FormatPanel: FC<FormatPanelProps> = ({ sheet, onUpdate }) => {
   )
 
   return (
-    <div className="h-full flex flex-col bg-white border-l border-gray-200 w-[220px] shrink-0">
-      <div className="px-4 py-3 border-b border-gray-200">
-        <p className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+    <div className="h-full flex flex-col bg-ds-surface border-l border-ds-border w-[220px] shrink-0">
+      <div className="px-4 py-3 border-b border-ds-border">
+        <p className="micro-label">
           Format
         </p>
       </div>
@@ -175,7 +173,7 @@ const FormatPanel: FC<FormatPanelProps> = ({ sheet, onUpdate }) => {
         />
 
         {/* Divider */}
-        <div className="border-t border-gray-100" />
+        <div className="border-t border-ds-border" />
 
         {/* Display Options */}
         <div className="space-y-1">
@@ -220,7 +218,7 @@ const FormatPanel: FC<FormatPanelProps> = ({ sheet, onUpdate }) => {
         )}
 
         {/* Divider */}
-        <div className="border-t border-gray-100" />
+        <div className="border-t border-ds-border" />
 
         {/* Color Palette */}
         <div>
@@ -229,8 +227,7 @@ const FormatPanel: FC<FormatPanelProps> = ({ sheet, onUpdate }) => {
             {PALETTES.map((p) => (
               <button
                 key={p.name}
-                className="w-full flex items-center gap-2 px-2 py-1.5 border border-gray-200 hover:border-gray-400 transition-colors group"
-                style={{ borderRadius: 2 }}
+                className="w-full flex items-center gap-2 px-2 py-1.5 border border-ds-border hover:border-ds-border-strong transition-colors group"
               >
                 <div className="flex gap-0.5">
                   {p.colors.map((c, i) => (
@@ -241,7 +238,7 @@ const FormatPanel: FC<FormatPanelProps> = ({ sheet, onUpdate }) => {
                     />
                   ))}
                 </div>
-                <span className="text-[10px] font-mono text-gray-400 group-hover:text-ink transition-colors">
+                <span className="text-[10px] font-mono text-ds-text-dim group-hover:text-ds-text transition-colors">
                   {p.name}
                 </span>
               </button>

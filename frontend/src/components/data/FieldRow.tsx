@@ -50,9 +50,9 @@ const EditableFieldName: FC<EditableFieldNameProps> = ({ col, onRename }) => {
             if (e.key === 'Enter') commit()
             if (e.key === 'Escape') setIsEditing(false)
           }}
-          className="font-mono text-sm text-ink bg-transparent border-b border-gray-900 outline-none py-0 w-full min-w-[60px]"
+          className="font-mono text-sm text-ds-text bg-transparent border-b border-ds-accent outline-none py-0 w-full min-w-[60px]"
         />
-        <span className="font-mono text-[9px] text-gray-400 tracking-wide">{col.name}</span>
+        <span className="font-mono text-[9px] text-ds-text-dim tracking-wide">{col.name}</span>
       </div>
     )
   }
@@ -63,14 +63,14 @@ const EditableFieldName: FC<EditableFieldNameProps> = ({ col, onRename }) => {
       onClick={() => { setEditValue(display); setIsEditing(true) }}
     >
       <div className="flex items-center gap-2">
-        <span className="font-mono text-sm text-ink group-hover:border-b group-hover:border-gray-300 transition-colors">
+        <span className="font-mono text-sm text-ds-text group-hover:border-b group-hover:border-ds-border-strong transition-colors">
           {display}
         </span>
         {isRenamed && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onRename(col.name, '') }}
-            className="font-mono text-[9px] text-gray-400 hover:text-gray-600 transition-colors"
+            className="font-mono text-[9px] text-ds-text-dim hover:text-ds-text-muted transition-colors"
             title="Reset to original name"
           >
             reset
@@ -78,7 +78,7 @@ const EditableFieldName: FC<EditableFieldNameProps> = ({ col, onRename }) => {
         )}
       </div>
       {isRenamed && (
-        <span className="font-mono text-[9px] text-gray-400 tracking-wide">{col.name}</span>
+        <span className="font-mono text-[9px] text-ds-text-dim tracking-wide">{col.name}</span>
       )}
     </div>
   )
@@ -91,7 +91,7 @@ const RolePill: FC<{ role: FieldRole; onChange: (r: FieldRole) => void }> = ({ r
     type="button"
     onClick={(e) => { e.stopPropagation(); onChange(role === 'dimension' ? 'measure' : 'dimension') }}
     className={`font-mono text-[9px] uppercase px-2 py-0.5 cursor-pointer transition-colors hover:opacity-80 ${
-      role === 'measure' ? 'text-accent bg-accent/8' : 'text-gray-500 bg-gray-100'
+      role === 'measure' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
     }`}
     title={`Click to convert to ${role === 'dimension' ? 'measure' : 'dimension'}`}
   >
@@ -106,7 +106,7 @@ const EyeToggle: FC<{ hidden: boolean; onToggle: () => void }> = ({ hidden, onTo
     type="button"
     onClick={(e) => { e.stopPropagation(); onToggle() }}
     className={`w-5 h-5 flex items-center justify-center transition-colors ${
-      hidden ? 'text-gray-300 hover:text-gray-500' : 'text-gray-400 hover:text-gray-600'
+      hidden ? 'text-ds-text-dim hover:text-ds-text-muted' : 'text-ds-text-dim hover:text-ds-text-muted'
     }`}
     title={hidden ? 'Show field' : 'Hide field'}
   >
@@ -149,20 +149,20 @@ const FieldRow: FC<FieldRowProps> = ({
       </div>
       <div className="flex items-center gap-4">
         {p?.type === 'categorical' && (
-          <span className="font-mono text-[10px] text-gray-400 tabular-nums">{p.uniqueCount} unique</span>
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">{p.uniqueCount} unique</span>
         )}
         {p?.type === 'date' && (
-          <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {(p as DateProfile).earliest} → {(p as DateProfile).latest}
           </span>
         )}
         {p?.type === 'numeric' && (
-          <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {formatStat(p.min)} — {formatStat(p.max)}
           </span>
         )}
         {p && p.nullPercent > 0 && (
-          <span className="font-mono text-[10px] text-red-500 tabular-nums">{p.nullPercent}% null</span>
+          <span className="font-mono text-[10px] text-ds-error tabular-nums">{p.nullPercent}% null</span>
         )}
         <EyeToggle hidden={isHidden} onToggle={() => onToggleVisibility(col.name)} />
       </div>

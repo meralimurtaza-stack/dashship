@@ -57,14 +57,14 @@ const EditableCell: FC<EditableCellProps> = ({ value, originalValue, onCommit })
           if (e.key === 'Enter') commit()
           if (e.key === 'Escape') setIsEditing(false)
         }}
-        className="font-mono text-sm text-ink bg-transparent border-b border-gray-900 outline-none py-0 w-full"
+        className="font-mono text-sm text-ds-text bg-transparent border-b border-ds-accent outline-none py-0 w-full"
       />
     )
   }
 
   return (
     <span
-      className="font-mono text-sm text-ink cursor-pointer hover:border-b hover:border-gray-300 transition-colors"
+      className="font-mono text-sm text-ds-text cursor-pointer hover:border-b hover:border-ds-border-strong transition-colors"
       onClick={() => { setEditValue(value); setIsEditing(true) }}
     >
       {value}
@@ -107,10 +107,10 @@ const MetadataGrid: FC<MetadataGridProps> = ({
     : schema.columns.filter((c) => !c.hidden)
 
   return (
-    <div className="border border-gray-200 bg-white overflow-hidden">
+    <div className="border border-ds-border bg-ds-surface overflow-hidden">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-gray-400">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-ds-border">
+        <span className="micro-label">
           Metadata Grid
         </span>
         <div className="flex items-center gap-4">
@@ -118,12 +118,12 @@ const MetadataGrid: FC<MetadataGridProps> = ({
             <button
               type="button"
               onClick={onToggleShowHidden}
-              className="font-mono text-[10px] uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors"
+              className="font-mono text-[10px] uppercase tracking-widest text-ds-text-dim hover:text-ds-text-muted transition-colors"
             >
               {showHidden ? 'Hide hidden' : `+${hiddenCount} hidden`}
             </button>
           )}
-          <span className="font-mono text-[10px] text-gray-400 tabular-nums">
+          <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
             {cols.length} fields
           </span>
         </div>
@@ -133,12 +133,12 @@ const MetadataGrid: FC<MetadataGridProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200">
+            <tr className="border-b border-ds-border">
               {['', 'Field Name', 'Original', 'Role', 'Unique', 'Nulls', 'Sample Values', ''].map(
                 (h, i) => (
                   <th
                     key={i}
-                    className="text-left px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-gray-400 font-normal"
+                    className="text-left px-3 py-2 micro-label font-normal"
                   >
                     {h}
                   </th>
@@ -153,7 +153,7 @@ const MetadataGrid: FC<MetadataGridProps> = ({
               return (
                 <tr
                   key={col.name}
-                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                  className={`border-b border-ds-border hover:bg-ds-surface-alt transition-colors ${
                     isHidden ? 'opacity-40' : ''
                   }`}
                 >
@@ -176,7 +176,7 @@ const MetadataGrid: FC<MetadataGridProps> = ({
 
                   {/* Original Name */}
                   <td className="px-3 py-2.5">
-                    <span className="font-mono text-[11px] text-gray-400">
+                    <span className="font-mono text-[11px] text-ds-text-dim">
                       {col.name}
                     </span>
                   </td>
@@ -193,8 +193,8 @@ const MetadataGrid: FC<MetadataGridProps> = ({
                       }
                       className={`font-mono text-[9px] uppercase px-2 py-0.5 cursor-pointer transition-colors hover:opacity-80 ${
                         col.role === 'measure'
-                          ? 'text-accent bg-accent/8'
-                          : 'text-gray-500 bg-gray-100'
+                          ? 'text-ds-accent bg-ds-accent-glow'
+                          : 'text-ds-text-muted bg-ds-surface-alt'
                       }`}
                     >
                       {col.role === 'measure' ? 'Measure' : 'Dimension'}
@@ -203,7 +203,7 @@ const MetadataGrid: FC<MetadataGridProps> = ({
 
                   {/* Unique Values */}
                   <td className="px-3 py-2.5">
-                    <span className="font-mono text-[11px] text-gray-500 tabular-nums">
+                    <span className="font-mono text-[11px] text-ds-text-muted tabular-nums">
                       {getUniques(profile, col.name)}
                     </span>
                   </td>
@@ -213,8 +213,8 @@ const MetadataGrid: FC<MetadataGridProps> = ({
                     <span
                       className={`font-mono text-[11px] tabular-nums ${
                         (profile.columns[col.name]?.nullPercent ?? 0) > 0
-                          ? 'text-red-500'
-                          : 'text-gray-400'
+                          ? 'text-ds-error'
+                          : 'text-ds-text-dim'
                       }`}
                     >
                       {getNullPercent(profile, col.name)}
@@ -223,7 +223,7 @@ const MetadataGrid: FC<MetadataGridProps> = ({
 
                   {/* Sample Values */}
                   <td className="px-3 py-2.5 max-w-[200px]">
-                    <span className="font-mono text-[11px] text-gray-500 truncate block">
+                    <span className="font-mono text-[11px] text-ds-text-muted truncate block">
                       {getSamples(col)}
                     </span>
                   </td>
@@ -235,8 +235,8 @@ const MetadataGrid: FC<MetadataGridProps> = ({
                       onClick={() => onToggleVisibility(col.name)}
                       className={`transition-colors ${
                         isHidden
-                          ? 'text-gray-300 hover:text-gray-500'
-                          : 'text-gray-400 hover:text-gray-600'
+                          ? 'text-ds-text-dim hover:text-ds-text-muted'
+                          : 'text-ds-text-dim hover:text-ds-text-muted'
                       }`}
                       title={isHidden ? 'Show field' : 'Hide field'}
                     >
