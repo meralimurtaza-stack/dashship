@@ -31,12 +31,32 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage]
-    data_context: DataContext
+    data_context: DataContext | None = None
+    is_first_message: bool = False
+
+
+BASE_PROMPT = """You are a dashboard planning consultant for DashShip. Help users plan and create production-ready dashboards. Be concise and specific. When you have enough information, summarise a dashboard plan with specific charts, fields, and layout."""
+
+PROJECT_NAME_INSTRUCTION = """
+
+When responding to the user's FIRST message, include a suggested project name wrapped in: <project-name>Customer Insights</project-name>
+The name should be 2-4 words that describe the dashboard's purpose.
+Do not explain the tag — it will be parsed and removed before display."""
+
+NO_DATA_INSTRUCTION = """
+
+No data has been uploaded yet. When responding to the user's first message, acknowledge what they want to build. Then ask whether they'd like to use sample data (to see a dashboard in 60 seconds) or upload their own CSV/Excel file. Keep your response to 2-3 sentences. Do NOT ask multiple clarifying questions — just the data question."""
 
 
 # ── System Prompt Builder ────────────────────────────────────────
 
-def build_system_prompt(ctx: DataContext) -> str:
+def build_system_prompt(ctx: DataContext | None, is_first_message: bool = False) -> str:
+    if ctx is None:
+        prompt = BASE_PROMPT + NO_DATA_INSTRUCTION
+        if is_first_message:
+            prompt += PROJECT_NAME_INSTRUCTION
+        return prompt
+
     dims = [c for c in ctx.columns if c.role == "dimension"]
     measures = [c for c in ctx.columns if c.role == "measure"]
 
@@ -52,7 +72,7 @@ def build_system_prompt(ctx: DataContext) -> str:
         samples = ", ".join(c.sample_values[:3]) if c.sample_values else ""
         meas_lines.append(f"  - {name} ({c.type}){f' — e.g. {samples}' if samples else ''}")
 
-    return f"""You are a dashboard planning consultant for DashShip. The user has uploaded a dataset and wants to create a production-ready dashboard. You have their data profile below. Help them by: 1. Understanding what questions they want their dashboard to answer 2. Suggesting specific visualisations based on their data 3. Recommending which fields to use for each chart 4. Building toward a concrete dashboard plan Be concise and specific. Reference their actual field names. When you have enough information, summarise a dashboard plan with specific charts, fields, and layout.
+    prompt = f"""{BASE_PROMPT} The user has uploaded a dataset. You have their data profile below. Help them by: 1. Understanding what questions they want their dashboard to answer 2. Suggesting specific visualisations based on their data 3. Recommending which fields to use for each chart 4. Building toward a concrete dashboard plan Reference their actual field names.
 
 ## Data Profile
 
@@ -65,6 +85,11 @@ def build_system_prompt(ctx: DataContext) -> str:
 **Measures ({len(measures)}):**
 {chr(10).join(meas_lines) if meas_lines else "  (none)"}"""
 
+    if is_first_message:
+        prompt += PROJECT_NAME_INSTRUCTION
+
+    return prompt
+
 
 # ── Streaming Endpoint ──────────────────────────────────────────
 
@@ -74,7 +99,7 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Anthropic API key not configured")
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    system = build_system_prompt(request.data_context)
+    system = build_system_prompt(request.data_context, request.is_first_message)
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type FC, type KeyboardEvent } from 'react'
-import type { ChatMessage, ChatDataContext } from '../../types/chat'
-import { useChat } from '../../hooks/useChat'
+import type { ChatMessage } from '../../types/chat'
+import { useChatContext } from '../../contexts/ChatContext'
 import Markdown from '../chat/Markdown'
 
 // ── Quick Commands ──────────────────────────────────────────────
@@ -52,30 +52,21 @@ const MessageBubble: FC<{ message: ChatMessage; isStreaming?: boolean }> = ({
 // ── Captain Panel ───────────────────────────────────────────────
 
 interface CaptainPanelProps {
-  dataContext: ChatDataContext | null
-  existingMessages?: ChatMessage[]
   onCommand?: (command: string) => void
 }
 
-const CaptainPanel: FC<CaptainPanelProps> = ({
-  dataContext,
-  existingMessages,
-  onCommand,
-}) => {
-  const { messages, isStreaming, sendMessage, stopStreaming } = useChat(dataContext)
+const CaptainPanel: FC<CaptainPanelProps> = ({ onCommand }) => {
+  const { messages, isStreaming, sendMessage, stopStreaming } = useChatContext()
   const [input, setInput] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
-
-  // Initialize with existing messages if provided
-  const allMessages = existingMessages?.length ? existingMessages : messages
 
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [allMessages])
+  }, [messages])
 
   const handleSend = () => {
     const text = input.trim()
@@ -114,7 +105,7 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
-        {allMessages.length === 0 && (
+        {messages.length === 0 && (
           <div className="py-6 text-center space-y-3">
             <p className="text-xs text-ds-text-dim leading-relaxed">
               Ask Captain to modify your dashboard. Try a quick command:
@@ -133,11 +124,11 @@ const CaptainPanel: FC<CaptainPanelProps> = ({
           </div>
         )}
 
-        {allMessages.map((msg) => (
+        {messages.map((msg) => (
           <MessageBubble
             key={msg.id}
             message={msg}
-            isStreaming={isStreaming && msg === allMessages[allMessages.length - 1]}
+            isStreaming={isStreaming && msg === messages[messages.length - 1]}
           />
         ))}
       </div>

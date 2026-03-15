@@ -1,6 +1,8 @@
 import { supabase } from './supabase'
 import type { Sheet } from '../types/sheet'
 import type { DashboardLayout } from '../types/sheet'
+import type { ChatMessage, ChatDataContext } from '../types/chat'
+import type { CalculatedField } from '../engine/formulaParser'
 
 export interface DashboardRecord {
   id: string
@@ -11,6 +13,9 @@ export interface DashboardRecord {
   layout: DashboardLayout
   data: Record<string, unknown>[]
   publishedSlug: string | null
+  chatMessages: ChatMessage[]
+  dataContext: ChatDataContext | null
+  calculatedFields: CalculatedField[]
   createdAt: string
   updatedAt: string
 }
@@ -21,9 +26,12 @@ export async function saveDashboard(params: {
   name: string
   status?: 'draft' | 'published'
   sheets: Sheet[]
-  layout: DashboardLayout
-  data: Record<string, unknown>[]
+  layout?: DashboardLayout
+  data?: Record<string, unknown>[]
   publishedSlug?: string
+  chatMessages?: ChatMessage[]
+  dataContext?: ChatDataContext | null
+  calculatedFields?: CalculatedField[]
 }): Promise<DashboardRecord> {
   const record = {
     ...(params.id ? { id: params.id } : {}),
@@ -31,9 +39,12 @@ export async function saveDashboard(params: {
     name: params.name,
     status: params.status ?? 'draft',
     sheets: params.sheets,
-    layout: params.layout,
-    data: params.data,
+    layout: params.layout ?? { columns: 12, rowHeight: 60, items: [] },
+    data: params.data ?? [],
     published_slug: params.publishedSlug ?? null,
+    chat_messages: params.chatMessages ?? [],
+    data_context: params.dataContext ?? null,
+    calculated_fields: params.calculatedFields ?? [],
   }
 
   const { data, error } = await supabase
@@ -90,6 +101,9 @@ function mapRow(d: any): DashboardRecord {
     layout: d.layout,
     data: d.data,
     publishedSlug: d.published_slug,
+    chatMessages: d.chat_messages || [],
+    dataContext: d.data_context || null,
+    calculatedFields: d.calculated_fields || [],
     createdAt: d.created_at,
     updatedAt: d.updated_at,
   }

@@ -8,11 +8,13 @@ import DataPage from '../../pages/DataPage'
 import ChatPage from '../../pages/ChatPage'
 import EditorPage from '../../pages/EditorPage'
 import { useProject, type Project } from '../../contexts/ProjectContext'
+import { ChatProvider } from '../../contexts/ChatContext'
 import { useToast } from '../ui/Toast'
 import { type DashboardRecord } from '../../lib/dashboard-storage'
 import type { GeneratedDashboard } from '../../lib/generate-api'
 import type { ColumnSchema } from '../../types/datasource'
 import type { ChatMessage, ChatDataContext } from '../../types/chat'
+import type { CalculatedField } from '../../engine/formulaParser'
 
 interface DashboardContext {
   dashboardId?: string
@@ -21,6 +23,7 @@ interface DashboardContext {
   columns: ColumnSchema[]
   dataContext: ChatDataContext | null
   chatMessages: ChatMessage[]
+  calculatedFields: CalculatedField[]
 }
 
 type AppPage = 'Home' | 'Data' | 'Chat' | 'Dashboards' | 'Settings'
@@ -35,10 +38,42 @@ const AppLayout: FC = () => {
   const [pendingMessage, setPendingMessage] = useState<string | null>(null)
   const [pendingProjectName, setPendingProjectName] = useState<string | null>(null)
 
-  const { currentProject, setCurrentProject, projects } = useProject()
+  const { currentProject, setCurrentProject, projects, refreshProjects, renameProject } = useProject()
   const { success } = useToast()
 
   const showSidebar = projects.length > 0
+
+  // ── Derived chat context from current project ─────────────────
+
+  const currentDataSourceId = currentProject?.dataSource?.id ?? null
+
+  const currentDataContext: ChatDataContext | null = useMemo(() => {
+    const ds = currentProject?.dataSource
+    if (!ds?.schema) return null
+    return {
+      sourceId: ds.id,
+      sourceName: ds.name,
+      rowCount: ds.schema.rowCount,
+      columns: ds.schema.columns
+        .filter((c) => !c.hidden)
+        .map((c) => ({
+          name: c.name,
+          displayName: c.displayName || null,
+          type: c.type,
+          role: c.role,
+          sampleValues: c.sampleValues,
+        })),
+    }
+  }, [currentProject])
+
+  // ── Project naming from AI ────────────────────────────────────
+
+  const handleProjectNamed = useCallback((name: string) => {
+    setPendingProjectName(name)
+    if (currentProject) {
+      renameProject(currentProject.id, name)
+    }
+  }, [currentProject, renameProject])
 
   // ── Project Nav ──────────────────────────────────────────────
 
@@ -124,7 +159,7 @@ const AppLayout: FC = () => {
     setActivePage('Data')
   }, [])
 
-  const handleChatStarted = useCallback((message: string, projectName: string) => {
+  const handleChatStarted = useCallback((message: string, projectName: string | null) => {
     setPendingProjectName(projectName)
     setPendingMessage(message)
     setPendingFile(null)
@@ -172,6 +207,24 @@ const AppLayout: FC = () => {
     setActivePage('Chat')
   }, [setCurrentProject])
 
+  const handleSidebarSelectDashboard = useCallback((draft: DashboardRecord) => {
+    const dashboard: GeneratedDashboard = {
+      name: draft.name,
+      sheets: draft.sheets,
+      layout: draft.layout,
+    }
+    setDashCtx({
+      dashboardId: draft.id,
+      dashboard,
+      data: draft.data,
+      columns: [],
+      dataContext: draft.dataContext || null,
+      chatMessages: draft.chatMessages || [],
+      calculatedFields: draft.calculatedFields || [],
+    })
+    setActivePage('Dashboards')
+  }, [])
+
   // ── Dashboard ──────────────────────────────────────────────────
 
   const handleDashboardGenerated = useCallback(
@@ -183,11 +236,12 @@ const AppLayout: FC = () => {
       chatMessages: ChatMessage[],
       dashboardId?: string
     ) => {
-      setDashCtx({ dashboardId, dashboard, data, columns, dataContext, chatMessages })
+      setDashCtx({ dashboardId, dashboard, data, columns, dataContext, chatMessages, calculatedFields: [] })
       setActivePage('Dashboards')
+      refreshProjects()
       success('Dashboard generated successfully')
     },
-    [success]
+    [success, refreshProjects]
   )
 
   const handleDraftSelected = useCallback(async (draft: DashboardRecord) => {
@@ -201,8 +255,9 @@ const AppLayout: FC = () => {
       dashboard,
       data: draft.data,
       columns: [],
-      dataContext: null,
-      chatMessages: [],
+      dataContext: draft.dataContext || null,
+      chatMessages: draft.chatMessages || [],
+      calculatedFields: draft.calculatedFields || [],
     })
     setActivePage('Dashboards')
   }, [])
@@ -214,6 +269,10 @@ const AppLayout: FC = () => {
   const handleStartPlanning = useCallback(() => {
     setActivePage('Chat')
   }, [])
+
+  const handlePublished = useCallback(() => {
+    refreshProjects()
+  }, [refreshProjects])
 
   // ── Render ─────────────────────────────────────────────────────
 
@@ -279,7 +338,9 @@ const AppLayout: FC = () => {
             columns={dashCtx.columns}
             dataContext={dashCtx.dataContext}
             chatMessages={dashCtx.chatMessages}
+            calculatedFields={dashCtx.calculatedFields}
             onBackToChat={handleBackToChat}
+            onPublished={handlePublished}
           />
         )
       case 'Settings':
@@ -317,13 +378,20 @@ const AppLayout: FC = () => {
             collapsed={sidebarCollapsed}
             activeProjectId={currentProject?.id ?? null}
             onSelectProject={handleSidebarSelectProject}
+            onSelectDashboard={handleSidebarSelectDashboard}
             onGoHome={goHome}
           />
         )}
         <main className={`flex-1 overflow-auto ${showProjectNav ? 'h-[calc(100vh-3.5rem-2.75rem)]' : 'h-[calc(100vh-3.5rem)]'}`}>
-          <PageTransition pageKey={activePage}>
-            {renderPage()}
-          </PageTransition>
+          <ChatProvider
+            dataContext={currentDataContext}
+            dataSourceId={currentDataSourceId}
+            onProjectNamed={handleProjectNamed}
+          >
+            <PageTransition pageKey={activePage}>
+              {renderPage()}
+            </PageTransition>
+          </ChatProvider>
         </main>
       </div>
     </div>

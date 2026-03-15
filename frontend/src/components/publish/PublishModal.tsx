@@ -13,6 +13,7 @@ interface PublishModalProps {
   layout: DashboardLayout
   data: Record<string, unknown>[]
   onClose: () => void
+  onPublished?: (slug: string) => void
 }
 
 function slugify(text: string): string {
@@ -23,7 +24,7 @@ function slugify(text: string): string {
     .slice(0, 60)
 }
 
-const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheets, layout, data, onClose }) => {
+const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheets, layout, data, onClose, onPublished }) => {
   const [activeTab, setActiveTab] = useState<'publish' | 'email'>('publish')
   const [slug, setSlug] = useState(() => slugify(dashboardName))
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('public')
@@ -80,6 +81,12 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheet
           // Non-critical — draft status update failed
         }
       }
+
+      // Auto-close and notify after 500ms
+      setTimeout(() => {
+        onClose()
+        onPublished?.(result.slug)
+      }, 500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Publish failed')
     } finally {

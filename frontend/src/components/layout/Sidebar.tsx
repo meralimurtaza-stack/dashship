@@ -1,15 +1,17 @@
 import { type FC } from 'react'
 import { useProject, type Project } from '../../contexts/ProjectContext'
 import { deleteDataSource } from '../../lib/datasource-storage'
+import type { DashboardRecord } from '../../lib/dashboard-storage'
 
 interface SidebarProps {
   collapsed: boolean
   activeProjectId: string | null
   onSelectProject: (project: Project) => void
+  onSelectDashboard: (dashboard: DashboardRecord) => void
   onGoHome: () => void
 }
 
-const Sidebar: FC<SidebarProps> = ({ collapsed, activeProjectId, onSelectProject, onGoHome }) => {
+const Sidebar: FC<SidebarProps> = ({ collapsed, activeProjectId, onSelectProject, onSelectDashboard, onGoHome }) => {
   const { projects, refreshProjects, currentProject, setCurrentProject } = useProject()
 
   const handleDelete = async (e: React.MouseEvent, project: Project) => {
@@ -76,6 +78,29 @@ const Sidebar: FC<SidebarProps> = ({ collapsed, activeProjectId, onSelectProject
                     </div>
                   )}
                 </button>
+
+                {/* Dashboard children */}
+                {isActive && project.dashboards.length > 0 && (
+                  <div className="ml-6 mt-0.5 pl-1 border-l border-ds-border space-y-px">
+                    {project.dashboards.map((dash) => (
+                      <button
+                        key={dash.id}
+                        onClick={(e) => { e.stopPropagation(); onSelectDashboard(dash) }}
+                        className="w-full flex items-center gap-2 py-1 px-2 text-left hover:bg-ds-surface-alt transition-colors"
+                      >
+                        <span className="font-sans text-[11px] text-ds-text-muted truncate flex-1">
+                          {dash.name}
+                        </span>
+                        {dash.status === 'published' && (
+                          <span className="font-mono text-[8px] uppercase tracking-wider text-ds-success bg-[rgba(46,125,91,0.1)] px-1 py-px shrink-0">
+                            LIVE
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <button
                   onClick={(e) => handleDelete(e, project)}
                   className="absolute right-2 top-2.5 opacity-0 group-hover:opacity-100 p-0.5 text-ds-text-dim hover:text-ds-error transition-all"

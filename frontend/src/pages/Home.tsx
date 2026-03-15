@@ -7,7 +7,7 @@ import { listDashboards, deleteDashboard, type DashboardRecord } from '../lib/da
 
 interface HomeProps {
   onFileUploaded: (file: File, projectName: string) => void
-  onChatStarted: (message: string, projectName: string) => void
+  onChatStarted: (message: string, projectName: string | null) => void
   onSampleSelected: (sampleKey: string, projectName: string) => void
   onProjectSelected: (project: Project) => void
   onDraftSelected?: (draft: DashboardRecord) => void
@@ -322,8 +322,7 @@ const Home: FC<HomeProps> = ({
   }, [onFileUploaded])
 
   const handleChat = useCallback((message: string) => {
-    const projectName = message.slice(0, 40).replace(/[^\w\s-]/g, '').trim()
-    onChatStarted(message, projectName)
+    onChatStarted(message, null)
   }, [onChatStarted])
 
   return (

@@ -15,7 +15,7 @@ import type { GeneratedDashboard } from '../lib/generate-api'
 import type { ColumnSchema } from '../types/datasource'
 import type { ChatMessage } from '../types/chat'
 import { useDataSource } from '../hooks/useDataSource'
-import { useChat } from '../hooks/useChat'
+import { useChatContext } from '../contexts/ChatContext'
 import { uploadFileToStorage, saveDataSource } from '../lib/datasource-storage'
 import { generateDashboard } from '../lib/generate-api'
 import { saveDashboard } from '../lib/dashboard-storage'
@@ -131,7 +131,7 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
     }
   }, [isDone, ds.schema, ds.sourceName])
 
-  const { messages, isStreaming, sendMessage, stopStreaming } = useChat(dataContext)
+  const { messages, isStreaming, sendMessage, stopStreaming } = useChatContext()
 
   // Auto-send opening message when data is ready
   const autoSentRef = useRef(false)

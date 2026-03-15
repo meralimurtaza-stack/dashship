@@ -13,6 +13,7 @@ import CaptainPanel from '../components/editor/CaptainPanel'
 import ResizeHandle from '../components/editor/ResizeHandle'
 import SheetEditor from '../components/sheet-editor/SheetEditor'
 import PublishModal from '../components/publish/PublishModal'
+import SampleDataBanner from '../components/editor/SampleDataBanner'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useToast } from '../components/ui/Toast'
 
@@ -25,7 +26,10 @@ interface EditorPageProps {
   chatMessages?: ChatMessage[]
   calculatedFields?: CalculatedField[]
   onBackToChat?: () => void
+  onPublished?: () => void
 }
+
+const SAMPLE_NAMES = ['sales data', 'hr data', 'ecommerce data', 'sample']
 
 const EditorPage: FC<EditorPageProps> = ({
   dashboardId,
@@ -36,6 +40,7 @@ const EditorPage: FC<EditorPageProps> = ({
   chatMessages,
   calculatedFields,
   onBackToChat,
+  onPublished,
 }) => {
   const [state, dispatch] = useReducer(editorReducer, {
     ...initialEditorState,
@@ -50,9 +55,16 @@ const EditorPage: FC<EditorPageProps> = ({
   const [isEditingName, setIsEditingName] = useState(false)
   const [showPublishModal, setShowPublishModal] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const { success } = useToast()
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const currentDashboardId = useRef(dashboardId)
+
+  const isSampleData = useMemo(() => {
+    if (!dataContext?.sourceName) return false
+    const name = dataContext.sourceName.toLowerCase()
+    return SAMPLE_NAMES.some((s) => name.includes(s))
+  }, [dataContext])
 
   // ── Auto-save on changes (debounced 2s) ──────────────────────
 
@@ -69,6 +81,9 @@ const EditorPage: FC<EditorPageProps> = ({
           sheets: state.sheets,
           layout: state.layout,
           data,
+          chatMessages: chatMessages || [],
+          dataContext: dataContext || null,
+          calculatedFields: calculatedFields || [],
         })
         setSaveStatus('saved')
         setTimeout(() => setSaveStatus('idle'), 1500)
@@ -81,7 +96,7 @@ const EditorPage: FC<EditorPageProps> = ({
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [state.sheets, state.layout, state.dashboardName, data])
+  }, [state.sheets, state.layout, state.dashboardName, data, chatMessages, dataContext, calculatedFields])
 
   // ── Keyboard Shortcuts ──────────────────────────────────────────
 
@@ -99,6 +114,9 @@ const EditorPage: FC<EditorPageProps> = ({
           sheets: state.sheets,
           layout: state.layout,
           data,
+          chatMessages: chatMessages || [],
+          dataContext: dataContext || null,
+          calculatedFields: calculatedFields || [],
         })
         setSaveStatus('saved')
         success('Dashboard saved')
@@ -106,7 +124,7 @@ const EditorPage: FC<EditorPageProps> = ({
       } catch {
         setSaveStatus('idle')
       }
-    }, [state.dashboardName, state.sheets, state.layout, data, success]),
+    }, [state.dashboardName, state.sheets, state.layout, data, chatMessages, dataContext, calculatedFields, success]),
     onDelete: useCallback(() => {
       if (state.selectedSheetId) {
         dispatch({ type: 'DELETE_SHEET', sheetId: state.selectedSheetId })
@@ -124,7 +142,14 @@ const EditorPage: FC<EditorPageProps> = ({
     }, [state.editingSheetId, showPublishModal, state.selectedSheetId]),
   })
 
-  // ── DnD handlers (fields panel → canvas is informational only for now) ──
+  // ── Publish handler ───────────────────────────────────────────
+
+  const handlePublished = useCallback((slug: string) => {
+    success(`Dashboard published — /view/${slug}`)
+    onPublished?.()
+  }, [success, onPublished])
+
+  // ── DnD handlers ──────────────────────────────────────────────
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const fieldData = event.active.data.current
@@ -186,9 +211,7 @@ const EditorPage: FC<EditorPageProps> = ({
   // ── Captain command handler ───────────────────────────────────
 
   const handleCaptainCommand = useCallback((_cmd: string) => {
-    // Commands processed via the chat API — the response from Captain
-    // would ideally update the dashboard state. For now, messages flow through
-    // the chat hook.
+    // Commands processed via the chat API
   }, [])
 
   // ── Sheet Editor Overlay ──────────────────────────────────────
@@ -210,6 +233,14 @@ const EditorPage: FC<EditorPageProps> = ({
 
   return (
     <div className="h-full flex flex-col">
+      {/* Sample Data Banner */}
+      {isSampleData && !bannerDismissed && (
+        <SampleDataBanner
+          onUpload={() => onBackToChat?.()}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      )}
+
       {/* Editor Header */}
       <div className="h-11 px-4 flex items-center justify-between border-b border-ds-border bg-ds-surface shrink-0">
         <div className="flex items-center gap-3">
@@ -323,11 +354,7 @@ const EditorPage: FC<EditorPageProps> = ({
                 }
               />
               <div style={{ width: chatPanelWidth }} className="shrink-0">
-                <CaptainPanel
-                  dataContext={dataContext}
-                  existingMessages={chatMessages}
-                  onCommand={handleCaptainCommand}
-                />
+                <CaptainPanel onCommand={handleCaptainCommand} />
               </div>
             </>
           )}
@@ -353,6 +380,7 @@ const EditorPage: FC<EditorPageProps> = ({
           layout={state.layout}
           data={data}
           onClose={() => setShowPublishModal(false)}
+          onPublished={handlePublished}
         />
       )}
     </div>

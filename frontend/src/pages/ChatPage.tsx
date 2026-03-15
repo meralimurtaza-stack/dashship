@@ -3,12 +3,14 @@ import ChatMessageComponent from '../components/chat/ChatMessage'
 import ChatInput from '../components/chat/ChatInput'
 import ConversationStarters from '../components/chat/ConversationStarters'
 import DataContextPanel from '../components/chat/DataContextPanel'
-import SourceSelector from '../components/chat/SourceSelector'
+import DataChoiceCards from '../components/chat/DataChoiceCards'
 import GenerateButton from '../components/chat/GenerateButton'
-import { useChat } from '../hooks/useChat'
+import { useChatContext } from '../contexts/ChatContext'
 import { listDataSources, downloadDataSourceRows } from '../lib/datasource-storage'
 import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
 import { saveDashboard } from '../lib/dashboard-storage'
+import { parseFile } from '../engine/parser'
+import { detectSchema, generateProfile } from '../engine/profiler'
 import type { DataSource } from '../types/datasource'
 import type { ChatMessage, ChatDataContext } from '../types/chat'
 import type { ColumnSchema } from '../types/datasource'
@@ -30,12 +32,12 @@ interface ChatPageProps {
 // ── Main Chat Page ──────────────────────────────────────────────
 
 const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) => {
-  const [sources, setSources] = useState<DataSource[]>([])
-  const [loadingSources, setLoadingSources] = useState(true)
   const [selectedSource, setSelectedSource] = useState<DataSource | null>(null)
   const [contextPanelOpen, setContextPanelOpen] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
+  const [fieldWarnings, setFieldWarnings] = useState<string[]>([])
+  const [dataChoiceLoading, setDataChoiceLoading] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -58,23 +60,23 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
   }, [selectedSource])
 
   const { messages, isStreaming, sendMessage, stopStreaming, clearMessages } =
-    useChat(dataContext)
+    useChatContext()
 
+  // Auto-select source if only one exists
   useEffect(() => {
+    if (selectedSource) return
     let cancelled = false
-    async function load() {
+    async function autoSelect() {
       try {
         const data = await listDataSources()
-        if (!cancelled) setSources(data)
-      } catch {
-        // Silently fail
-      } finally {
-        if (!cancelled) setLoadingSources(false)
-      }
+        if (!cancelled && data.length >= 1) {
+          setSelectedSource(data[0])
+        }
+      } catch { /* ok */ }
     }
-    load()
+    autoSelect()
     return () => { cancelled = true }
-  }, [])
+  }, [selectedSource])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -83,18 +85,82 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
   // Auto-send initial message from Home page
   const [initialSent, setInitialSent] = useState(false)
   useEffect(() => {
-    if (initialMessage && !initialSent && selectedSource && dataContext && !isStreaming && messages.length === 0) {
+    if (initialMessage && !initialSent && !isStreaming && messages.length === 0) {
       setInitialSent(true)
       sendMessage(initialMessage)
     }
-  }, [initialMessage, initialSent, selectedSource, dataContext, isStreaming, messages.length, sendMessage])
+  }, [initialMessage, initialSent, isStreaming, messages.length, sendMessage])
 
-  const handleBack = () => {
-    setSelectedSource(null)
-    clearMessages()
-    setContextPanelOpen(true)
-    setGenerateError(null)
-  }
+  // ── Sample data / Upload from DataChoiceCards ─────────────────
+
+  const handleUseSampleData = useCallback(async () => {
+    setDataChoiceLoading(true)
+    try {
+      const resp = await fetch('/samples/sales-data.csv')
+      const blob = await resp.blob()
+      const file = new File([blob], 'sales-data.csv', { type: 'text/csv' })
+      const parsed = await parseFile(file)
+      const schema = detectSchema(parsed.headers, parsed.rows, file.size, parsed.fileType)
+      const profile = generateProfile(schema, parsed.rows)
+
+      const source: DataSource = {
+        id: 'sample-sales',
+        projectId: '',
+        name: 'Sales Data (Sample)',
+        fileName: 'sales-data.csv',
+        fileType: 'csv',
+        fileSizeBytes: file.size,
+        storagePath: '',
+        schema,
+        profile,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      setSelectedSource(source)
+
+      const dims = schema.columns.filter((c) => c.role === 'dimension').length
+      const measures = schema.columns.filter((c) => c.role === 'measure').length
+      sendMessage(`I've loaded sample sales data — ${schema.rowCount} rows with ${dims} dimensions and ${measures} measures. What dashboards should I build?`)
+    } catch (err) {
+      console.error('Failed to load sample data:', err)
+    } finally {
+      setDataChoiceLoading(false)
+    }
+  }, [sendMessage])
+
+  const handleUploadData = useCallback(async (file: File) => {
+    setDataChoiceLoading(true)
+    try {
+      const parsed = await parseFile(file)
+      const schema = detectSchema(parsed.headers, parsed.rows, file.size, parsed.fileType)
+      const profile = generateProfile(schema, parsed.rows)
+
+      const source: DataSource = {
+        id: `local-${Date.now()}`,
+        projectId: '',
+        name: file.name.replace(/\.[^.]+$/, ''),
+        fileName: file.name,
+        fileType: parsed.fileType,
+        fileSizeBytes: file.size,
+        storagePath: '',
+        schema,
+        profile,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      setSelectedSource(source)
+
+      const dims = schema.columns.filter((c) => c.role === 'dimension').length
+      const measures = schema.columns.filter((c) => c.role === 'measure').length
+      sendMessage(`I've loaded ${file.name} — ${schema.rowCount} rows with ${dims} dimensions and ${measures} measures. What dashboards should I build?`)
+    } catch (err) {
+      console.error('Failed to process uploaded file:', err)
+    } finally {
+      setDataChoiceLoading(false)
+    }
+  }, [sendMessage])
+
+  // ── Generate ──────────────────────────────────────────────────
 
   const buildSummary = useCallback((): string => {
     return messages
@@ -106,41 +172,20 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
     if (!dataContext || !selectedSource || isGenerating) return
     setIsGenerating(true)
     setGenerateError(null)
+    setFieldWarnings([])
 
     try {
-      // 1. Generate dashboard structure from Claude
       const summary = buildSummary()
-      console.log('[ChatPage] Generating dashboard...')
       const result = await generateDashboard(dataContext, summary)
-      console.log('[ChatPage] Dashboard generated:', result.dashboard.sheets.length, 'sheets')
+
       if (result.warnings.length > 0) {
-        console.warn('[ChatPage] Generation warnings:', result.warnings)
+        setFieldWarnings(result.warnings)
       }
 
-      // 2. Download and parse the actual data from Supabase Storage
-      console.log('[ChatPage] Loading data from:', selectedSource.storagePath)
-      const rows = await downloadDataSourceRows(
-        selectedSource.storagePath,
-        selectedSource.fileName
-      )
-      console.log('[ChatPage] Data loaded:', rows.length, 'rows')
-      if (rows.length > 0) {
-        console.log('[ChatPage] Sample row keys:', Object.keys(rows[0]))
-        console.log('[ChatPage] First row:', rows[0])
-      }
-
-      // 3. Log sheet field names vs actual data columns for debugging
-      const dataColumns = rows.length > 0 ? new Set(Object.keys(rows[0])) : new Set<string>()
-      for (const sheet of result.dashboard.sheets) {
-        const sheetFields: string[] = []
-        const enc = sheet.encoding
-        if (enc.columns) sheetFields.push(enc.columns.field)
-        if (enc.rows) sheetFields.push(enc.rows.field)
-        if (enc.color) sheetFields.push(enc.color.field)
-        const missing = sheetFields.filter((f) => !dataColumns.has(f))
-        if (missing.length > 0) {
-          console.warn(`[ChatPage] Sheet "${sheet.name}" references missing fields:`, missing)
-        }
+      // Download and parse the actual data
+      let rows: Record<string, unknown>[] = []
+      if (selectedSource.storagePath) {
+        rows = await downloadDataSourceRows(selectedSource.storagePath, selectedSource.fileName)
       }
 
       const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
@@ -154,6 +199,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
           sheets: result.dashboard.sheets,
           layout: result.dashboard.layout,
           data: rows,
+          chatMessages: messages,
+          dataContext,
         })
         dashboardId = saved.id
       } catch (err) {
@@ -167,18 +214,10 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
     } finally {
       setIsGenerating(false)
     }
-  }, [dataContext, selectedSource, isGenerating, buildSummary, onDashboardGenerated])
-
-  if (!selectedSource || !dataContext) {
-    return (
-      <div className="h-full flex flex-col">
-        <SourceSelector sources={sources} loading={loadingSources} onSelect={setSelectedSource} />
-      </div>
-    )
-  }
+  }, [dataContext, selectedSource, isGenerating, buildSummary, onDashboardGenerated, messages])
 
   const hasMessages = messages.length > 0
-  const canGenerate = hasMessages && !isStreaming
+  const canGenerate = hasMessages && !isStreaming && !!dataContext
 
   return (
     <div className="h-full flex">
@@ -186,28 +225,32 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
         {/* Header */}
         <div className="px-5 py-3 border-b border-ds-border bg-ds-surface flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={handleBack} className="p-1 hover:opacity-60 transition-opacity" aria-label="Back to sources">
-              <svg className="w-4 h-4 text-ds-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-              </svg>
-            </button>
             <div>
-              <p className="font-mono text-xs font-medium text-ds-text">{dataContext.sourceName}</p>
-              <p className="font-mono text-[10px] text-ds-text-dim tabular-nums">
-                {dataContext.rowCount.toLocaleString()} rows &middot; {dataContext.columns.length} fields
-              </p>
+              {dataContext ? (
+                <>
+                  <p className="font-mono text-xs font-medium text-ds-text">{dataContext.sourceName}</p>
+                  <p className="font-mono text-[10px] text-ds-text-dim tabular-nums">
+                    {dataContext.rowCount.toLocaleString()} rows &middot; {dataContext.columns.length} fields
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-mono text-xs font-medium text-ds-text">Captain</p>
+                  <p className="font-mono text-[10px] text-ds-text-dim">No data source yet</p>
+                </>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
             {hasMessages && (
               <button
-                onClick={() => { clearMessages(); setGenerateError(null) }}
+                onClick={() => { clearMessages(); setGenerateError(null); setFieldWarnings([]) }}
                 className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 transition-colors"
               >
                 New Chat
               </button>
             )}
-            {!contextPanelOpen && (
+            {!contextPanelOpen && dataContext && (
               <button
                 onClick={() => setContextPanelOpen(true)}
                 className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 border border-ds-border hover:border-ds-accent transition-colors"
@@ -220,7 +263,16 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
 
         {/* Messages or starters */}
         {!hasMessages ? (
-          <ConversationStarters dataContext={dataContext} onSend={sendMessage} />
+          dataContext ? (
+            <ConversationStarters dataContext={dataContext} onSend={sendMessage} />
+          ) : (
+            <div className="flex-1 flex items-center justify-center px-5">
+              <div className="max-w-md text-center space-y-3">
+                <p className="font-mono text-xs font-medium text-ds-text">Tell Captain what you want to build</p>
+                <p className="font-sans text-[13px] text-ds-text-muted">Captain will help you choose data and plan your dashboard.</p>
+              </div>
+            </div>
+          )
         ) : (
           <div className="flex-1 overflow-y-auto px-5 py-6">
             <div className="max-w-2xl mx-auto space-y-6">
@@ -235,12 +287,57 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
                   />
                 )
               })}
+
+              {/* Data choice cards — shown after first assistant response when no data */}
+              {!selectedSource && hasMessages && !isStreaming && (
+                <DataChoiceCards
+                  onUseSampleData={handleUseSampleData}
+                  onUploadData={handleUploadData}
+                  loading={dataChoiceLoading}
+                />
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           </div>
         )}
 
-        {/* Generate button — clear next step */}
+        {/* Field warnings */}
+        {fieldWarnings.length > 0 && (
+          <div className="shrink-0 px-5 pb-2">
+            <div className="max-w-2xl mx-auto">
+              <div
+                className="border px-4 py-3 space-y-2"
+                style={{ background: 'rgba(184,134,11,0.06)', borderColor: 'rgba(184,134,11,0.2)' }}
+              >
+                <p className="font-mono text-[11px] uppercase tracking-wide text-ds-warning">
+                  {fieldWarnings.length} field issue{fieldWarnings.length > 1 ? 's' : ''} detected
+                </p>
+                <ul className="space-y-1">
+                  {fieldWarnings.map((w, i) => (
+                    <li key={i} className="font-sans text-xs text-ds-text-muted">{w}</li>
+                  ))}
+                </ul>
+                <div className="flex gap-3 pt-1">
+                  <button
+                    onClick={() => setFieldWarnings([])}
+                    className="font-mono text-[10px] uppercase tracking-wide text-ds-text-muted border border-ds-border px-3 py-1.5 hover:border-ds-accent hover:text-ds-text transition-colors"
+                  >
+                    Continue anyway
+                  </button>
+                  <button
+                    onClick={() => { setFieldWarnings([]); handleGenerate() }}
+                    className="font-mono text-[10px] uppercase tracking-wide bg-ds-accent text-white px-3 py-1.5 hover:bg-ds-accent-hover transition-colors"
+                  >
+                    Fix and regenerate
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generate button */}
         {canGenerate && (
           <div className="shrink-0 px-5 pb-2">
             <div className="max-w-2xl mx-auto">
@@ -265,12 +362,12 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage }) =
         {/* Input */}
         <div className="shrink-0 px-5 pb-4 pt-2">
           <div className="max-w-2xl mx-auto">
-            <ChatInput onSend={sendMessage} disabled={!dataContext} isStreaming={isStreaming} onStop={stopStreaming} />
+            <ChatInput onSend={sendMessage} disabled={false} isStreaming={isStreaming} onStop={stopStreaming} />
           </div>
         </div>
       </div>
 
-      {contextPanelOpen && (
+      {contextPanelOpen && dataContext && (
         <div className="w-72 shrink-0">
           <DataContextPanel dataContext={dataContext} onCollapse={() => setContextPanelOpen(false)} />
         </div>

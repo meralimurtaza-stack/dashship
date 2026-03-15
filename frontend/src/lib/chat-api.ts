@@ -4,26 +4,30 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export async function streamChat(
   messages: ChatMessage[],
-  dataContext: ChatDataContext,
+  dataContext: ChatDataContext | null,
   onChunk: (text: string) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  isFirstMessage?: boolean
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      data_context: {
-        source_name: dataContext.sourceName,
-        row_count: dataContext.rowCount,
-        columns: dataContext.columns.map((c) => ({
-          name: c.name,
-          display_name: c.displayName,
-          type: c.type,
-          role: c.role,
-          sample_values: c.sampleValues,
-        })),
-      },
+      data_context: dataContext
+        ? {
+            source_name: dataContext.sourceName,
+            row_count: dataContext.rowCount,
+            columns: dataContext.columns.map((c) => ({
+              name: c.name,
+              display_name: c.displayName,
+              type: c.type,
+              role: c.role,
+              sample_values: c.sampleValues,
+            })),
+          }
+        : null,
+      is_first_message: isFirstMessage ?? false,
     }),
     signal,
   })
