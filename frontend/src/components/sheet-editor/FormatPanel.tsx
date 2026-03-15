@@ -88,7 +88,7 @@ const NumberControl: FC<{
 
 const PALETTES = [
   { name: 'Monochrome', colors: ['#0E0D0D', '#525252', '#737373', '#a1a1a0', '#d4d4d2'] },
-  { name: 'Teal Accent', colors: ['#2A9D8F', '#0E0D0D', '#525252', '#a1a1a0', '#e09f3e'] },
+  { name: 'Ink Accent', colors: ['#1C3360', '#0E0D0D', '#525252', '#a1a1a0', '#C8963E'] },
   { name: 'Editorial', colors: CHART_COLORS.slice(0, 5) as unknown as string[] },
 ]
 

@@ -8,11 +8,8 @@ interface HeaderProps {
 
 const DashShipLogo: FC = () => (
   <div className="flex items-center gap-2 shrink-0">
-    {/* Ink-blue square with white D */}
-    <div className="w-[22px] h-[22px] bg-ds-accent flex items-center justify-center shrink-0">
-      <span className="font-mono text-[10px] font-medium text-white leading-none">D</span>
-    </div>
-    <span className="font-mono font-medium text-sm text-ds-text">
+    <img src="/Logos/dashship-helm-logo.svg" alt="DashShip" className="w-[22px] h-[22px] shrink-0" />
+    <span className="font-mono font-medium text-[14px] text-ds-text">
       DashShip_
     </span>
   </div>
