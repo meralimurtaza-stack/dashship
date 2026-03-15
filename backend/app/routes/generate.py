@@ -32,11 +32,90 @@ class CalculatedFieldInput(BaseModel):
 
 class GenerateRequest(BaseModel):
     data_context: DataContext
-    conversation_summary: str
+    conversation_summary: str = ""
     calculated_fields: list[CalculatedFieldInput] = []
+    plan_spec: dict | None = None
 
 
-# ── System Prompt ────────────────────────────────────────────────
+# ── Validation ───────────────────────────────────────────────────
+
+VALID_MARK_TYPES = {"bar", "line", "area", "scatter", "pie", "text", "table"}
+VALID_AGGREGATIONS = {"sum", "avg", "count", "min", "max", "none", "count_distinct"}
+
+
+def validate_plan_spec(plan_spec: dict, field_names: set[str]) -> list[str]:
+    """Validate field references in a plan spec against the data profile."""
+    warnings = []
+
+    # Collect calculated field names from the spec
+    calc_names = set()
+    for cf in plan_spec.get("calculatedFields", []):
+        calc_names.add(cf.get("name", ""))
+
+    all_fields = field_names | calc_names
+
+    for sheet in plan_spec.get("sheets", []):
+        sid = sheet.get("id", "unknown")
+
+        # Validate x, y, color bindings
+        for key in ["x", "y", "color"]:
+            binding = sheet.get(key)
+            if binding and isinstance(binding, dict):
+                field = binding.get("field", "")
+                if field and field not in all_fields:
+                    warnings.append(f"Sheet {sid}: unknown field '{field}' in {key}")
+
+        # Validate table columns
+        for col in sheet.get("columns", []):
+            if col not in all_fields:
+                warnings.append(f"Sheet {sid}: unknown column '{col}'")
+
+        # Validate kpi metrics
+        for metric in sheet.get("metrics", []):
+            field = metric.get("field", "")
+            if field and field not in all_fields:
+                warnings.append(f"Sheet {sid}: unknown metric field '{field}'")
+
+    return warnings
+
+
+def validate_legacy_response(data: dict, column_names: set[str]) -> list[str]:
+    """Validate generated JSON from legacy flow. Returns list of warnings."""
+    warnings = []
+
+    if "sheets" not in data:
+        warnings.append("Missing 'sheets' array")
+        return warnings
+
+    if "layout" not in data:
+        warnings.append("Missing 'layout' object")
+
+    sheet_ids = set()
+    for i, sheet in enumerate(data.get("sheets", [])):
+        sid = sheet.get("id", f"sheet-{i+1}")
+        sheet_ids.add(sid)
+
+        mt = sheet.get("markType", "")
+        if mt not in VALID_MARK_TYPES:
+            warnings.append(f"Sheet {sid}: invalid markType '{mt}'")
+
+        enc = sheet.get("encoding", {})
+        for key in ["columns", "rows", "color", "size", "label"]:
+            binding = enc.get(key)
+            if binding and isinstance(binding, dict):
+                field = binding.get("field", "")
+                if field and field not in column_names:
+                    warnings.append(f"Sheet {sid}: unknown field '{field}' in {key}")
+
+    layout = data.get("layout", {})
+    for item in layout.get("items", []):
+        if item.get("sheetId") not in sheet_ids:
+            warnings.append(f"Layout references unknown sheetId '{item.get('sheetId')}'")
+
+    return warnings
+
+
+# ── Legacy prompt (backwards compat during transition) ───────────
 
 def build_generate_prompt(ctx: DataContext, calc_fields: list[CalculatedFieldInput]) -> str:
     dims = [c for c in ctx.columns if c.role == "dimension"]
@@ -129,56 +208,35 @@ Return ONLY valid JSON with this exact structure — no markdown, no explanation
 13. Return ONLY the JSON object. No other text."""
 
 
-# ── Validation ───────────────────────────────────────────────────
-
-VALID_MARK_TYPES = {"bar", "line", "area", "scatter", "pie", "text", "table"}
-VALID_AGGREGATIONS = {"sum", "avg", "count", "min", "max", "none", "count_distinct"}
-
-
-def validate_response(data: dict, column_names: set[str]) -> list[str]:
-    """Validate generated JSON. Returns list of warnings (empty = valid)."""
-    warnings = []
-
-    if "sheets" not in data:
-        warnings.append("Missing 'sheets' array")
-        return warnings
-
-    if "layout" not in data:
-        warnings.append("Missing 'layout' object")
-
-    sheet_ids = set()
-    for i, sheet in enumerate(data.get("sheets", [])):
-        sid = sheet.get("id", f"sheet-{i+1}")
-        sheet_ids.add(sid)
-
-        mt = sheet.get("markType", "")
-        if mt not in VALID_MARK_TYPES:
-            warnings.append(f"Sheet {sid}: invalid markType '{mt}'")
-
-        # Validate field references in encoding
-        enc = sheet.get("encoding", {})
-        for key in ["columns", "rows", "color", "size", "label"]:
-            binding = enc.get(key)
-            if binding and isinstance(binding, dict):
-                field = binding.get("field", "")
-                if field and field not in column_names:
-                    warnings.append(f"Sheet {sid}: unknown field '{field}' in {key}")
-
-    # Validate layout references
-    layout = data.get("layout", {})
-    for item in layout.get("items", []):
-        if item.get("sheetId") not in sheet_ids:
-            warnings.append(f"Layout references unknown sheetId '{item.get('sheetId')}'")
-
-    return warnings
-
-
 # ── Endpoint ─────────────────────────────────────────────────────
 
 @router.post("")
 async def generate_dashboard(request: GenerateRequest):
     if not settings.anthropic_api_key:
         raise HTTPException(status_code=500, detail="Anthropic API key not configured")
+
+    # Collect valid field names
+    field_names = {c.name for c in request.data_context.columns}
+    for c in request.data_context.columns:
+        if c.display_name:
+            field_names.add(c.display_name)
+    for cf in request.calculated_fields:
+        field_names.add(cf.name)
+
+    # ── New path: plan_spec provided → validate and return ────────
+    if request.plan_spec:
+        warnings = validate_plan_spec(request.plan_spec, field_names)
+        return {
+            "plan_spec": request.plan_spec,
+            "warnings": warnings,
+        }
+
+    # ── Legacy path: AI generation from conversation summary ─────
+    if not request.conversation_summary:
+        raise HTTPException(
+            status_code=400,
+            detail="Either plan_spec or conversation_summary is required",
+        )
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
     system = build_generate_prompt(request.data_context, request.calculated_fields)
@@ -209,16 +267,7 @@ Generate the dashboard JSON now."""
 
         dashboard = json.loads(raw_text)
 
-        # Collect valid field names
-        field_names = {c.name for c in request.data_context.columns}
-        if request.data_context.columns:
-            for c in request.data_context.columns:
-                if c.display_name:
-                    field_names.add(c.display_name)
-        for cf in request.calculated_fields:
-            field_names.add(cf.name)
-
-        warnings = validate_response(dashboard, field_names)
+        warnings = validate_legacy_response(dashboard, field_names)
 
         # Ensure required fields
         if "name" not in dashboard:

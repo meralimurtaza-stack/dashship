@@ -1,15 +1,19 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import type { ChatMessage, ChatDataContext } from '../types/chat'
+import type { PlanDelta, PlanSpec } from '../types/plan-spec'
 import { streamChat } from '../lib/chat-api'
 import { loadMessages, saveMessage } from '../lib/chat-storage'
+import { parsePlanDeltas } from '../utils/plan-delta-parser'
 
 export function useChat(
   dataContext: ChatDataContext | null,
   dataSourceId?: string | null,
-  onProjectNamed?: (name: string) => void
+  onProjectNamed?: (name: string) => void,
+  planSpec?: PlanSpec | null
 ) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  const [lastDeltas, setLastDeltas] = useState<PlanDelta[]>([])
   const abortRef = useRef<AbortController | null>(null)
   const loadedSourceRef = useRef<string | null>(null)
 
@@ -44,6 +48,7 @@ export function useChat(
 
       setMessages((prev) => [...prev, userMsg, assistantMsg])
       setIsStreaming(true)
+      setLastDeltas([])
 
       // Persist user message (fire-and-forget)
       if (dataSourceId) {
@@ -60,6 +65,7 @@ export function useChat(
         await streamChat(
           allMessages,
           dataContext,
+          planSpec ?? null,
           (chunk) => {
             finalContent += chunk
             setMessages((prev) => {
@@ -78,13 +84,19 @@ export function useChat(
           isFirst
         )
 
+        // Parse plan deltas from response
+        const { text: deltaCleanedContent, deltas } = parsePlanDeltas(finalContent)
+        if (deltas.length > 0) {
+          setLastDeltas(deltas)
+        }
+
         // Parse and strip <project-name> tag from first response
-        let cleanContent = finalContent
+        let cleanContent = deltaCleanedContent
         if (isFirst && onProjectNamed) {
-          const nameMatch = finalContent.match(/<project-name>(.*?)<\/project-name>/)
+          const nameMatch = cleanContent.match(/<project-name>(.*?)<\/project-name>/)
           if (nameMatch) {
             onProjectNamed(nameMatch[1].trim())
-            cleanContent = finalContent.replace(/<project-name>.*?<\/project-name>\s*/g, '').trim()
+            cleanContent = cleanContent.replace(/<project-name>.*?<\/project-name>\s*/g, '').trim()
           }
         }
 
@@ -124,7 +136,7 @@ export function useChat(
         abortRef.current = null
       }
     },
-    [dataContext, dataSourceId, messages, isStreaming, onProjectNamed]
+    [dataContext, dataSourceId, messages, isStreaming, onProjectNamed, planSpec]
   )
 
   const stopStreaming = useCallback(() => {
@@ -135,5 +147,5 @@ export function useChat(
     setMessages([])
   }, [])
 
-  return { messages, setMessages, isStreaming, sendMessage, stopStreaming, clearMessages }
+  return { messages, setMessages, isStreaming, sendMessage, stopStreaming, clearMessages, lastDeltas }
 }

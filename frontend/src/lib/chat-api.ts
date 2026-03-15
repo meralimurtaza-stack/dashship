@@ -1,10 +1,12 @@
 import type { ChatDataContext, ChatMessage } from '../types/chat'
+import type { PlanSpec } from '../types/plan-spec'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export async function streamChat(
   messages: ChatMessage[],
   dataContext: ChatDataContext | null,
+  planSpec: PlanSpec | null,
   onChunk: (text: string) => void,
   signal?: AbortSignal,
   isFirstMessage?: boolean
@@ -28,6 +30,7 @@ export async function streamChat(
           }
         : null,
       is_first_message: isFirstMessage ?? false,
+      plan_spec: planSpec ?? null,
     }),
     signal,
   })

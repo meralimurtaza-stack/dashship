@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -33,9 +34,62 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage]
     data_context: DataContext | None = None
     is_first_message: bool = False
+    plan_spec: dict | None = None
 
 
-BASE_PROMPT = """You are a dashboard planning consultant for DashShip. Help users plan and create production-ready dashboards. Be concise and specific. When you have enough information, summarise a dashboard plan with specific charts, fields, and layout."""
+# ── Captain System Prompt ────────────────────────────────────────
+
+CAPTAIN_SYSTEM_PROMPT = """You are Captain, a dashboard planning consultant for DashShip.
+The user has uploaded data and wants to build a dashboard. Your job is to understand their
+business problem, define the logic, and build a structured dashboard plan through conversation.
+
+## How you work
+
+1. Listen to what the user wants to achieve — the business question, not the chart type
+2. Propose business rules, calculated fields, and chart layouts based on their data
+3. For every concrete suggestion you make, emit a <plan_delta> block (see format below)
+4. The user sees your natural language. The system reads your plan_delta blocks.
+5. Add suggestions to the plan immediately — the user corrects what they disagree with
+
+## Rules
+
+- ALWAYS use exact field names from the data profile below. Never paraphrase or rename fields.
+- Before referencing a field, verify it exists in the data profile or in your proposed calculated fields.
+- If a calculation requires a LOD/FIXED-style expression, flag it clearly and explain the grain.
+- Keep responses concise — 2-4 sentences of explanation per suggestion.
+- Multiple choice options are for genuinely ambiguous decisions ONLY, not the default.
+- When you have enough context, propose a complete dashboard layout unprompted.
+- Available chart types: bar, line, area, scatter, pie, kpi, table
+- Available aggregations: sum, avg, count, count_distinct, min, max, none
+
+## Plan delta format
+
+After your natural language response, include one or more plan_delta blocks:
+
+<plan_delta>
+{"action": "add_sheet", "sheet": {"id": "unique-id", "intent": "What this shows", "chartType": "bar", "x": {"field": "ExactFieldName", "type": "dimension"}, "y": {"field": "ExactFieldName", "type": "measure", "agg": "sum"}}}
+</plan_delta>
+
+<plan_delta>
+{"action": "add_calculated_field", "field": {"name": "Profit_Margin", "formula": "Profit / Revenue * 100", "type": "measure", "dependsOn": ["Profit", "Revenue"]}}
+</plan_delta>
+
+<plan_delta>
+{"action": "set_plan_meta", "meta": {"title": "Dashboard Title", "description": "What it does"}}
+</plan_delta>
+
+<plan_delta>
+{"action": "add_business_rule", "rule": {"name": "Alert thresholds", "rules": [{"status": "on_track", "condition": "ratio < 1.5", "action": "none"}]}}
+</plan_delta>
+
+## Current plan
+
+{current_plan_json}
+
+## Data profile
+
+{data_profile}
+"""
 
 PROJECT_NAME_INSTRUCTION = """
 
@@ -50,13 +104,7 @@ No data has been uploaded yet. When responding to the user's first message, ackn
 
 # ── System Prompt Builder ────────────────────────────────────────
 
-def build_system_prompt(ctx: DataContext | None, is_first_message: bool = False) -> str:
-    if ctx is None:
-        prompt = BASE_PROMPT + NO_DATA_INSTRUCTION
-        if is_first_message:
-            prompt += PROJECT_NAME_INSTRUCTION
-        return prompt
-
+def build_data_profile(ctx: DataContext) -> str:
     dims = [c for c in ctx.columns if c.role == "dimension"]
     measures = [c for c in ctx.columns if c.role == "measure"]
 
@@ -72,11 +120,7 @@ def build_system_prompt(ctx: DataContext | None, is_first_message: bool = False)
         samples = ", ".join(c.sample_values[:3]) if c.sample_values else ""
         meas_lines.append(f"  - {name} ({c.type}){f' — e.g. {samples}' if samples else ''}")
 
-    prompt = f"""{BASE_PROMPT} The user has uploaded a dataset. You have their data profile below. Help them by: 1. Understanding what questions they want their dashboard to answer 2. Suggesting specific visualisations based on their data 3. Recommending which fields to use for each chart 4. Building toward a concrete dashboard plan Reference their actual field names.
-
-## Data Profile
-
-**Source:** {ctx.source_name}
+    return f"""**Source:** {ctx.source_name}
 **Rows:** {ctx.row_count:,}
 
 **Dimensions ({len(dims)}):**
@@ -84,6 +128,32 @@ def build_system_prompt(ctx: DataContext | None, is_first_message: bool = False)
 
 **Measures ({len(measures)}):**
 {chr(10).join(meas_lines) if meas_lines else "  (none)"}"""
+
+
+def build_system_prompt(
+    ctx: DataContext | None,
+    is_first_message: bool = False,
+    plan_spec: dict | None = None,
+) -> str:
+    if ctx is None:
+        prompt = CAPTAIN_SYSTEM_PROMPT.replace(
+            "{current_plan_json}", "No plan yet — start building one."
+        ).replace("{data_profile}", "No data uploaded yet.")
+        prompt += NO_DATA_INSTRUCTION
+        if is_first_message:
+            prompt += PROJECT_NAME_INSTRUCTION
+        return prompt
+
+    data_profile = build_data_profile(ctx)
+
+    if plan_spec:
+        current_plan = json.dumps(plan_spec, indent=2)
+    else:
+        current_plan = "No plan yet — start building one."
+
+    prompt = CAPTAIN_SYSTEM_PROMPT.replace(
+        "{current_plan_json}", current_plan
+    ).replace("{data_profile}", data_profile)
 
     if is_first_message:
         prompt += PROJECT_NAME_INSTRUCTION
@@ -99,7 +169,11 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Anthropic API key not configured")
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-    system = build_system_prompt(request.data_context, request.is_first_message)
+    system = build_system_prompt(
+        request.data_context,
+        request.is_first_message,
+        request.plan_spec,
+    )
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
 
