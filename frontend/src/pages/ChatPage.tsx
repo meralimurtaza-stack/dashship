@@ -8,7 +8,7 @@ import PlanPanel from '../components/plan/PlanPanel'
 import { useChatContext } from '../contexts/ChatContext'
 import { usePlanSpec } from '../hooks/usePlanSpec'
 import { specToDashboard } from '../utils/spec-to-dashboard'
-import { listDataSources, downloadDataSourceRows } from '../lib/datasource-storage'
+import { downloadDataSourceRows } from '../lib/datasource-storage'
 import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
 import { saveDashboard } from '../lib/dashboard-storage'
 import { parseFile } from '../engine/parser'
@@ -45,7 +45,14 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const dataContext: ChatDataContext | null = useMemo(() => {
+  // Get chat context — includes dataContext from provider + local override
+  const {
+    messages, isStreaming, sendMessage, stopStreaming, clearMessages, lastDeltas,
+    dataContext: ctxDataContext, setDataContext,
+  } = useChatContext()
+
+  // Build dataContext from local selectedSource
+  const localDataContext: ChatDataContext | null = useMemo(() => {
     if (!selectedSource) return null
     return {
       sourceId: selectedSource.id,
@@ -62,6 +69,16 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
         })),
     }
   }, [selectedSource])
+
+  // Push local data context into ChatProvider so useChat sends it to the backend
+  useEffect(() => {
+    if (localDataContext) {
+      setDataContext(localDataContext)
+    }
+  }, [localDataContext, setDataContext])
+
+  // Use whichever is available: local (from sample/upload) or context (from project)
+  const dataContext = localDataContext ?? ctxDataContext
 
   // Plan spec state
   const { spec, applyDelta, fieldWarnings: planFieldWarnings, isValid, reset: resetSpec } = usePlanSpec(dashboardId ?? null)
@@ -87,9 +104,6 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataContext])
 
-  const { messages, isStreaming, sendMessage, stopStreaming, clearMessages, lastDeltas } =
-    useChatContext()
-
   // Apply deltas from Captain responses
   const appliedDeltasRef = useRef<object | null>(null)
   useEffect(() => {
@@ -101,21 +115,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
     }
   }, [lastDeltas, applyDelta])
 
-  // Auto-select source if only one exists
-  useEffect(() => {
-    if (selectedSource) return
-    let cancelled = false
-    async function autoSelect() {
-      try {
-        const data = await listDataSources()
-        if (!cancelled && data.length >= 1) {
-          setSelectedSource(data[0])
-        }
-      } catch { /* ok */ }
-    }
-    autoSelect()
-    return () => { cancelled = true }
-  }, [selectedSource])
+  // No auto-select — data comes from project context or explicit user action
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

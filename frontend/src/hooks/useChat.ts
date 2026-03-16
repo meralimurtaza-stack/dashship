@@ -17,6 +17,14 @@ export function useChat(
   const abortRef = useRef<AbortController | null>(null)
   const loadedSourceRef = useRef<string | null>(null)
 
+  // Refs so sendMessage always reads latest values without re-creating
+  const dataContextRef = useRef(dataContext)
+  dataContextRef.current = dataContext
+  const planSpecRef = useRef(planSpec)
+  planSpecRef.current = planSpec
+  const onProjectNamedRef = useRef(onProjectNamed)
+  onProjectNamedRef.current = onProjectNamed
+
   // Load persisted messages when dataSourceId becomes available
   useEffect(() => {
     if (!dataSourceId || loadedSourceRef.current === dataSourceId) return
@@ -31,6 +39,8 @@ export function useChat(
       if (!content.trim() || isStreaming) return
 
       const isFirst = messages.length === 0
+      const currentDataContext = dataContextRef.current
+      const currentPlanSpec = planSpecRef.current
 
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
@@ -50,8 +60,8 @@ export function useChat(
       setIsStreaming(true)
       setLastDeltas([])
 
-      // Persist user message (fire-and-forget)
-      if (dataSourceId) {
+      // Persist user message (fire-and-forget) — only for real Supabase IDs
+      if (dataSourceId && !dataSourceId.startsWith('sample-') && !dataSourceId.startsWith('local-')) {
         saveMessage(dataSourceId, 'user', content.trim()).catch(() => {})
       }
 
@@ -64,8 +74,8 @@ export function useChat(
       try {
         await streamChat(
           allMessages,
-          dataContext,
-          planSpec ?? null,
+          currentDataContext,
+          currentPlanSpec ?? null,
           (chunk) => {
             finalContent += chunk
             setMessages((prev) => {
@@ -92,10 +102,11 @@ export function useChat(
 
         // Parse and strip <project-name> tag from first response
         let cleanContent = deltaCleanedContent
-        if (isFirst && onProjectNamed) {
+        const namedCb = onProjectNamedRef.current
+        if (isFirst && namedCb) {
           const nameMatch = cleanContent.match(/<project-name>(.*?)<\/project-name>/)
           if (nameMatch) {
-            onProjectNamed(nameMatch[1].trim())
+            namedCb(nameMatch[1].trim())
             cleanContent = cleanContent.replace(/<project-name>.*?<\/project-name>\s*/g, '').trim()
           }
         }
@@ -112,8 +123,8 @@ export function useChat(
           })
         }
 
-        // Persist completed assistant message
-        if (dataSourceId && cleanContent) {
+        // Persist completed assistant message — only for real Supabase IDs
+        if (dataSourceId && !dataSourceId.startsWith('sample-') && !dataSourceId.startsWith('local-') && cleanContent) {
           saveMessage(dataSourceId, 'assistant', cleanContent).catch(() => {})
         }
       } catch (err) {
@@ -136,7 +147,8 @@ export function useChat(
         abortRef.current = null
       }
     },
-    [dataContext, dataSourceId, messages, isStreaming, onProjectNamed, planSpec]
+    // Only depend on values that affect control flow, not data passed to API
+    [dataSourceId, messages, isStreaming]
   )
 
   const stopStreaming = useCallback(() => {
@@ -145,6 +157,8 @@ export function useChat(
 
   const clearMessages = useCallback(() => {
     setMessages([])
+    loadedSourceRef.current = null  // Reset so old messages don't reload
+    setLastDeltas([])
   }, [])
 
   return { messages, setMessages, isStreaming, sendMessage, stopStreaming, clearMessages, lastDeltas }
