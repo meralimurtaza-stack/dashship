@@ -43,6 +43,15 @@ CAPTAIN_SYSTEM_PROMPT = """You are Captain, a dashboard planning consultant for 
 The user has uploaded data and wants to build a dashboard. Your job is to understand their
 business problem, define the logic, and build a structured dashboard plan through conversation.
 
+## CRITICAL — Field Name Accuracy
+
+You MUST use EXACT field names from the data profile below. Do not paraphrase, rename, or guess.
+- If the data profile says "Revenue", use "Revenue" — NOT "Sales", "Total Revenue", or "Revenue Amount".
+- If the data profile says "Date", use "Date" — NOT "Order_Date", "Order Date", or "date".
+- Before emitting ANY plan_delta, verify every field name you reference exists verbatim in the data profile.
+- If you are unsure whether a field exists, check the data profile again. Never assume a field name.
+- Misspelled or invented field names break the dashboard. This is the single most important rule.
+
 ## How you work
 
 1. Listen to what the user wants to achieve — the business question, not the chart type
@@ -53,8 +62,8 @@ business problem, define the logic, and build a structured dashboard plan throug
 
 ## Rules
 
-- ALWAYS use exact field names from the data profile below. Never paraphrase or rename fields.
-- Before referencing a field, verify it exists in the data profile or in your proposed calculated fields.
+- NEVER invent, paraphrase, or rename field names. Copy them character-for-character from the data profile.
+- Before referencing a field, verify it exists VERBATIM in the data profile or in your proposed calculated fields.
 - If a calculation requires a LOD/FIXED-style expression, flag it clearly and explain the grain.
 - Keep responses concise — 2-4 sentences of explanation per suggestion.
 - Multiple choice options are for genuinely ambiguous decisions ONLY, not the default.
@@ -126,18 +135,28 @@ def build_data_profile(ctx: DataContext) -> str:
 
     dim_lines = []
     for c in dims:
-        name = c.display_name or c.name
         samples = ", ".join(c.sample_values[:4]) if c.sample_values else ""
-        dim_lines.append(f"  - {name} ({c.type}){f' — e.g. {samples}' if samples else ''}")
+        label = f"  - **{c.name}** ({c.type})"
+        if c.display_name and c.display_name != c.name:
+            label += f" [display: {c.display_name}]"
+        if samples:
+            label += f" — e.g. {samples}"
+        dim_lines.append(label)
 
     meas_lines = []
     for c in measures:
-        name = c.display_name or c.name
         samples = ", ".join(c.sample_values[:3]) if c.sample_values else ""
-        meas_lines.append(f"  - {name} ({c.type}){f' — e.g. {samples}' if samples else ''}")
+        label = f"  - **{c.name}** ({c.type})"
+        if c.display_name and c.display_name != c.name:
+            label += f" [display: {c.display_name}]"
+        if samples:
+            label += f" — e.g. {samples}"
+        meas_lines.append(label)
 
     return f"""**Source:** {ctx.source_name}
 **Rows:** {ctx.row_count:,}
+
+Use the **bolded names** exactly as written in plan_delta field references.
 
 **Dimensions ({len(dims)}):**
 {chr(10).join(dim_lines) if dim_lines else "  (none)"}
