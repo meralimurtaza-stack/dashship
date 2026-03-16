@@ -44,6 +44,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
   const [dataChoiceLoading, setDataChoiceLoading] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const parsedDataRef = useRef<Record<string, unknown>[]>([])
 
   // Get chat context — includes dataContext from provider + local override
   const {
@@ -122,13 +123,14 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
   }, [messages])
 
   // Auto-send initial message from Home page
-  const [initialSent, setInitialSent] = useState(false)
+  // Use a ref (not state) so the guard survives React StrictMode's double-effect invocation
+  const initialSentRef = useRef(false)
   useEffect(() => {
-    if (initialMessage && !initialSent && !isStreaming && messages.length === 0) {
-      setInitialSent(true)
+    if (initialMessage && !initialSentRef.current && !isStreaming && messages.length === 0) {
+      initialSentRef.current = true
       sendMessage(initialMessage)
     }
-  }, [initialMessage, initialSent, isStreaming, messages.length, sendMessage])
+  }, [initialMessage, isStreaming, messages.length, sendMessage])
 
   // ── Sample data / Upload from DataChoiceCards ─────────────────
 
@@ -141,6 +143,9 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
       const parsed = await parseFile(file)
       const schema = detectSchema(parsed.headers, parsed.rows, file.size, parsed.fileType)
       const profile = generateProfile(schema, parsed.rows)
+
+      // Store parsed rows so dashboard generation can use them
+      parsedDataRef.current = parsed.rows
 
       const source: DataSource = {
         id: 'sample-sales',
@@ -173,6 +178,9 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
       const parsed = await parseFile(file)
       const schema = detectSchema(parsed.headers, parsed.rows, file.size, parsed.fileType)
       const profile = generateProfile(schema, parsed.rows)
+
+      // Store parsed rows so dashboard generation can use them
+      parsedDataRef.current = parsed.rows
 
       const source: DataSource = {
         id: `local-${Date.now()}`,
@@ -209,9 +217,9 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
     try {
       const dashboardConfig = specToDashboard(spec)
 
-      // Download and parse the actual data
-      let rows: Record<string, unknown>[] = []
-      if (selectedSource.storagePath) {
+      // Use locally parsed data when available, otherwise download from storage
+      let rows: Record<string, unknown>[] = parsedDataRef.current
+      if (rows.length === 0 && selectedSource.storagePath) {
         rows = await downloadDataSourceRows(selectedSource.storagePath, selectedSource.fileName)
       }
 
@@ -273,8 +281,9 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
       const summary = buildSummary()
       const result = await generateDashboard(dataContext, summary)
 
-      let rows: Record<string, unknown>[] = []
-      if (selectedSource.storagePath) {
+      // Use locally parsed data when available, otherwise download from storage
+      let rows: Record<string, unknown>[] = parsedDataRef.current
+      if (rows.length === 0 && selectedSource.storagePath) {
         rows = await downloadDataSourceRows(selectedSource.storagePath, selectedSource.fileName)
       }
 

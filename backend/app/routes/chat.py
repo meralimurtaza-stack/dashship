@@ -126,6 +126,35 @@ NO_DATA_INSTRUCTION = """
 
 No data has been uploaded yet. When responding to the user's first message, acknowledge what they want to build. Then ask whether they'd like to use sample data (to see a dashboard in 60 seconds) or upload their own CSV/Excel file. Keep your response to 2-3 sentences. Do NOT ask multiple clarifying questions — just the data question."""
 
+TEMPLATE_PROMPT_SECTION = """
+## Dashboard templates
+
+You have access to proven dashboard templates. Based on the data profile and user intent,
+pick the BEST template and map the user's actual fields to it. Do NOT invent layouts from scratch.
+
+Available templates:
+1. **Sales performance** — for revenue/sales data with dates, amounts, and categories
+   Layout: 4 KPIs + trend line + category bar chart + top items table + segment donut
+
+2. **Customer analytics** — for customer behavior, retention, and value analysis
+   Layout: 4 KPIs + customer trend + segment donut + top customers table + segment bar chart
+
+3. **Operations overview** — for operational metrics, shipping, status tracking
+   Layout: 4 KPIs + volume trend + status donut + category performance bar chart
+
+4. **General KPI tracker** — fallback for any data with measures and dimensions
+   Layout: 3 KPIs + category bar chart + distribution donut
+
+RULES FOR TEMPLATES:
+- Pick the template that best matches the user's intent and data shape
+- Map EXACT field names from the data profile to template slots
+- Maximum 4-6 charts total — templates define the layout, you fill in the fields
+- Propose the mapped template to the user in your first substantive response
+- The user can then adjust, add, or remove charts
+- NEVER generate more than 6 sheets in a single response
+- Every field you reference MUST exist in the data profile
+"""
+
 
 # ── System Prompt Builder ────────────────────────────────────────
 
@@ -169,6 +198,7 @@ def build_system_prompt(
     ctx: DataContext | None,
     is_first_message: bool = False,
     plan_spec: dict | None = None,
+    user_message: str = "",
 ) -> str:
     if ctx is None:
         prompt = CAPTAIN_SYSTEM_PROMPT.replace(
@@ -190,8 +220,43 @@ def build_system_prompt(
         "{current_plan_json}", current_plan
     ).replace("{data_profile}", data_profile)
 
+    # Always include template awareness
+    prompt += TEMPLATE_PROMPT_SECTION
+
+    # On first message with data, match a template and inject field mapping
     if is_first_message:
         prompt += PROJECT_NAME_INSTRUCTION
+        try:
+            from app.templates.dashboard_templates import match_template, map_fields_to_template, TEMPLATES
+
+            profile = {
+                "fields": [
+                    {
+                        "name": c.name,
+                        "type": c.role,
+                        "subtype": "date" if "date" in c.type.lower() else None,
+                        "cardinality": len(set(c.sample_values)) if c.sample_values else 10,
+                    }
+                    for c in ctx.columns
+                ]
+            }
+            template_key = match_template(profile, user_message)
+            field_mapping = map_fields_to_template(template_key, profile)
+            template = TEMPLATES[template_key]
+
+            prompt += f"""
+
+## Recommended template: {template['name']}
+{template['description']}
+
+Field mapping (use these EXACT field names):
+{json.dumps(field_mapping, indent=2)}
+
+Propose this template to the user with the mapped fields.
+Generate the plan_delta blocks to create the dashboard plan.
+"""
+        except Exception:
+            pass  # Template matching is best-effort; Captain can still work without it
 
     return prompt
 
@@ -204,10 +269,19 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail="Anthropic API key not configured")
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+    # Extract last user message for template matching
+    last_user_msg = ""
+    for m in reversed(request.messages):
+        if m.role == "user":
+            last_user_msg = m.content
+            break
+
     system = build_system_prompt(
         request.data_context,
         request.is_first_message,
         request.plan_spec,
+        last_user_msg,
     )
 
     messages = [{"role": m.role, "content": m.content} for m in request.messages]
