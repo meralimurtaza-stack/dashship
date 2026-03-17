@@ -446,7 +446,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
               })}
 
               {/* Data choice cards — shown after first assistant response when no data */}
-              {!selectedSource && hasMessages && !isStreaming && (
+              {!selectedSource && !dataContext && hasMessages && !isStreaming && (
                 <DataChoiceCards
                   onUseSampleData={handleUseSampleData}
                   onUploadData={handleUploadData}
