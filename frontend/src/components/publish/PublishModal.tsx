@@ -8,6 +8,7 @@ import EmailReportConfig from './EmailReportConfig'
 
 interface PublishModalProps {
   dashboardId?: string
+  projectId?: string
   dashboardName: string
   sheets: Sheet[]
   layout: DashboardLayout
@@ -24,7 +25,7 @@ function slugify(text: string): string {
     .slice(0, 60)
 }
 
-const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheets, layout, data, onClose, onPublished }) => {
+const PublishModal: FC<PublishModalProps> = ({ dashboardId, projectId, dashboardName, sheets, layout, data, onClose, onPublished }) => {
   const [activeTab, setActiveTab] = useState<'publish' | 'email'>('publish')
   const [slug, setSlug] = useState(() => slugify(dashboardName))
   const [accessLevel, setAccessLevel] = useState<AccessLevel>('public')
@@ -66,15 +67,15 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheet
       setPublished(true)
 
       // Update draft status to published
-      if (dashboardId) {
+      if (dashboardId && projectId) {
         try {
           await saveDashboard({
             id: dashboardId,
+            projectId,
             name: dashboardName,
             status: 'published',
             sheets,
             layout,
-            data,
             publishedSlug: result.slug,
           })
         } catch {
@@ -92,7 +93,7 @@ const PublishModal: FC<PublishModalProps> = ({ dashboardId, dashboardName, sheet
     } finally {
       setPublishing(false)
     }
-  }, [slug, dashboardName, accessLevel, password, allowedEmails, branding, embedEnabled, sheets, layout, data, dashboardId, onClose, onPublished])
+  }, [slug, dashboardName, accessLevel, password, allowedEmails, branding, embedEnabled, sheets, layout, data, dashboardId, projectId, onClose, onPublished])
 
   const handleCopy = useCallback(async (type: 'url' | 'embed') => {
     const text = type === 'url' ? getViewUrl(publishedSlug || slug) : getEmbedCode(publishedSlug || slug)

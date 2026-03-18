@@ -1,50 +1,51 @@
 import { supabase } from './supabase'
 import type { Sheet } from '../types/sheet'
 import type { DashboardLayout } from '../types/sheet'
-import type { ChatMessage, ChatDataContext } from '../types/chat'
-import type { CalculatedField } from '../engine/formulaParser'
+
+export interface PublishConfig {
+  logoUrl?: string | null
+  brandColor?: string | null
+  fontFamily?: string | null
+  showHeader?: boolean
+  showFilters?: boolean
+  [key: string]: unknown
+}
 
 export interface DashboardRecord {
   id: string
-  dataSourceId: string | null
+  projectId: string
+  conversationId: string | null
   name: string
   status: 'draft' | 'published'
   sheets: Sheet[]
   layout: DashboardLayout
-  data: Record<string, unknown>[]
   publishedSlug: string | null
-  chatMessages: ChatMessage[]
-  dataContext: ChatDataContext | null
-  calculatedFields: CalculatedField[]
+  publishConfig: PublishConfig | null
   createdAt: string
   updatedAt: string
 }
 
 export async function saveDashboard(params: {
   id?: string
-  dataSourceId?: string
+  projectId: string
+  conversationId?: string | null
   name: string
   status?: 'draft' | 'published'
   sheets: Sheet[]
   layout?: DashboardLayout
-  data?: Record<string, unknown>[]
-  publishedSlug?: string
-  chatMessages?: ChatMessage[]
-  dataContext?: ChatDataContext | null
-  calculatedFields?: CalculatedField[]
+  publishedSlug?: string | null
+  publishConfig?: PublishConfig | null
 }): Promise<DashboardRecord> {
   const record = {
     ...(params.id ? { id: params.id } : {}),
-    data_source_id: params.dataSourceId ?? null,
+    project_id: params.projectId,
+    conversation_id: params.conversationId ?? null,
     name: params.name,
     status: params.status ?? 'draft',
     sheets: params.sheets,
     layout: params.layout ?? { columns: 12, rowHeight: 60, items: [] },
-    data: params.data ?? [],
     published_slug: params.publishedSlug ?? null,
-    chat_messages: params.chatMessages ?? [],
-    data_context: params.dataContext ?? null,
-    calculated_fields: params.calculatedFields ?? [],
+    publish_config: params.publishConfig ?? null,
   }
 
   const { data, error } = await supabase
@@ -58,11 +59,17 @@ export async function saveDashboard(params: {
   return mapRow(data)
 }
 
-export async function listDashboards(): Promise<DashboardRecord[]> {
-  const { data, error } = await supabase
+export async function listDashboards(projectId?: string): Promise<DashboardRecord[]> {
+  let query = supabase
     .from('dashboards')
     .select('*')
     .order('updated_at', { ascending: false })
+
+  if (projectId) {
+    query = query.eq('project_id', projectId)
+  }
+
+  const { data, error } = await query
 
   if (error) throw new Error(`Fetch dashboards failed: ${error.message}`)
 
@@ -94,16 +101,14 @@ export async function deleteDashboard(id: string): Promise<void> {
 function mapRow(d: any): DashboardRecord {
   return {
     id: d.id,
-    dataSourceId: d.data_source_id,
+    projectId: d.project_id,
+    conversationId: d.conversation_id ?? null,
     name: d.name,
     status: d.status,
     sheets: d.sheets,
     layout: d.layout,
-    data: d.data,
-    publishedSlug: d.published_slug,
-    chatMessages: d.chat_messages || [],
-    dataContext: d.data_context || null,
-    calculatedFields: d.calculated_fields || [],
+    publishedSlug: d.published_slug ?? null,
+    publishConfig: d.publish_config ?? null,
     createdAt: d.created_at,
     updatedAt: d.updated_at,
   }

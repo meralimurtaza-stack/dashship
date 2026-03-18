@@ -19,6 +19,8 @@ import { useToast } from '../components/ui/Toast'
 
 interface EditorPageProps {
   dashboardId?: string
+  projectId?: string
+  conversationId?: string | null
   dashboard: GeneratedDashboard
   data: Record<string, unknown>[]
   columns: ColumnSchema[]
@@ -33,6 +35,8 @@ const SAMPLE_NAMES = ['sales data', 'hr data', 'ecommerce data', 'sample']
 
 const EditorPage: FC<EditorPageProps> = ({
   dashboardId,
+  projectId,
+  conversationId,
   dashboard,
   data,
   columns,
@@ -73,17 +77,16 @@ const EditorPage: FC<EditorPageProps> = ({
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(async () => {
+      if (!projectId) return
       setSaveStatus('saving')
       try {
         await saveDashboard({
           id: currentDashboardId.current!,
+          projectId,
+          conversationId: conversationId ?? null,
           name: state.dashboardName,
           sheets: state.sheets,
           layout: state.layout,
-          data,
-          chatMessages: chatMessages || [],
-          dataContext: dataContext || null,
-          calculatedFields: calculatedFields || [],
         })
         setSaveStatus('saved')
         setTimeout(() => setSaveStatus('idle'), 1500)
@@ -96,13 +99,13 @@ const EditorPage: FC<EditorPageProps> = ({
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [state.sheets, state.layout, state.dashboardName, data, chatMessages, dataContext, calculatedFields])
+  }, [state.sheets, state.layout, state.dashboardName, projectId, conversationId])
 
   // ── Keyboard Shortcuts ──────────────────────────────────────────
 
   useKeyboardShortcuts({
     onSave: useCallback(async () => {
-      if (!currentDashboardId.current) {
+      if (!currentDashboardId.current || !projectId) {
         success('Dashboard saved')
         return
       }
@@ -110,13 +113,11 @@ const EditorPage: FC<EditorPageProps> = ({
       try {
         await saveDashboard({
           id: currentDashboardId.current,
+          projectId,
+          conversationId: conversationId ?? null,
           name: state.dashboardName,
           sheets: state.sheets,
           layout: state.layout,
-          data,
-          chatMessages: chatMessages || [],
-          dataContext: dataContext || null,
-          calculatedFields: calculatedFields || [],
         })
         setSaveStatus('saved')
         success('Dashboard saved')
@@ -124,7 +125,7 @@ const EditorPage: FC<EditorPageProps> = ({
       } catch {
         setSaveStatus('idle')
       }
-    }, [state.dashboardName, state.sheets, state.layout, data, chatMessages, dataContext, calculatedFields, success]),
+    }, [state.dashboardName, state.sheets, state.layout, projectId, conversationId, success]),
     onDelete: useCallback(() => {
       if (state.selectedSheetId) {
         dispatch({ type: 'DELETE_SHEET', sheetId: state.selectedSheetId })
@@ -375,6 +376,7 @@ const EditorPage: FC<EditorPageProps> = ({
       {showPublishModal && (
         <PublishModal
           dashboardId={dashboardId}
+          projectId={projectId}
           dashboardName={state.dashboardName}
           sheets={state.sheets}
           layout={state.layout}

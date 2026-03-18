@@ -7,20 +7,40 @@ import { parseFile } from '../engine/parser'
  *
  * CREATE TABLE data_sources (
  *   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
- *   project_id UUID REFERENCES projects(id),
+ *   project_id UUID NOT NULL REFERENCES projects(id),
  *   name TEXT NOT NULL,
- *   file_name TEXT NOT NULL,
- *   file_type TEXT NOT NULL CHECK (file_type IN ('csv', 'xlsx')),
- *   file_size_bytes BIGINT NOT NULL,
- *   storage_path TEXT NOT NULL,
- *   schema JSONB NOT NULL,
- *   profile JSONB NOT NULL,
+ *   file_path TEXT,
+ *   file_name TEXT,
+ *   file_type TEXT,
+ *   file_size_bytes BIGINT,
+ *   schema JSONB,
+ *   profile JSONB,
  *   created_at TIMESTAMPTZ DEFAULT now(),
  *   updated_at TIMESTAMPTZ DEFAULT now()
  * );
  */
 
 const BUCKET = 'data-files'
+
+// ── Helper: map a DB row to a DataSource ─────────────────────────
+
+function rowToDataSource(d: Record<string, unknown>): DataSource {
+  return {
+    id: d.id as string,
+    projectId: d.project_id as string,
+    name: d.name as string,
+    fileName: (d.file_name as string) ?? '',
+    fileType: (d.file_type as 'csv' | 'xlsx') ?? 'csv',
+    fileSizeBytes: Number(d.file_size_bytes ?? 0),
+    filePath: (d.file_path as string) ?? null,
+    schema: d.schema as DataSchema,
+    profile: d.profile as DataProfile,
+    createdAt: d.created_at as string,
+    updatedAt: d.updated_at as string,
+  }
+}
+
+// ── Upload file to storage bucket ────────────────────────────────
 
 export async function uploadFileToStorage(
   file: File,
@@ -34,59 +54,49 @@ export async function uploadFileToStorage(
   return path
 }
 
+// ── Save data source record ──────────────────────────────────────
+
 export async function saveDataSource(params: {
+  projectId: string
   name: string
   fileName: string
   fileType: 'csv' | 'xlsx'
   fileSizeBytes: number
-  storagePath: string
+  filePath: string | null
   schema: DataSchema
   profile: DataProfile
-  projectId?: string
 }): Promise<DataSource> {
   const { data, error } = await supabase
     .from('data_sources')
     .insert({
+      project_id: params.projectId,
       name: params.name,
       file_name: params.fileName,
       file_type: params.fileType,
       file_size_bytes: params.fileSizeBytes,
-      storage_path: params.storagePath,
+      file_path: params.filePath,
       schema: params.schema,
       profile: params.profile,
-      project_id: params.projectId ?? null,
     })
     .select()
     .single()
 
   if (error) throw new Error(`Save failed: ${error.message}`)
 
-  return {
-    id: data.id,
-    projectId: data.project_id,
-    name: data.name,
-    fileName: data.file_name,
-    fileType: data.file_type,
-    fileSizeBytes: data.file_size_bytes,
-    storagePath: data.storage_path,
-    schema: data.schema,
-    profile: data.profile,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-  }
+  return rowToDataSource(data)
 }
 
 // ── Download & Parse Rows ────────────────────────────────────────
 
 export async function downloadDataSourceRows(
-  storagePath: string,
+  filePath: string,
   fileName: string
 ): Promise<Record<string, unknown>[]> {
-  console.log('[datasource-storage] Downloading file from:', storagePath)
+  console.log('[datasource-storage] Downloading file from:', filePath)
 
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .download(storagePath)
+    .download(filePath)
 
   if (error) throw new Error(`Download failed: ${error.message}`)
   if (!data) throw new Error('Download returned empty data')
@@ -102,9 +112,13 @@ export async function downloadDataSourceRows(
   return result.rows
 }
 
-export async function deleteDataSource(id: string, storagePath: string): Promise<void> {
-  // Delete file from storage
-  await supabase.storage.from(BUCKET).remove([storagePath])
+// ── Delete data source ───────────────────────────────────────────
+
+export async function deleteDataSource(id: string, filePath: string | null): Promise<void> {
+  // Delete file from storage if path exists
+  if (filePath) {
+    await supabase.storage.from(BUCKET).remove([filePath])
+  }
 
   // Delete metadata from table
   const { error } = await supabase
@@ -115,25 +129,21 @@ export async function deleteDataSource(id: string, storagePath: string): Promise
   if (error) throw new Error(`Delete failed: ${error.message}`)
 }
 
-export async function listDataSources(): Promise<DataSource[]> {
-  const { data, error } = await supabase
+// ── List data sources ────────────────────────────────────────────
+
+export async function listDataSources(projectId?: string): Promise<DataSource[]> {
+  let query = supabase
     .from('data_sources')
     .select('*')
     .order('created_at', { ascending: false })
 
+  if (projectId) {
+    query = query.eq('project_id', projectId)
+  }
+
+  const { data, error } = await query
+
   if (error) throw new Error(`Fetch failed: ${error.message}`)
 
-  return (data ?? []).map((d) => ({
-    id: d.id,
-    projectId: d.project_id,
-    name: d.name,
-    fileName: d.file_name,
-    fileType: d.file_type,
-    fileSizeBytes: d.file_size_bytes,
-    storagePath: d.storage_path,
-    schema: d.schema,
-    profile: d.profile,
-    createdAt: d.created_at,
-    updatedAt: d.updated_at,
-  }))
+  return (data ?? []).map(rowToDataSource)
 }

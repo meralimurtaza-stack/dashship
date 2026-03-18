@@ -1,3 +1,22 @@
+/**
+ * AppLayout.tsx — Rewritten for new context architecture
+ *
+ * What changed:
+ * - Uses AuthContext for anonymous sign-in on first action
+ * - Uses new ProjectContext (createProject, selectProject, clearProject)
+ * - ChatProvider receives activePhase instead of dataSourceId
+ * - Removed all the derived dataContext/dataSourceId logic (now in ChatContext)
+ * - Removed onProjectNamed callback chain (project naming handled by ProjectContext)
+ * - Navigation still uses useState (React Router comes later)
+ *
+ * What's kept:
+ * - dashCtx state for EditorPage (dashboard context is a later rebuild)
+ * - pendingFile / pendingMessage for passing data between pages
+ * - Sidebar, Header, ProjectNavBar, PageTransition components (unchanged)
+ *
+ * Spec references: §4 (customer journey), §10 (state management)
+ */
+
 import { useState, useCallback, useMemo, type FC } from 'react'
 import Header from './Header'
 import Sidebar from './Sidebar'
@@ -6,15 +25,17 @@ import PageTransition from './PageTransition'
 import Home from '../../pages/Home'
 import DataPage from '../../pages/DataPage'
 import ChatPage from '../../pages/ChatPage'
-import EditorPage from '../../pages/EditorPage'
-import { useProject, type Project } from '../../contexts/ProjectContext'
+import BuildPage from '../../pages/BuildPage'
+import { useAuth } from '../../contexts/AuthContext'
+import { useProject } from '../../contexts/ProjectContext'
 import { ChatProvider } from '../../contexts/ChatContext'
 import { useToast } from '../ui/Toast'
-import { type DashboardRecord } from '../../lib/dashboard-storage'
 import type { GeneratedDashboard } from '../../lib/generate-api'
 import type { ColumnSchema } from '../../types/datasource'
-import type { ChatMessage, ChatDataContext } from '../../types/chat'
+import type { ChatMessage, ChatDataContext, ConversationPhase } from '../../types/chat'
 import type { CalculatedField } from '../../engine/formulaParser'
+
+// ─── Types ────────────────────────────────────────────────────────
 
 interface DashboardContext {
   dashboardId?: string
@@ -28,58 +49,60 @@ interface DashboardContext {
 
 type AppPage = 'Home' | 'Data' | 'Chat' | 'Dashboards' | 'Settings'
 
-// ── Layout ───────────────────────────────────────────────────
+// ─── Layout ──────────────────────────────────────────────────────
 
 const AppLayout: FC = () => {
+  const { user, signInAnonymously } = useAuth()
+  const {
+    currentProject,
+    projects,
+    loading: projectsLoading,
+    createProject,
+    selectProject,
+    clearProject,
+    loadProjects,
+  } = useProject()
+  const { success } = useToast()
+
+  // ── Local UI state ────────────────────────────────────────────
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [activePage, setActivePage] = useState<AppPage>('Home')
   const [dashCtx, setDashCtx] = useState<DashboardContext | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [pendingMessage, setPendingMessage] = useState<string | null>(null)
-  const [pendingProjectName, setPendingProjectName] = useState<string | null>(null)
-
-  const { currentProject, setCurrentProject, projects, refreshProjects, renameProject } = useProject()
-  const { success } = useToast()
 
   const showSidebar = projects.length > 0
 
-  // ── Derived chat context from current project ─────────────────
+  // ── Ensure user exists (anonymous sign-in if needed) ──────────
+  // Every action that creates data needs a user.id.
+  // This is called before createProject.
 
-  const currentDataSourceId = currentProject?.dataSource?.id ?? null
-
-  const currentDataContext: ChatDataContext | null = useMemo(() => {
-    const ds = currentProject?.dataSource
-    if (!ds?.schema) return null
-    return {
-      sourceId: ds.id,
-      sourceName: ds.name,
-      rowCount: ds.schema.rowCount,
-      columns: ds.schema.columns
-        .filter((c) => !c.hidden)
-        .map((c) => ({
-          name: c.name,
-          displayName: c.displayName || null,
-          type: c.type,
-          role: c.role,
-          sampleValues: c.sampleValues,
-        })),
+  const ensureUser = useCallback(async () => {
+    if (user) return
+    const { error } = await signInAnonymously()
+    if (error) {
+      console.error('Anonymous sign-in failed:', error.message)
+      throw error
     }
-  }, [currentProject])
+    // Small delay to let auth state propagate
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }, [user, signInAnonymously])
 
-  // ── Project naming from AI ────────────────────────────────────
+  // ── Map active page to conversation phase ─────────────────────
+  // ChatProvider needs this to load the right conversation
 
-  const handleProjectNamed = useCallback((name: string) => {
-    setPendingProjectName(name)
-    if (currentProject) {
-      renameProject(currentProject.id, name)
+  const activePhase: ConversationPhase = useMemo(() => {
+    switch (activePage) {
+      case 'Data': return 'data'
+      case 'Chat': return 'plan'
+      case 'Dashboards': return 'build'
+      default: return 'plan'
     }
-  }, [currentProject, renameProject])
+  }, [activePage])
 
-  // ── Project Nav ──────────────────────────────────────────────
+  // ── Project nav ───────────────────────────────────────────────
 
-  const projectName = currentProject?.name || pendingProjectName || ''
-
-  const showProjectNav = activePage !== 'Home' && activePage !== 'Settings' && projectName
+  const showProjectNav = activePage !== 'Home' && activePage !== 'Settings' && currentProject
 
   const activeNavTab: NavTab = useMemo(() => {
     switch (activePage) {
@@ -92,23 +115,14 @@ const AppLayout: FC = () => {
 
   const handleNavTab = useCallback((tab: NavTab) => {
     switch (tab) {
-      case 'Data':
-        setActivePage('Data')
-        break
-      case 'Plan':
-        setActivePage('Chat')
-        break
-      case 'Build':
-        setActivePage('Dashboards')
-        break
-      case 'Publish':
-        // Navigate to editor where publish lives
-        setActivePage('Dashboards')
-        break
+      case 'Data': setActivePage('Data'); break
+      case 'Plan': setActivePage('Chat'); break
+      case 'Build': setActivePage('Dashboards'); break
+      case 'Publish': setActivePage('Dashboards'); break
     }
   }, [])
 
-  // ── Breadcrumbs ────────────────────────────────────────────────
+  // ── Breadcrumbs ───────────────────────────────────────────────
 
   const breadcrumbs = useMemo(() => {
     if (activePage === 'Home') return []
@@ -116,8 +130,6 @@ const AppLayout: FC = () => {
 
     if (currentProject) {
       crumbs.push({ label: currentProject.name })
-    } else if (pendingProjectName) {
-      crumbs.push({ label: pendingProjectName })
     }
 
     const pageLabels: Record<string, string> = {
@@ -131,53 +143,66 @@ const AppLayout: FC = () => {
     if (pageLabels[activePage]) crumbs.push({ label: pageLabels[activePage] })
 
     return crumbs
-  }, [activePage, currentProject, pendingProjectName])
+  }, [activePage, currentProject])
 
-  // ── Navigation ─────────────────────────────────────────────────
+  // ── Go home ───────────────────────────────────────────────────
 
   const goHome = useCallback(() => {
     setActivePage('Home')
-    setCurrentProject(null)
+    clearProject()
     setDashCtx(null)
     setPendingFile(null)
     setPendingMessage(null)
-    setPendingProjectName(null)
-  }, [setCurrentProject])
+  }, [clearProject])
 
   const handleNavigate = useCallback((page: string) => {
     if (page === 'Home') goHome()
     else if (page === 'Settings') setActivePage('Settings')
   }, [goHome])
 
-  // ── Home Actions ───────────────────────────────────────────────
+  // ── Home page actions ─────────────────────────────────────────
+  // Each action: ensure user → create project → navigate
 
-  const handleFileUploaded = useCallback((file: File, projectName: string) => {
-    setPendingProjectName(projectName)
-    setPendingFile(file)
-    setPendingMessage(null)
-    setSidebarCollapsed(false)
-    setActivePage('Data')
-  }, [])
-
-  const handleChatStarted = useCallback((message: string, projectName: string | null) => {
-    setPendingProjectName(projectName)
-    setPendingMessage(message)
-    setPendingFile(null)
-    setSidebarCollapsed(false)
-    setActivePage('Chat')
-  }, [])
-
-  const handleSampleSelected = useCallback(async (sampleKey: string, projectName: string) => {
-    setPendingProjectName(projectName)
-    setPendingMessage(null)
-    setSidebarCollapsed(false)
-
-    const sampleFiles: Record<string, string> = {
-      sales: '/samples/sales-data.csv',
-      hr: '/samples/hr-data.csv',
-      ecommerce: '/samples/ecommerce-data.csv',
-    }
+  const handleFileUploaded = useCallback(async (file: File) => {
     try {
+      await ensureUser()
+      const name = file.name.replace(/\.[^.]+$/, '')
+      await createProject({ name })
+      setPendingFile(file)
+      setPendingMessage(null)
+      setSidebarCollapsed(false)
+      setActivePage('Data')
+    } catch (err) {
+      console.error('Failed to start from file:', err)
+    }
+  }, [ensureUser, createProject])
+
+  const handleChatStarted = useCallback(async (message: string) => {
+    try {
+      await ensureUser()
+      await createProject({ fromPrompt: message })
+      setPendingMessage(message)
+      setPendingFile(null)
+      setSidebarCollapsed(false)
+      setActivePage('Chat')
+    } catch (err) {
+      console.error('Failed to start from chat:', err)
+    }
+  }, [ensureUser, createProject])
+
+  const handleSampleSelected = useCallback(async (sampleKey: string, sampleName: string) => {
+    try {
+      await ensureUser()
+      await createProject({ name: sampleName })
+      setPendingMessage(null)
+      setSidebarCollapsed(false)
+
+      const sampleFiles: Record<string, string> = {
+        sales: '/samples/sales-data.csv',
+        hr: '/samples/hr-data.csv',
+        ecommerce: '/samples/ecommerce-data.csv',
+      }
+
       const url = sampleFiles[sampleKey]
       if (url) {
         const resp = await fetch(url)
@@ -188,44 +213,26 @@ const AppLayout: FC = () => {
       }
     } catch (err) {
       console.error('Failed to load sample:', err)
+    }
+  }, [ensureUser, createProject])
+
+  // ── Project selection (sidebar / home) ────────────────────────
+
+  const handleProjectSelected = useCallback(async (projectId: string) => {
+    try {
+      await selectProject(projectId)
+      setSidebarCollapsed(false)
+      setPendingFile(null)
+      setPendingMessage(null)
       setActivePage('Chat')
+    } catch (err) {
+      console.error('Failed to select project:', err)
     }
-  }, [])
+  }, [selectProject])
 
-  const handleProjectSelected = useCallback((project: Project) => {
-    setCurrentProject(project)
-    setSidebarCollapsed(false)
-    setPendingFile(null)
-    setPendingMessage(null)
-    setActivePage('Chat')
-  }, [setCurrentProject])
-
-  const handleSidebarSelectProject = useCallback((project: Project) => {
-    setCurrentProject(project)
-    setPendingFile(null)
-    setPendingMessage(null)
-    setActivePage('Chat')
-  }, [setCurrentProject])
-
-  const handleSidebarSelectDashboard = useCallback((draft: DashboardRecord) => {
-    const dashboard: GeneratedDashboard = {
-      name: draft.name,
-      sheets: draft.sheets,
-      layout: draft.layout,
-    }
-    setDashCtx({
-      dashboardId: draft.id,
-      dashboard,
-      data: draft.data,
-      columns: [],
-      dataContext: draft.dataContext || null,
-      chatMessages: draft.chatMessages || [],
-      calculatedFields: draft.calculatedFields || [],
-    })
-    setActivePage('Dashboards')
-  }, [])
-
-  // ── Dashboard ──────────────────────────────────────────────────
+  // ── Dashboard generation callback ─────────────────────────────
+  // Pages call this when a dashboard is generated.
+  // This will be replaced by proper dashboard context later.
 
   const handleDashboardGenerated = useCallback(
     (
@@ -236,45 +243,27 @@ const AppLayout: FC = () => {
       chatMessages: ChatMessage[],
       dashboardId?: string
     ) => {
-      setDashCtx({ dashboardId, dashboard, data, columns, dataContext, chatMessages, calculatedFields: [] })
+      setDashCtx({
+        dashboardId,
+        dashboard,
+        data,
+        columns,
+        dataContext,
+        chatMessages,
+        calculatedFields: [],
+      })
       setActivePage('Dashboards')
-      refreshProjects()
+      loadProjects()
       success('Dashboard generated successfully')
     },
-    [success, refreshProjects]
+    [success, loadProjects]
   )
 
-  const handleDraftSelected = useCallback(async (draft: DashboardRecord) => {
-    const dashboard: GeneratedDashboard = {
-      name: draft.name,
-      sheets: draft.sheets,
-      layout: draft.layout,
-    }
-    setDashCtx({
-      dashboardId: draft.id,
-      dashboard,
-      data: draft.data,
-      columns: [],
-      dataContext: draft.dataContext || null,
-      chatMessages: draft.chatMessages || [],
-      calculatedFields: draft.calculatedFields || [],
-    })
-    setActivePage('Dashboards')
-  }, [])
+  const handleBackToChat = useCallback(() => setActivePage('Chat'), [])
+  const handleStartPlanning = useCallback(() => setActivePage('Chat'), [])
+  const handlePublished = useCallback(() => loadProjects(), [loadProjects])
 
-  const handleBackToChat = useCallback(() => {
-    setActivePage('Chat')
-  }, [])
-
-  const handleStartPlanning = useCallback(() => {
-    setActivePage('Chat')
-  }, [])
-
-  const handlePublished = useCallback(() => {
-    refreshProjects()
-  }, [refreshProjects])
-
-  // ── Render ─────────────────────────────────────────────────────
+  // ── Render page ───────────────────────────────────────────────
 
   const renderPage = () => {
     switch (activePage) {
@@ -285,14 +274,12 @@ const AppLayout: FC = () => {
             onChatStarted={handleChatStarted}
             onSampleSelected={handleSampleSelected}
             onProjectSelected={handleProjectSelected}
-            onDraftSelected={handleDraftSelected}
           />
         )
       case 'Data':
         return (
           <DataPage
             initialFile={pendingFile}
-            onDashboardGenerated={handleDashboardGenerated}
             onStartPlanning={handleStartPlanning}
           />
         )
@@ -301,6 +288,10 @@ const AppLayout: FC = () => {
           <ChatPage
             onDashboardGenerated={handleDashboardGenerated}
             initialMessage={pendingMessage}
+            onDataUploaded={(file: File) => {
+              setPendingFile(file)
+              setActivePage('Data')
+            }}
           />
         )
       case 'Dashboards':
@@ -308,9 +299,7 @@ const AppLayout: FC = () => {
           return (
             <div className="flex-1 flex items-center justify-center">
               <div className="max-w-md text-center space-y-4 px-6">
-                <p className="micro-label">
-                  Dashboards
-                </p>
+                <p className="micro-label">Dashboards</p>
                 <h2 className="font-mono text-2xl font-medium text-ds-text leading-tight">
                   No dashboard yet.
                 </h2>
@@ -331,15 +320,11 @@ const AppLayout: FC = () => {
           )
         }
         return (
-          <EditorPage
-            dashboardId={dashCtx.dashboardId}
+          <BuildPage
             dashboard={dashCtx.dashboard}
             data={dashCtx.data}
             columns={dashCtx.columns}
-            dataContext={dashCtx.dataContext}
-            chatMessages={dashCtx.chatMessages}
             calculatedFields={dashCtx.calculatedFields}
-            onBackToChat={handleBackToChat}
             onPublished={handlePublished}
           />
         )
@@ -360,13 +345,13 @@ const AppLayout: FC = () => {
   return (
     <div className="min-h-screen bg-ds-bg">
       <Header
-        onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
+        onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
         breadcrumbs={breadcrumbs}
         onNavigate={handleNavigate}
       />
       {showProjectNav && (
         <ProjectNavBar
-          projectName={projectName}
+          projectName={currentProject!.name}
           activeTab={activeNavTab}
           onNavigate={handleNavTab}
           hasDashboard={dashCtx !== null}
@@ -377,17 +362,18 @@ const AppLayout: FC = () => {
           <Sidebar
             collapsed={sidebarCollapsed}
             activeProjectId={currentProject?.id ?? null}
-            onSelectProject={handleSidebarSelectProject}
-            onSelectDashboard={handleSidebarSelectDashboard}
+            onSelectProject={handleProjectSelected}
             onGoHome={goHome}
           />
         )}
-        <main className={`flex-1 overflow-auto ${showProjectNav ? 'h-[calc(100vh-3.5rem-2.75rem)]' : 'h-[calc(100vh-3.5rem)]'}`}>
-          <ChatProvider
-            dataContext={currentDataContext}
-            dataSourceId={currentDataSourceId}
-            onProjectNamed={handleProjectNamed}
-          >
+        <main
+          className={`flex-1 overflow-auto ${
+            showProjectNav
+              ? 'h-[calc(100vh-3.5rem-2.75rem)]'
+              : 'h-[calc(100vh-3.5rem)]'
+          }`}
+        >
+          <ChatProvider activePhase={activePhase}>
             <PageTransition pageKey={activePage}>
               {renderPage()}
             </PageTransition>

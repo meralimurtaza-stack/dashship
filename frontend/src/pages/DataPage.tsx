@@ -6,19 +6,13 @@ import MetadataGrid from '../components/data/MetadataGrid'
 import CsvOptionsPanel from '../components/data/CsvOptionsPanel'
 import ChangeLog from '../components/data/ChangeLog'
 import DataSourceSidebar from '../components/data/DataSourceSidebar'
-import CaptainSidebar from '../components/data/CaptainSidebar'
-import CaptainFullPage from '../components/data/CaptainFullPage'
 import AdvancedStats from '../components/data/AdvancedStats'
+import RecommendationCards from '../components/data/RecommendationCards'
+import { reviewDataSchema, type DataReviewResponse, type DataRecommendation } from '../lib/data-review-api'
 import type { DataSourceEntry } from '../components/data/DataSourceSidebar'
 import type { ChatDataContext } from '../types/chat'
-import type { GeneratedDashboard } from '../lib/generate-api'
-import type { ColumnSchema } from '../types/datasource'
-import type { ChatMessage } from '../types/chat'
 import { useDataSource } from '../hooks/useDataSource'
-import { useChatContext } from '../contexts/ChatContext'
 import { uploadFileToStorage, saveDataSource } from '../lib/datasource-storage'
-import { generateDashboard } from '../lib/generate-api'
-import { saveDashboard } from '../lib/dashboard-storage'
 import { useProject } from '../contexts/ProjectContext'
 
 type Tab = 'schema' | 'preview' | 'metadata'
@@ -77,27 +71,21 @@ const EditableName: FC<{ value: string; onChange: (n: string) => void }> = ({
 
 interface DataPageProps {
   initialFile?: File | null
-  onDashboardGenerated?: (
-    dashboard: GeneratedDashboard,
-    data: Record<string, unknown>[],
-    columns: ColumnSchema[],
-    dataContext: ChatDataContext | null,
-    chatMessages: ChatMessage[],
-    dashboardId?: string
-  ) => void
   onStartPlanning?: () => void
 }
 
-const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStartPlanning }) => {
+const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
   const ds = useDataSource()
-  const { refreshProjects } = useProject()
+  const { currentProject, loadProjects } = useProject()
   const [activeTab, setActiveTab] = useState<Tab>('schema')
   const [savedSources, setSavedSources] = useState<DataSourceEntry[]>([])
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [captainCollapsed, setCaptainCollapsed] = useState(false)
-  const [captainExpanded, setCaptainExpanded] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  // ── Data review state ─────────────────────────────────────
+  const [reviewResult, setReviewResult] = useState<DataReviewResponse | null>(null)
+  const [reviewLoading, setReviewLoading] = useState(false)
+  const [handledRecs, setHandledRecs] = useState<Set<string>>(new Set())
 
   // Auto-process initial file from Home page
   const [initialProcessed, setInitialProcessed] = useState(false)
@@ -131,38 +119,78 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
     }
   }, [isDone, ds.schema, ds.sourceName])
 
-  const { messages, isStreaming, sendMessage, stopStreaming } = useChatContext()
+  // ── Auto-trigger data review when data is ready ────────────
 
-  // Auto-send opening message when data is ready
-  const autoSentRef = useRef(false)
+  const reviewTriggeredRef = useRef(false)
   useEffect(() => {
-    if (dataContext && messages.length === 0 && !autoSentRef.current && !isStreaming) {
-      autoSentRef.current = true
-      const dims = dataContext.columns.filter((c) => c.role === 'dimension').length
-      const measures = dataContext.columns.filter((c) => c.role === 'measure').length
-      sendMessage(
-        `I've loaded ${dataContext.sourceName} — ${dataContext.rowCount.toLocaleString()} rows with ${dims} dimensions and ${measures} measures. What patterns do you see? What dashboards should I build?`
-      )
+    if (dataContext && !reviewResult && !reviewLoading && !reviewTriggeredRef.current) {
+      reviewTriggeredRef.current = true
+      setReviewLoading(true)
+      reviewDataSchema(dataContext)
+        .then(setReviewResult)
+        .catch(err => {
+          console.error('Data review failed:', err)
+          setReviewResult({ summary: 'Review complete.', recommendations: [] })
+        })
+        .finally(() => setReviewLoading(false))
     }
-  }, [dataContext, messages.length, isStreaming, sendMessage])
+  }, [dataContext, reviewResult, reviewLoading])
+
+  // ── Recommendation handlers ───────────────────────────────
+
+  const handleApproveRec = useCallback((rec: DataRecommendation) => {
+    switch (rec.type) {
+      case 'rename':
+        if (rec.to) ds.renameColumn(rec.field, rec.to)
+        break
+      case 'reclassify':
+        if (rec.to_role) ds.changeColumnRole(rec.field, rec.to_role as 'dimension' | 'measure')
+        break
+      case 'type_change':
+        if (rec.to_type) ds.changeColumnType(rec.field, rec.to_type as 'string' | 'number' | 'date' | 'boolean')
+        break
+      case 'hide':
+        ds.toggleColumnVisibility(rec.field)
+        break
+    }
+    setHandledRecs(prev => new Set(prev).add(rec.id))
+  }, [ds])
+
+  const handleSkipRec = useCallback((recId: string) => {
+    setHandledRecs(prev => new Set(prev).add(recId))
+  }, [])
+
+  const handleApproveAll = useCallback(() => {
+    if (!reviewResult) return
+    for (const rec of reviewResult.recommendations) {
+      if (!handledRecs.has(rec.id)) {
+        handleApproveRec(rec)
+      }
+    }
+  }, [reviewResult, handledRecs, handleApproveRec])
+
+  const allHandled = reviewResult
+    ? reviewResult.recommendations.every(r => handledRecs.has(r.id))
+    : false
 
   // ── Save ───────────────────────────────────────────────────
 
   const handleSave = async () => {
-    if (!ds.schema || !ds.profile || !ds.file) return
+    if (!ds.schema || !ds.profile || !ds.file || !currentProject?.id) return
     setSaveStatus('saving')
     setSaveError(null)
 
     try {
-      const storagePath = `uploads/${Date.now()}_${ds.file.name}`
-      await uploadFileToStorage(ds.file, storagePath)
+      const filePath = `uploads/${Date.now()}_${ds.file.name}`
+      await uploadFileToStorage(ds.file, filePath)
 
       await saveDataSource({
+        projectId: currentProject.id,
         name: ds.sourceName,
         fileName: ds.file.name,
         fileType: ds.schema.fileType,
         fileSizeBytes: ds.schema.fileSizeBytes,
-        storagePath,
+        filePath,
         schema: ds.schema,
         profile: ds.profile,
       })
@@ -178,7 +206,8 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
       })
 
       setSaveStatus('saved')
-      await refreshProjects()
+      setIsSaved(true)
+      await loadProjects()
       setTimeout(() => setSaveStatus('idle'), 2000)
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Save failed')
@@ -187,49 +216,25 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
     }
   }
 
-  // ── Generate Dashboard from Captain ────────────────────────
+  // ── Start Planning (auto-saves first) ──────────────────────
 
-  const handleGenerate = useCallback(async () => {
-    if (!dataContext || !ds.schema || isGenerating) return
-    setIsGenerating(true)
-
-    try {
-      const summary = messages
-        .map((m) => `${m.role === 'user' ? 'User' : 'Captain'}: ${m.content}`)
-        .join('\n\n')
-
-      const result = await generateDashboard(dataContext, summary)
-      const rows = ds.rows
-      const columns = ds.schema.columns.filter((c) => !c.hidden)
-
-      // Save as draft
-      let dashboardId: string | undefined
-      try {
-        const saved = await saveDashboard({
-          name: result.dashboard.name,
-          sheets: result.dashboard.sheets,
-          layout: result.dashboard.layout,
-          data: rows,
-        })
-        dashboardId = saved.id
-      } catch (err) {
-        console.warn('[DataPage] Failed to save draft:', err)
-      }
-
-      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages, dashboardId)
-    } catch (err) {
-      console.error('[DataPage] Generation failed:', err)
-    } finally {
-      setIsGenerating(false)
+  const handleStartPlanning = async () => {
+    if (!onStartPlanning) return
+    if (!isSaved) {
+      await handleSave()
     }
-  }, [dataContext, ds.schema, ds.rows, isGenerating, messages, onDashboardGenerated])
+    onStartPlanning()
+  }
 
   // ── Other handlers ─────────────────────────────────────────
 
   const handleUploadAnother = () => {
     if (isDone) handleSave()
     ds.reset()
-    autoSentRef.current = false
+    setIsSaved(false)
+    reviewTriggeredRef.current = false
+    setReviewResult(null)
+    setHandledRecs(new Set())
   }
 
   const currentSource: DataSourceEntry | null = isDone
@@ -328,27 +333,12 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
                     <button onClick={handleUploadAnother} className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors">
                       Upload Another
                     </button>
-                    <button
-                      onClick={handleSave}
-                      disabled={saveStatus === 'saving'}
-                      className={`font-mono text-[10px] uppercase tracking-wide px-6 py-2 transition-colors ${
-                        saveStatus === 'saved'
-                          ? 'bg-ds-success text-white'
-                          : saveStatus === 'error'
-                          ? 'bg-ds-error text-white'
-                          : saveStatus === 'saving'
-                          ? 'bg-ds-text-dim text-white cursor-wait'
-                          : 'bg-ds-accent text-white hover:bg-ds-accent-hover'
-                      }`}
-                    >
-                      {saveStatus === 'saving'
-                        ? 'Saving...'
-                        : saveStatus === 'saved'
-                        ? 'Saved'
-                        : saveStatus === 'error'
-                        ? saveError || 'Error'
-                        : 'Save Data Source'}
-                    </button>
+                    {saveStatus === 'saving' && (
+                      <span className="font-mono text-[10px] text-ds-text-dim">Saving…</span>
+                    )}
+                    {saveStatus === 'error' && (
+                      <span className="font-mono text-[10px] text-ds-error">{saveError || 'Save failed'}</span>
+                    )}
                   </div>
                 </div>
 
@@ -361,11 +351,12 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
                 <AdvancedStats profile={ds.profile!} />
 
                 {/* Next Step: Start Planning */}
-                {!captainCollapsed && onStartPlanning && (
+                {onStartPlanning && (
                   <div className="border-t border-ds-border pt-8 pb-4">
                     <button
-                      onClick={onStartPlanning}
-                      className="flex items-center gap-2 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-ds-accent-hover transition-colors"
+                      onClick={handleStartPlanning}
+                      disabled={saveStatus === 'saving'}
+                      className="flex items-center gap-2 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-ds-accent-hover transition-colors disabled:opacity-40"
                     >
                       Start Planning
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -379,36 +370,47 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onDashboardGenerated, onStar
           </div>
         </div>
 
-        {/* Captain Sidebar (replaces AIReviewPanel) */}
+        {/* Captain Data Review Sidebar */}
         {isDone && (
-          <CaptainSidebar
-            messages={messages}
-            isStreaming={isStreaming}
-            dataContext={dataContext}
-            onSend={sendMessage}
-            onStop={stopStreaming}
-            onExpand={() => setCaptainExpanded(true)}
-            onGenerate={onDashboardGenerated ? handleGenerate : undefined}
-            isGenerating={isGenerating}
-            collapsed={captainCollapsed}
-            onToggleCollapse={() => setCaptainCollapsed((p) => !p)}
-          />
+          <div className="w-80 shrink-0 border-l border-ds-border bg-ds-surface overflow-y-auto">
+            <div className="p-4 space-y-5">
+              {/* Header */}
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-ds-accent flex items-center justify-center">
+                  <span className="text-white text-[10px] font-mono font-medium">C</span>
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-ds-text-dim">
+                  Captain · Data Review
+                </span>
+              </div>
+
+              {/* Loading state */}
+              {reviewLoading && (
+                <div className="flex items-center gap-3 py-6">
+                  <div className="w-2 h-2 bg-ds-accent animate-pulse" />
+                  <span className="font-mono text-xs text-ds-text-muted">
+                    Captain is reviewing your data…
+                  </span>
+                </div>
+              )}
+
+              {/* Recommendation cards */}
+              {reviewResult && !reviewLoading && (
+                <RecommendationCards
+                  summary={reviewResult.summary}
+                  recommendations={reviewResult.recommendations}
+                  onApprove={handleApproveRec}
+                  onSkip={handleSkipRec}
+                  onApproveAll={handleApproveAll}
+                  onStartPlanning={handleStartPlanning}
+                  allHandled={allHandled}
+                />
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Captain Full Page Overlay */}
-      {captainExpanded && dataContext && (
-        <CaptainFullPage
-          messages={messages}
-          isStreaming={isStreaming}
-          dataContext={dataContext}
-          onSend={sendMessage}
-          onStop={stopStreaming}
-          onMinimize={() => setCaptainExpanded(false)}
-          onGenerate={onDashboardGenerated ? handleGenerate : undefined}
-          isGenerating={isGenerating}
-        />
-      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ from app.routes.chat import router as chat_router
 from app.routes.generate import router as generate_router
 from app.routes.publish import router as publish_router
 from app.routes.email import router as email_router
+from app.routes.data_review import router as data_review_router
 
 app = FastAPI(title="DashShip API", version="0.1.0")
 
@@ -23,6 +24,7 @@ app.include_router(chat_router)
 app.include_router(generate_router)
 app.include_router(publish_router)
 app.include_router(email_router)
+app.include_router(data_review_router)
 
 
 @app.get("/health")

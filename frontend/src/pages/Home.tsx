@@ -1,16 +1,13 @@
-import { useState, useRef, useCallback, useEffect, type FC, type DragEvent, type KeyboardEvent } from 'react'
+import { useState, useRef, useCallback, type FC, type DragEvent, type KeyboardEvent } from 'react'
 import { useProject, type Project } from '../contexts/ProjectContext'
-import { deleteDataSource } from '../lib/datasource-storage'
-import { listDashboards, deleteDashboard, type DashboardRecord } from '../lib/dashboard-storage'
 
 // ── Types ────────────────────────────────────────────────────────
 
 interface HomeProps {
-  onFileUploaded: (file: File, projectName: string) => void
-  onChatStarted: (message: string, projectName: string | null) => void
+  onFileUploaded: (file: File) => void
+  onChatStarted: (message: string) => void
   onSampleSelected: (sampleKey: string, projectName: string) => void
-  onProjectSelected: (project: Project) => void
-  onDraftSelected?: (draft: DashboardRecord) => void
+  onProjectSelected: (projectId: string) => void
 }
 
 // ── Sample Data ──────────────────────────────────────────────────
@@ -56,8 +53,6 @@ const PROMPTS = [
   'Show me customer ordering patterns',
   'Create a KPI tracker for monthly metrics',
 ]
-
-// (Ship wheel icon removed — logo is now in Header)
 
 // ── Relative Time ────────────────────────────────────────────────
 
@@ -174,10 +169,12 @@ const HomeChatInput: FC<{ onSend: (msg: string) => void }> = ({ onSend }) => {
 }
 
 // ── Project Card ─────────────────────────────────────────────────
+// Updated for new Project type (no more .dataSource or .dashboards)
 
-const ProjectCard: FC<{ project: Project; onClick: () => void; onDelete: () => void }> = ({ project, onClick, onDelete }) => {
-  const dims = project.dataSource?.schema.columns.filter((c) => c.role === 'dimension').length ?? 0
-  const measures = project.dataSource?.schema.columns.filter((c) => c.role === 'measure').length ?? 0
+const ProjectCard: FC<{
+  project: Project
+  onClick: () => void
+}> = ({ project, onClick }) => {
   const bars = [40, 65, 30, 80, 55, 70, 45]
 
   return (
@@ -199,72 +196,14 @@ const ProjectCard: FC<{ project: Project; onClick: () => void; onDelete: () => v
           <h3 className="font-mono text-xs font-medium text-ds-text truncate">{project.name}</h3>
           <div className="flex items-center gap-2">
             <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
-              {dims}D / {measures}M
+              {project.data_source_count ?? 0} source{(project.data_source_count ?? 0) !== 1 ? 's' : ''}
             </span>
             <span className="text-[10px] text-ds-text-dim">&middot;</span>
             <span className="font-mono text-[10px] text-ds-text-dim">
-              {timeAgo(project.updatedAt)}
+              {timeAgo(project.updated_at)}
             </span>
           </div>
         </div>
-      </button>
-      <button
-        onClick={(e) => { e.stopPropagation(); onDelete() }}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-ds-text-dim hover:text-ds-error transition-all"
-        title="Delete data source"
-      >
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  )
-}
-
-// ── Draft Card ──────────────────────────────────────────────────
-
-const DraftCard: FC<{ draft: DashboardRecord; onClick: () => void; onDelete: () => void }> = ({ draft, onClick, onDelete }) => {
-  const chartCount = draft.sheets.length
-
-  return (
-    <div className="relative group shrink-0 w-56">
-      <button
-        onClick={onClick}
-        className="w-full text-left border border-ds-border bg-ds-surface hover:border-ds-border-strong transition-colors"
-      >
-        <div className="h-24 bg-ds-bg border-b border-ds-border flex items-center justify-center">
-          <svg className="w-8 h-8 text-ds-border" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1}>
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="4" />
-            <rect x="14" y="10" width="7" height="7" />
-            <rect x="3" y="13" width="7" height="4" />
-          </svg>
-        </div>
-        <div className="p-3 space-y-1">
-          <h3 className="font-mono text-xs font-medium text-ds-text truncate">{draft.name}</h3>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[8px] uppercase tracking-wider text-ds-success bg-[rgba(46,125,91,0.1)] px-1 py-px">
-              {draft.status}
-            </span>
-            <span className="text-[10px] text-ds-text-dim">&middot;</span>
-            <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
-              {chartCount} chart{chartCount !== 1 ? 's' : ''}
-            </span>
-            <span className="text-[10px] text-ds-text-dim">&middot;</span>
-            <span className="font-mono text-[10px] text-ds-text-dim">
-              {timeAgo(draft.updatedAt)}
-            </span>
-          </div>
-        </div>
-      </button>
-      <button
-        onClick={(e) => { e.stopPropagation(); onDelete() }}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-ds-text-dim hover:text-ds-error transition-all"
-        title="Delete dashboard"
-      >
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
       </button>
     </div>
   )
@@ -277,52 +216,16 @@ const Home: FC<HomeProps> = ({
   onChatStarted,
   onSampleSelected,
   onProjectSelected,
-  onDraftSelected,
 }) => {
-  const { projects, loading, refreshProjects } = useProject()
-  const [drafts, setDrafts] = useState<DashboardRecord[]>([])
+  const { projects, loading } = useProject()
   const hasProjects = projects.length > 0
 
-  useEffect(() => {
-    let cancelled = false
-    async function loadDrafts() {
-      try {
-        const data = await listDashboards()
-        if (!cancelled) setDrafts(data)
-      } catch {
-        // Silently fail
-      }
-    }
-    loadDrafts()
-    return () => { cancelled = true }
-  }, [])
-
-  const handleDeleteProject = useCallback(async (project: Project) => {
-    if (!project.dataSource) return
-    try {
-      await deleteDataSource(project.id, project.dataSource.storagePath)
-      await refreshProjects()
-    } catch (err) {
-      console.error('Failed to delete:', err)
-    }
-  }, [refreshProjects])
-
-  const handleDeleteDraft = useCallback(async (draft: DashboardRecord) => {
-    try {
-      await deleteDashboard(draft.id)
-      setDrafts((prev) => prev.filter((d) => d.id !== draft.id))
-    } catch (err) {
-      console.error('Failed to delete draft:', err)
-    }
-  }, [])
-
   const handleFile = useCallback((file: File) => {
-    const projectName = file.name.replace(/\.[^.]+$/, '')
-    onFileUploaded(file, projectName)
+    onFileUploaded(file)
   }, [onFileUploaded])
 
   const handleChat = useCallback((message: string) => {
-    onChatStarted(message, null)
+    onChatStarted(message)
   }, [onChatStarted])
 
   return (
@@ -403,25 +306,7 @@ const Home: FC<HomeProps> = ({
                   <ProjectCard
                     key={project.id}
                     project={project}
-                    onClick={() => onProjectSelected(project)}
-                    onDelete={() => handleDeleteProject(project)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Your Dashboards — drafts and published */}
-          {drafts.length > 0 && (
-            <div className="space-y-3">
-              <p className="micro-label">Your Dashboards</p>
-              <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
-                {drafts.map((draft) => (
-                  <DraftCard
-                    key={draft.id}
-                    draft={draft}
-                    onClick={() => onDraftSelected?.(draft)}
-                    onDelete={() => handleDeleteDraft(draft)}
+                    onClick={() => onProjectSelected(project.id)}
                   />
                 ))}
               </div>

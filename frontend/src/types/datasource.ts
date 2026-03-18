@@ -126,12 +126,12 @@ export interface DataProfile {
 
 export interface DataSource {
   id: string
-  projectId?: string
+  projectId: string
   name: string
   fileName: string
   fileType: 'csv' | 'xlsx'
   fileSizeBytes: number
-  storagePath: string
+  filePath: string | null
   schema: DataSchema
   profile: DataProfile
   createdAt: string

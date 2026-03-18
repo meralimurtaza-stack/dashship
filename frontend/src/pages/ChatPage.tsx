@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, type FC } from 'react'
+import { useState, useEffect, useRef, useCallback, type FC } from 'react'
 import ChatMessageComponent from '../components/chat/ChatMessage'
 import ChatInput from '../components/chat/ChatInput'
 import ConversationStarters from '../components/chat/ConversationStarters'
@@ -6,14 +6,12 @@ import DataContextPanel from '../components/chat/DataContextPanel'
 import DataChoiceCards from '../components/chat/DataChoiceCards'
 import PlanPanel from '../components/plan/PlanPanel'
 import { useChatContext } from '../contexts/ChatContext'
+import { useProject } from '../contexts/ProjectContext'
+import { listDataSources } from '../lib/datasource-storage'
 import { usePlanSpec } from '../hooks/usePlanSpec'
 import { specToDashboard } from '../utils/spec-to-dashboard'
-import { downloadDataSourceRows } from '../lib/datasource-storage'
 import { generateDashboard, type GeneratedDashboard } from '../lib/generate-api'
 import { saveDashboard } from '../lib/dashboard-storage'
-import { parseFile } from '../engine/parser'
-import { detectSchema, generateProfile } from '../engine/profiler'
-import type { DataSource } from '../types/datasource'
 import type { ChatMessage, ChatDataContext } from '../types/chat'
 import type { ColumnSchema } from '../types/datasource'
 import type { InsightData, InsightBarItem } from '../utils/insight-parser'
@@ -31,55 +29,62 @@ interface ChatPageProps {
   ) => void
   initialMessage?: string | null
   dashboardId?: string | null
+  onDataUploaded?: (file: File) => void
 }
 
 // ── Main Chat Page ──────────────────────────────────────────────
 
-const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, dashboardId }) => {
-  const [selectedSource, setSelectedSource] = useState<DataSource | null>(null)
+const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, dashboardId, onDataUploaded }) => {
   const [contextPanelOpen, setContextPanelOpen] = useState(true)
   const [planPanelOpen, setPlanPanelOpen] = useState(true)
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
   const [dataChoiceLoading, setDataChoiceLoading] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const parsedDataRef = useRef<Record<string, unknown>[]>([])
 
-  // Get chat context — includes dataContext from provider + local override
+  // Get chat context
   const {
-    messages, isStreaming, sendMessage, stopStreaming, clearMessages, lastDeltas,
-    dataContext: ctxDataContext, setDataContext,
+    messages, isStreaming, loading, sendMessage, stopStreaming, clearChat,
+    dataContext: ctxDataContext, setDataContext, conversation,
   } = useChatContext()
 
-  // Build dataContext from local selectedSource
-  const localDataContext: ChatDataContext | null = useMemo(() => {
-    if (!selectedSource) return null
-    return {
-      sourceId: selectedSource.id,
-      sourceName: selectedSource.name,
-      rowCount: selectedSource.schema.rowCount,
-      columns: selectedSource.schema.columns
-        .filter((c) => !c.hidden)
-        .map((c) => ({
-          name: c.name,
-          displayName: c.displayName || null,
-          type: c.type,
-          role: c.role,
-          sampleValues: c.sampleValues,
-        })),
-    }
-  }, [selectedSource])
+  const { currentProject } = useProject()
 
-  // Push local data context into ChatProvider so useChat sends it to the backend
+  // Data context comes from the project (set by DataPage after schema review)
+  const dataContext = ctxDataContext
+
+  // Load data context from saved data sources if not already set
+  const dataContextLoadedRef = useRef(false)
   useEffect(() => {
-    if (localDataContext) {
-      setDataContext(localDataContext)
-    }
-  }, [localDataContext, setDataContext])
+    if (ctxDataContext || dataContextLoadedRef.current || !currentProject?.id) return
+    dataContextLoadedRef.current = true
+    setIsLoadingData(true)
 
-  // Use whichever is available: local (from sample/upload) or context (from project)
-  const dataContext = localDataContext ?? ctxDataContext
+    listDataSources(currentProject.id).then(sources => {
+      if (sources.length === 0) return
+      const src = sources[0]
+      setDataContext({
+        sourceId: src.id,
+        sourceName: src.name,
+        rowCount: src.schema.rowCount,
+        columns: src.schema.columns
+          .filter(c => !c.hidden)
+          .map(c => ({
+            name: c.name,
+            displayName: c.displayName || null,
+            type: c.type,
+            role: c.role,
+            sampleValues: c.sampleValues,
+          })),
+      })
+    }).catch(err => {
+      console.error('Failed to load data sources for project:', err)
+    }).finally(() => {
+      setIsLoadingData(false)
+    })
+  }, [ctxDataContext, currentProject?.id, setDataContext])
 
   // Plan spec state
   const { spec, applyDelta, fieldWarnings: planFieldWarnings, isValid, reset: resetSpec } = usePlanSpec(dashboardId ?? null)
@@ -105,130 +110,93 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataContext])
 
-  // Apply deltas from Captain responses
-  const appliedDeltasRef = useRef<object | null>(null)
-  useEffect(() => {
-    if (lastDeltas.length > 0 && lastDeltas !== appliedDeltasRef.current) {
-      appliedDeltasRef.current = lastDeltas
-      for (const delta of lastDeltas) {
-        applyDelta(delta)
-      }
-    }
-  }, [lastDeltas, applyDelta])
-
-  // No auto-select — data comes from project context or explicit user action
-
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   // Auto-send initial message from Home page
-  // Use a ref (not state) so the guard survives React StrictMode's double-effect invocation
+  // Wait for both chat loading AND data loading to finish so dataContext is available
   const initialSentRef = useRef(false)
   useEffect(() => {
-    if (initialMessage && !initialSentRef.current && !isStreaming && messages.length === 0) {
+    if (initialMessage && !initialSentRef.current && !loading && !isLoadingData && !isStreaming && messages.length === 0) {
       initialSentRef.current = true
-      sendMessage(initialMessage)
+      sendMessage(initialMessage, null, dataContext)
     }
-  }, [initialMessage, isStreaming, messages.length, sendMessage])
+  }, [initialMessage, loading, isLoadingData, isStreaming, messages.length, sendMessage, dataContext])
+
+  // Auto-start conversation on PLAN tab when data is loaded and no messages exist
+  const autoStartRef = useRef(false)
+  useEffect(() => {
+    if (
+      ctxDataContext &&
+      messages.length === 0 &&
+      !isStreaming &&
+      !isLoadingData &&
+      !loading &&
+      !autoStartRef.current &&
+      !initialMessage
+    ) {
+      autoStartRef.current = true
+      const dims = ctxDataContext.columns.filter(c => c.role === 'dimension').length
+      const meas = ctxDataContext.columns.filter(c => c.role === 'measure').length
+      sendMessage(
+        `I've loaded ${ctxDataContext.sourceName} — ${ctxDataContext.rowCount.toLocaleString()} rows with ${dims} dimensions and ${meas} measures. What dashboard should I build?`,
+        null,
+        ctxDataContext
+      )
+    }
+  }, [ctxDataContext, messages.length, isStreaming, isLoadingData, loading, initialMessage, sendMessage])
+
+  // Reset auto-start ref when project changes
+  useEffect(() => {
+    autoStartRef.current = false
+  }, [currentProject?.id])
 
   // ── Sample data / Upload from DataChoiceCards ─────────────────
 
   const handleUseSampleData = useCallback(async () => {
+    if (!onDataUploaded) return
     setDataChoiceLoading(true)
     try {
       const resp = await fetch('/samples/sales-data.csv')
       const blob = await resp.blob()
       const file = new File([blob], 'sales-data.csv', { type: 'text/csv' })
-      const parsed = await parseFile(file)
-      const schema = detectSchema(parsed.headers, parsed.rows, file.size, parsed.fileType)
-      const profile = generateProfile(schema, parsed.rows)
-
-      // Store parsed rows so dashboard generation can use them
-      parsedDataRef.current = parsed.rows
-
-      const source: DataSource = {
-        id: 'sample-sales',
-        projectId: '',
-        name: 'Sales Data (Sample)',
-        fileName: 'sales-data.csv',
-        fileType: 'csv',
-        fileSizeBytes: file.size,
-        storagePath: '',
-        schema,
-        profile,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      setSelectedSource(source)
-
-      const dims = schema.columns.filter((c) => c.role === 'dimension').length
-      const measures = schema.columns.filter((c) => c.role === 'measure').length
-      sendMessage(`I've loaded sample sales data — ${schema.rowCount} rows with ${dims} dimensions and ${measures} measures. What dashboards should I build?`)
+      onDataUploaded(file)
     } catch (err) {
       console.error('Failed to load sample data:', err)
     } finally {
       setDataChoiceLoading(false)
     }
-  }, [sendMessage])
+  }, [onDataUploaded])
 
-  const handleUploadData = useCallback(async (file: File) => {
-    setDataChoiceLoading(true)
-    try {
-      const parsed = await parseFile(file)
-      const schema = detectSchema(parsed.headers, parsed.rows, file.size, parsed.fileType)
-      const profile = generateProfile(schema, parsed.rows)
-
-      // Store parsed rows so dashboard generation can use them
-      parsedDataRef.current = parsed.rows
-
-      const source: DataSource = {
-        id: `local-${Date.now()}`,
-        projectId: '',
-        name: file.name.replace(/\.[^.]+$/, ''),
-        fileName: file.name,
-        fileType: parsed.fileType,
-        fileSizeBytes: file.size,
-        storagePath: '',
-        schema,
-        profile,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }
-      setSelectedSource(source)
-
-      const dims = schema.columns.filter((c) => c.role === 'dimension').length
-      const measures = schema.columns.filter((c) => c.role === 'measure').length
-      sendMessage(`I've loaded ${file.name} — ${schema.rowCount} rows with ${dims} dimensions and ${measures} measures. What dashboards should I build?`)
-    } catch (err) {
-      console.error('Failed to process uploaded file:', err)
-    } finally {
-      setDataChoiceLoading(false)
-    }
-  }, [sendMessage])
+  const handleUploadData = useCallback((file: File) => {
+    if (!onDataUploaded) return
+    onDataUploaded(file)
+  }, [onDataUploaded])
 
   // ── Generate from plan spec ────────────────────────────────────
 
   const handlePlanGenerate = useCallback(async () => {
-    if (!dataContext || !selectedSource || isGenerating) return
+    if (!dataContext || isGenerating) return
     setIsGenerating(true)
     setGenerateError(null)
 
     try {
       const dashboardConfig = specToDashboard(spec)
 
-      // Use locally parsed data when available, otherwise download from storage
-      let rows: Record<string, unknown>[] = parsedDataRef.current
-      if (rows.length === 0 && selectedSource.storagePath) {
-        rows = await downloadDataSourceRows(selectedSource.storagePath, selectedSource.fileName)
-      }
+      const columns = dataContext.columns.map(c => ({
+        name: c.name,
+        displayName: c.displayName || undefined,
+        type: c.type,
+        role: c.role,
+        sampleValues: c.sampleValues,
+        nullable: false,
+      }))
 
-      const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
-
-      // Set dataSourceId on each sheet
       const sheets = dashboardConfig.sheets.map((s) => ({
         ...s,
-        dataSourceId: selectedSource.id,
+        dataSourceId: dataContext.sourceId,
         projectId: '',
       }))
 
@@ -238,31 +206,30 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
         layout: dashboardConfig.layout,
       }
 
-      // Save as draft
       let savedId: string | undefined
-      try {
-        const saved = await saveDashboard({
-          dataSourceId: selectedSource.id,
-          name: dashboardConfig.name,
-          sheets: sheets as unknown as GeneratedDashboard['sheets'],
-          layout: dashboardConfig.layout,
-          data: rows,
-          chatMessages: messages,
-          dataContext,
-        })
-        savedId = saved.id
-      } catch (err) {
-        console.warn('[ChatPage] Failed to save draft:', err)
+      if (currentProject?.id) {
+        try {
+          const saved = await saveDashboard({
+            projectId: currentProject.id,
+            conversationId: conversation?.id ?? null,
+            name: dashboardConfig.name,
+            sheets: sheets as unknown as GeneratedDashboard['sheets'],
+            layout: dashboardConfig.layout,
+          })
+          savedId = saved.id
+        } catch (err) {
+          console.warn('[ChatPage] Failed to save draft:', err)
+        }
       }
 
-      onDashboardGenerated?.(dashboard, rows, columns, dataContext, messages, savedId)
+      onDashboardGenerated?.(dashboard, [], columns, dataContext, messages, savedId)
     } catch (err) {
       console.error('[ChatPage] Generation failed:', err)
       setGenerateError((err as Error).message)
     } finally {
       setIsGenerating(false)
     }
-  }, [dataContext, selectedSource, isGenerating, spec, onDashboardGenerated, messages])
+  }, [dataContext, isGenerating, spec, onDashboardGenerated, messages, currentProject?.id, conversation])
 
   // ── Legacy generate (fallback when no plan spec) ───────────────
 
@@ -273,7 +240,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
   }, [messages])
 
   const handleLegacyGenerate = useCallback(async () => {
-    if (!dataContext || !selectedSource || isGenerating) return
+    if (!dataContext || isGenerating) return
     setIsGenerating(true)
     setGenerateError(null)
 
@@ -281,38 +248,39 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
       const summary = buildSummary()
       const result = await generateDashboard(dataContext, summary)
 
-      // Use locally parsed data when available, otherwise download from storage
-      let rows: Record<string, unknown>[] = parsedDataRef.current
-      if (rows.length === 0 && selectedSource.storagePath) {
-        rows = await downloadDataSourceRows(selectedSource.storagePath, selectedSource.fileName)
-      }
-
-      const columns = selectedSource.schema.columns.filter((c) => !c.hidden)
+      const columns = dataContext.columns.map(c => ({
+        name: c.name,
+        displayName: c.displayName || undefined,
+        type: c.type,
+        role: c.role,
+        sampleValues: c.sampleValues,
+        nullable: false,
+      }))
 
       let savedDashboardId: string | undefined
-      try {
-        const saved = await saveDashboard({
-          dataSourceId: selectedSource.id,
-          name: result.dashboard.name,
-          sheets: result.dashboard.sheets,
-          layout: result.dashboard.layout,
-          data: rows,
-          chatMessages: messages,
-          dataContext,
-        })
-        savedDashboardId = saved.id
-      } catch (err) {
-        console.warn('[ChatPage] Failed to save draft:', err)
+      if (currentProject?.id) {
+        try {
+          const saved = await saveDashboard({
+            projectId: currentProject.id,
+            conversationId: conversation?.id ?? null,
+            name: result.dashboard.name,
+            sheets: result.dashboard.sheets,
+            layout: result.dashboard.layout,
+          })
+          savedDashboardId = saved.id
+        } catch (err) {
+          console.warn('[ChatPage] Failed to save draft:', err)
+        }
       }
 
-      onDashboardGenerated?.(result.dashboard, rows, columns, dataContext, messages, savedDashboardId)
+      onDashboardGenerated?.(result.dashboard, [], columns, dataContext, messages, savedDashboardId)
     } catch (err) {
       console.error('[ChatPage] Generation failed:', err)
       setGenerateError((err as Error).message)
     } finally {
       setIsGenerating(false)
     }
-  }, [dataContext, selectedSource, isGenerating, buildSummary, onDashboardGenerated, messages])
+  }, [dataContext, isGenerating, buildSummary, onDashboardGenerated, messages, currentProject?.id, conversation])
 
   // ── Pin insight to plan spec ─────────────────────────────────────
 
@@ -400,7 +368,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
             )}
             {hasMessages && (
               <button
-                onClick={() => { clearMessages(); setGenerateError(null) }}
+                onClick={() => { clearChat(); setGenerateError(null) }}
                 className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 transition-colors"
               >
                 New Chat
@@ -446,7 +414,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
               })}
 
               {/* Data choice cards — shown after first assistant response when no data */}
-              {!selectedSource && !dataContext && hasMessages && !isStreaming && (
+              {!dataContext && hasMessages && !isStreaming && onDataUploaded && (
                 <DataChoiceCards
                   onUseSampleData={handleUseSampleData}
                   onUploadData={handleUploadData}
@@ -490,7 +458,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, initialMessage, das
         {/* Input */}
         <div className="shrink-0 px-5 pb-4 pt-2">
           <div className="max-w-2xl mx-auto">
-            <ChatInput onSend={sendMessage} disabled={false} isStreaming={isStreaming} onStop={stopStreaming} />
+            <ChatInput onSend={sendMessage} disabled={isLoadingData} isStreaming={isStreaming} onStop={stopStreaming} />
           </div>
         </div>
       </div>

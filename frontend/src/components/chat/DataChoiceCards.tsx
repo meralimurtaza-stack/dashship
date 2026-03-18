@@ -8,7 +8,6 @@ interface DataChoiceCardsProps {
 
 const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadData, loading }) => {
   const [isDragging, setIsDragging] = useState(false)
-  const [showDropzone, setShowDropzone] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDragOver = useCallback((e: DragEvent) => {
@@ -28,6 +27,11 @@ const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadDa
     if (file) onUploadData(file)
   }, [onUploadData])
 
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onUploadData(file)
+  }, [onUploadData])
+
   if (loading) {
     return (
       <div className="flex items-center gap-3 py-4">
@@ -38,7 +42,7 @@ const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadDa
   }
 
   return (
-    <div className="space-y-3 py-2">
+    <div className="py-2">
       <div className="grid grid-cols-2 gap-3">
         {/* Sample data card */}
         <button
@@ -53,51 +57,35 @@ const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadDa
           </p>
         </button>
 
-        {/* Upload card */}
+        {/* Upload card — click opens file picker, also accepts drag-and-drop */}
         <button
-          onClick={() => setShowDropzone(true)}
-          className="text-left border-[1.5px] border-ds-border bg-ds-surface p-4 hover:border-ds-accent hover:bg-ds-accent-glow transition-colors group"
-        >
-          <p className="font-sans text-[13px] font-medium text-ds-text mb-1.5">
-            Upload my data
-          </p>
-          <p className="font-sans text-[13px] text-ds-text-muted leading-relaxed">
-            Drop a CSV or Excel file and I'll tailor the dashboard to your actual fields.
-          </p>
-        </button>
-      </div>
-
-      {/* Inline dropzone */}
-      {showDropzone && (
-        <div
+          onClick={() => inputRef.current?.click()}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          onClick={() => inputRef.current?.click()}
-          className={`border border-dashed p-6 text-center cursor-pointer transition-colors ${
-            isDragging ? 'border-ds-accent bg-ds-accent-glow' : 'border-ds-border-strong hover:border-ds-accent'
+          className={`text-left border-[1.5px] bg-ds-surface p-4 transition-colors group ${
+            isDragging
+              ? 'border-ds-accent bg-ds-accent-glow'
+              : 'border-ds-border hover:border-ds-accent hover:bg-ds-accent-glow'
           }`}
         >
           <input
             ref={inputRef}
             type="file"
             accept=".csv,.tsv,.xlsx,.xls"
-            onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) onUploadData(file)
-            }}
+            onChange={handleFileChange}
             className="hidden"
           />
-          <div className="flex items-center justify-center gap-3">
-            <svg className="w-4 h-4 text-ds-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            <span className="font-mono text-xs text-ds-text-muted">
-              Drop CSV or Excel here, or click to browse
-            </span>
-          </div>
-        </div>
-      )}
+          <p className="font-sans text-[13px] font-medium text-ds-text mb-1.5">
+            Upload my data
+          </p>
+          <p className="font-sans text-[13px] text-ds-text-muted leading-relaxed">
+            {isDragging
+              ? 'Drop your file here'
+              : 'Drop a CSV or Excel file, or click to browse.'}
+          </p>
+        </button>
+      </div>
     </div>
   )
 }
