@@ -11,11 +11,12 @@ const GenerateButton: FC<GenerateButtonProps> = ({ isGenerating, disabled, onCli
     return (
       <div
         className="flex items-center gap-3 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3"
+        style={{ borderRadius: 10 }}
       >
         <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '0ms' }} />
-          <div className="w-1.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '150ms' }} />
-          <div className="w-1.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '300ms' }} />
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
         </div>
         Captain is building your dashboard...
       </div>
@@ -27,6 +28,7 @@ const GenerateButton: FC<GenerateButtonProps> = ({ isGenerating, disabled, onCli
       onClick={onClick}
       disabled={disabled}
       className="flex items-center gap-2 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-ds-accent-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      style={{ borderRadius: 10 }}
     >
       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path

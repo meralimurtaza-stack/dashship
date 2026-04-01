@@ -5,7 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 // ── Publish API ──────────────────────────────────────────────────
 
 export async function publishDashboard(config: PublishConfig): Promise<{ slug: string; url: string }> {
-  const body = {
+  const body: Record<string, unknown> = {
     dashboard_name: config.dashboardName,
     slug: config.slug,
     access_level: config.accessLevel,
@@ -18,9 +18,17 @@ export async function publishDashboard(config: PublishConfig): Promise<{ slug: s
       powered_by_dashship: config.branding.poweredByDashShip,
     },
     embed_enabled: config.embedEnabled,
-    sheets: config.sheets,
-    layout: config.layout,
+    jsx_code: config.jsxCode,
     data: config.data,
+  }
+  if (config.userId) {
+    body.user_id = config.userId
+  }
+  if (config.projectId) {
+    body.project_id = config.projectId
+  }
+  if (config.dashboardId) {
+    body.dashboard_id = config.dashboardId
   }
   const res = await fetch(`${API_URL}/api/publish`, {
     method: 'POST',
@@ -47,8 +55,7 @@ function toDashboard(raw: Record<string, unknown>): PublishedDashboard {
       fontFamily: branding?.font_family as string | undefined ?? branding?.fontFamily as string | undefined,
       poweredByDashShip: (branding?.powered_by_dashship ?? branding?.poweredByDashShip ?? true) as boolean,
     },
-    sheets: raw.sheets as PublishedDashboard['sheets'],
-    layout: raw.layout as PublishedDashboard['layout'],
+    jsxCode: (raw.jsx_code ?? raw.jsxCode) as string,
     data: raw.data as PublishedDashboard['data'],
     requiresAuth: (raw.requires_auth ?? raw.requiresAuth ?? false) as boolean,
   }

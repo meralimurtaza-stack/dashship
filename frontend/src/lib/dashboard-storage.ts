@@ -19,8 +19,11 @@ export interface DashboardRecord {
   status: 'draft' | 'published'
   sheets: Sheet[]
   layout: DashboardLayout
+  jsxCode: string | null
   publishedSlug: string | null
   publishConfig: PublishConfig | null
+  version: number
+  publishedAt: string | null
   createdAt: string
   updatedAt: string
 }
@@ -31,12 +34,14 @@ export async function saveDashboard(params: {
   conversationId?: string | null
   name: string
   status?: 'draft' | 'published'
-  sheets: Sheet[]
+  sheets?: Sheet[]
   layout?: DashboardLayout
+  jsxCode?: string | null
   publishedSlug?: string | null
   publishConfig?: PublishConfig | null
+  publishedAt?: string | null
 }): Promise<DashboardRecord> {
-  const record = {
+  const record: Record<string, unknown> = {
     ...(params.id ? { id: params.id } : {}),
     project_id: params.projectId,
     conversation_id: params.conversationId ?? null,
@@ -46,6 +51,12 @@ export async function saveDashboard(params: {
     layout: params.layout ?? { columns: 12, rowHeight: 60, items: [] },
     published_slug: params.publishedSlug ?? null,
     publish_config: params.publishConfig ?? null,
+  }
+  if (params.jsxCode !== undefined) {
+    record.jsx_code = params.jsxCode
+  }
+  if (params.publishedAt !== undefined) {
+    record.published_at = params.publishedAt
   }
 
   const { data, error } = await supabase
@@ -107,8 +118,11 @@ function mapRow(d: any): DashboardRecord {
     status: d.status,
     sheets: d.sheets,
     layout: d.layout,
+    jsxCode: d.jsx_code ?? null,
     publishedSlug: d.published_slug ?? null,
     publishConfig: d.publish_config ?? null,
+    version: d.version ?? 1,
+    publishedAt: d.published_at ?? null,
     createdAt: d.created_at,
     updatedAt: d.updated_at,
   }

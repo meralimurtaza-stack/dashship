@@ -1,27 +1,16 @@
 /**
- * AppLayout.tsx — Rewritten for new context architecture
+ * AppLayout.tsx — Main layout with jsxCode-based dashboard context
  *
- * What changed:
- * - Uses AuthContext for anonymous sign-in on first action
- * - Uses new ProjectContext (createProject, selectProject, clearProject)
- * - ChatProvider receives activePhase instead of dataSourceId
- * - Removed all the derived dataContext/dataSourceId logic (now in ChatContext)
- * - Removed onProjectNamed callback chain (project naming handled by ProjectContext)
- * - Navigation still uses useState (React Router comes later)
- *
- * What's kept:
- * - dashCtx state for EditorPage (dashboard context is a later rebuild)
- * - pendingFile / pendingMessage for passing data between pages
- * - Sidebar, Header, ProjectNavBar, PageTransition components (unchanged)
- *
- * Spec references: §4 (customer journey), §10 (state management)
+ * The dashboard pipeline now uses Claude-generated JSX rendered in an iframe,
+ * replacing the old Sheet-based DashboardRenderer.
  */
 
-import { useState, useCallback, useMemo, type FC } from 'react'
+import { useState, useCallback, useMemo, useEffect, type FC } from 'react'
 import Header from './Header'
 import Sidebar from './Sidebar'
 import ProjectNavBar, { type NavTab } from './ProjectNavBar'
 import PageTransition from './PageTransition'
+import GeneratingOverlay from '../dashboard/GeneratingOverlay'
 import Home from '../../pages/Home'
 import DataPage from '../../pages/DataPage'
 import ChatPage from '../../pages/ChatPage'
@@ -30,21 +19,19 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useProject } from '../../contexts/ProjectContext'
 import { ChatProvider } from '../../contexts/ChatContext'
 import { useToast } from '../ui/Toast'
-import type { GeneratedDashboard } from '../../lib/generate-api'
-import type { ColumnSchema } from '../../types/datasource'
+import { generateDashboardJsx, editDashboardJsx } from '../../lib/generate-api'
+import { saveDashboard } from '../../lib/dashboard-storage'
 import type { ChatMessage, ChatDataContext, ConversationPhase } from '../../types/chat'
-import type { CalculatedField } from '../../engine/formulaParser'
 
 // ─── Types ────────────────────────────────────────────────────────
 
 interface DashboardContext {
   dashboardId?: string
-  dashboard: GeneratedDashboard
+  jsxCode: string
+  dashboardName: string
   data: Record<string, unknown>[]
-  columns: ColumnSchema[]
   dataContext: ChatDataContext | null
   chatMessages: ChatMessage[]
-  calculatedFields: CalculatedField[]
 }
 
 type AppPage = 'Home' | 'Data' | 'Chat' | 'Dashboards' | 'Settings'
@@ -62,7 +49,7 @@ const AppLayout: FC = () => {
     clearProject,
     loadProjects,
   } = useProject()
-  const { success } = useToast()
+  const { success, error: showError } = useToast()
 
   // ── Local UI state ────────────────────────────────────────────
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
@@ -70,12 +57,119 @@ const AppLayout: FC = () => {
   const [dashCtx, setDashCtx] = useState<DashboardContext | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [pendingMessage, setPendingMessage] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [savedPlan, setSavedPlan] = useState<import('../../utils/plan-parser').PlanDelta | null>(null)
 
   const showSidebar = projects.length > 0
 
+  // ── Auto-restore last project on return ─────────────────────
+  // When user returns after closing the browser, auto-select their
+  // most recent project so they pick up where they left off.
+
+  useEffect(() => {
+    if (projectsLoading || activePage !== 'Home' || currentProject) return
+    if (projects.length === 0) return
+
+    // Check if there's a saved last-project in localStorage
+    const lastProjectId = localStorage.getItem('dashship_last_project')
+    const target = lastProjectId
+      ? projects.find(p => p.id === lastProjectId) ?? projects[0]
+      : null
+
+    if (target) {
+      selectProject(target.id).then(() => {
+        setSidebarCollapsed(false)
+        setActivePage('Chat')
+      }).catch(() => {
+        // Project no longer accessible — stay on Home
+      })
+    }
+  }, [projectsLoading, projects]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save current project ID to localStorage whenever it changes
+  useEffect(() => {
+    if (currentProject?.id) {
+      localStorage.setItem('dashship_last_project', currentProject.id)
+    }
+  }, [currentProject?.id])
+
+  // ── Auto-load saved dashboard when returning to a project ──────
+  // If the user returns to a project that has a saved dashboard,
+  // reload the JSX + data so they can continue editing.
+  useEffect(() => {
+    if (!currentProject?.id || dashCtx) return
+
+    const loadSavedDashboard = async () => {
+      try {
+        const dashboards = await import('../../lib/dashboard-storage').then(m => m.listDashboards(currentProject.id))
+        if (dashboards.length === 0 || !dashboards[0].jsxCode) return
+
+        const latest = dashboards[0]
+        // Also need to reload the data rows
+        const sources = await import('../../lib/datasource-storage').then(m => m.listDataSources(currentProject.id))
+        if (sources.length === 0) return
+
+        const src = sources[0]
+        let rows: Record<string, unknown>[] = []
+        try {
+          rows = await import('../../lib/datasource-storage').then(m => m.downloadDataSourceRows(src.filePath, src.fileName))
+        } catch {
+          console.warn('[AppLayout] Could not reload data rows for saved dashboard')
+        }
+
+        // Build dataContext from saved source
+        const dataContext: ChatDataContext = {
+          sourceId: src.id,
+          sourceName: src.name,
+          rowCount: src.schema.rowCount,
+          filePath: src.filePath,
+          fileName: src.fileName,
+          columns: src.schema.columns
+            .filter((c: { hidden?: boolean }) => !c.hidden)
+            .map((c: { name: string; displayName?: string; type: string; role: string; sampleValues: string[] }) => ({
+              name: c.name,
+              displayName: c.displayName || null,
+              type: c.type,
+              role: c.role,
+              sampleValues: c.sampleValues || [],
+            })),
+        }
+
+        // Remap rows if there are display name renames
+        const renameMap: Record<string, string> = {}
+        for (const c of dataContext.columns) {
+          if (c.displayName && c.displayName !== c.name) {
+            renameMap[c.name] = c.displayName
+          }
+        }
+        if (Object.keys(renameMap).length > 0) {
+          rows = rows.map(row => {
+            const newRow: Record<string, unknown> = {}
+            for (const [key, value] of Object.entries(row)) {
+              newRow[renameMap[key] ?? key] = value
+            }
+            return newRow
+          })
+        }
+
+        setDashCtx({
+          dashboardId: latest.id,
+          jsxCode: latest.jsxCode!,
+          dashboardName: latest.name,
+          data: rows,
+          dataContext,
+          chatMessages: [],
+        })
+        console.log('[AppLayout] Restored saved dashboard:', latest.name)
+      } catch (err) {
+        console.error('[AppLayout] Failed to load saved dashboard:', err)
+      }
+    }
+
+    loadSavedDashboard()
+  }, [currentProject?.id, dashCtx])
+
   // ── Ensure user exists (anonymous sign-in if needed) ──────────
-  // Every action that creates data needs a user.id.
-  // This is called before createProject.
 
   const ensureUser = useCallback(async () => {
     if (user) return
@@ -84,12 +178,10 @@ const AppLayout: FC = () => {
       console.error('Anonymous sign-in failed:', error.message)
       throw error
     }
-    // Small delay to let auth state propagate
     await new Promise(resolve => setTimeout(resolve, 100))
   }, [user, signInAnonymously])
 
   // ── Map active page to conversation phase ─────────────────────
-  // ChatProvider needs this to load the right conversation
 
   const activePhase: ConversationPhase = useMemo(() => {
     switch (activePage) {
@@ -127,21 +219,12 @@ const AppLayout: FC = () => {
   const breadcrumbs = useMemo(() => {
     if (activePage === 'Home') return []
     const crumbs: Array<{ label: string; onClick?: () => void }> = []
-
-    if (currentProject) {
-      crumbs.push({ label: currentProject.name })
-    }
-
+    if (currentProject) crumbs.push({ label: currentProject.name })
     const pageLabels: Record<string, string> = {
-      Data: 'Data',
-      Chat: 'Plan',
-      Dashboards: 'Build',
-      Settings: 'Settings',
+      Data: 'Data', Chat: 'Plan', Dashboards: 'Build', Settings: 'Settings',
     }
-
     if (activePage === 'Settings') return [{ label: 'Settings' }]
     if (pageLabels[activePage]) crumbs.push({ label: pageLabels[activePage] })
-
     return crumbs
   }, [activePage, currentProject])
 
@@ -161,7 +244,6 @@ const AppLayout: FC = () => {
   }, [goHome])
 
   // ── Home page actions ─────────────────────────────────────────
-  // Each action: ensure user → create project → navigate
 
   const handleFileUploaded = useCallback(async (file: File) => {
     try {
@@ -216,7 +298,7 @@ const AppLayout: FC = () => {
     }
   }, [ensureUser, createProject])
 
-  // ── Project selection (sidebar / home) ────────────────────────
+  // ── Project selection ─────────────────────────────────────────
 
   const handleProjectSelected = useCallback(async (projectId: string) => {
     try {
@@ -231,37 +313,121 @@ const AppLayout: FC = () => {
   }, [selectProject])
 
   // ── Dashboard generation callback ─────────────────────────────
-  // Pages call this when a dashboard is generated.
-  // This will be replaced by proper dashboard context later.
+  // Now receives jsxCode instead of GeneratedDashboard
+
+  const handleGeneratingStarted = useCallback(() => {
+    setIsGenerating(true)
+  }, [])
+
+  const handleGeneratingFailed = useCallback(() => {
+    setIsGenerating(false)
+    // Stay on Chat page so user can see the error and try again
+  }, [])
 
   const handleDashboardGenerated = useCallback(
-    (
-      dashboard: GeneratedDashboard,
+    async (
+      jsxCode: string,
       data: Record<string, unknown>[],
-      columns: ColumnSchema[],
+      dashboardName: string,
       dataContext: ChatDataContext | null,
       chatMessages: ChatMessage[],
       dashboardId?: string
     ) => {
+      // Save JSX to dashboards table immediately
+      let savedId = dashboardId
+      if (currentProject?.id) {
+        try {
+          const saved = await saveDashboard({
+            id: dashboardId,
+            projectId: currentProject.id,
+            name: dashboardName,
+            jsxCode,
+            status: 'draft',
+          })
+          savedId = saved.id
+        } catch (err) {
+          console.error('[AppLayout] Failed to save dashboard:', err)
+        }
+      }
+
       setDashCtx({
-        dashboardId,
-        dashboard,
+        dashboardId: savedId,
+        jsxCode,
+        dashboardName,
         data,
-        columns,
         dataContext,
         chatMessages,
-        calculatedFields: [],
       })
+      setIsGenerating(false)
       setActivePage('Dashboards')
       loadProjects()
       success('Dashboard generated successfully')
     },
-    [success, loadProjects]
+    [success, loadProjects, currentProject]
   )
 
   const handleBackToChat = useCallback(() => setActivePage('Chat'), [])
   const handleStartPlanning = useCallback(() => setActivePage('Chat'), [])
   const handlePublished = useCallback(() => loadProjects(), [loadProjects])
+
+  // Edit: send current JSX + edit request for targeted changes
+  const [isRegenerating, setIsRegenerating] = useState(false)
+  const [jsxHistory, setJsxHistory] = useState<string[]>([])
+
+  const handleRegenerate = useCallback(async (buildMessages?: Array<{ role: string; content: string }>) => {
+    if (!dashCtx || isRegenerating) return
+    setIsRegenerating(true)
+    try {
+      // If we have build messages and current JSX, use the edit endpoint
+      if (buildMessages && buildMessages.length > 0 && dashCtx.jsxCode) {
+        // Save current JSX to history for undo
+        setJsxHistory(prev => [...prev.slice(-4), dashCtx.jsxCode])
+
+        // Extract the last user message as the edit request
+        const lastUserMsg = [...buildMessages].reverse().find(m => m.role === 'user')
+        if (!lastUserMsg) return
+
+        const result = await editDashboardJsx(
+          dashCtx.jsxCode,
+          lastUserMsg.content,
+          buildMessages.slice(-10)
+        )
+        setDashCtx(prev => prev ? { ...prev, jsxCode: result.jsxCode } : prev)
+        // Persist edit to Supabase
+        if (dashCtx.dashboardId && currentProject?.id) {
+          saveDashboard({ id: dashCtx.dashboardId, projectId: currentProject.id, name: dashCtx.dashboardName, jsxCode: result.jsxCode }).catch(err => console.error('[AppLayout] Failed to save edit:', err))
+        }
+        success('Dashboard updated')
+      } else {
+        // Full regeneration (no build messages or no existing JSX)
+        const planSummary = dashCtx.chatMessages
+          .filter(m => m.role === 'user' || m.role === 'assistant')
+          .map(m => `${m.role === 'user' ? 'User' : 'Captain'}: ${m.content}`)
+          .join('\n\n')
+
+        const result = await generateDashboardJsx(dashCtx.dataContext!, planSummary, undefined, dashCtx.data)
+        setDashCtx(prev => prev ? { ...prev, jsxCode: result.jsxCode } : prev)
+        // Persist regeneration to Supabase
+        if (dashCtx.dashboardId && currentProject?.id) {
+          saveDashboard({ id: dashCtx.dashboardId, projectId: currentProject.id, name: dashCtx.dashboardName, jsxCode: result.jsxCode }).catch(err => console.error('[AppLayout] Failed to save regen:', err))
+        }
+        success('Dashboard regenerated')
+      }
+    } catch (err) {
+      console.error('[AppLayout] Edit/regeneration failed:', err)
+      showError(`Dashboard update failed: ${(err as Error).message}`)
+    } finally {
+      setIsRegenerating(false)
+    }
+  }, [dashCtx, isRegenerating, success])
+
+  const handleUndo = useCallback(() => {
+    if (jsxHistory.length === 0) return
+    const previous = jsxHistory[jsxHistory.length - 1]
+    setJsxHistory(prev => prev.slice(0, -1))
+    setDashCtx(prev => prev ? { ...prev, jsxCode: previous } : prev)
+    success('Reverted to previous version')
+  }, [jsxHistory, success])
 
   // ── Render page ───────────────────────────────────────────────
 
@@ -287,7 +453,11 @@ const AppLayout: FC = () => {
         return (
           <ChatPage
             onDashboardGenerated={handleDashboardGenerated}
+            onGeneratingStarted={handleGeneratingStarted}
+            onGeneratingFailed={handleGeneratingFailed}
             initialMessage={pendingMessage}
+            savedPlan={savedPlan}
+            onPlanChanged={setSavedPlan}
             onDataUploaded={(file: File) => {
               setPendingFile(file)
               setActivePage('Data')
@@ -321,11 +491,15 @@ const AppLayout: FC = () => {
         }
         return (
           <BuildPage
-            dashboard={dashCtx.dashboard}
+            jsxCode={dashCtx.jsxCode}
             data={dashCtx.data}
-            columns={dashCtx.columns}
-            calculatedFields={dashCtx.calculatedFields}
+            dashboardName={dashCtx.dashboardName}
+            dashboardId={dashCtx.dashboardId}
+            projectId={currentProject?.id}
             onPublished={handlePublished}
+            onRegenerate={handleRegenerate}
+            isRegenerating={isRegenerating}
+            onUndo={jsxHistory.length > 0 ? handleUndo : undefined}
           />
         )
       case 'Settings':
@@ -344,6 +518,7 @@ const AppLayout: FC = () => {
 
   return (
     <div className="min-h-screen bg-ds-bg">
+      {isGenerating && <GeneratingOverlay />}
       <Header
         onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}
         breadcrumbs={breadcrumbs}

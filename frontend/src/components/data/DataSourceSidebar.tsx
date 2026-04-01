@@ -26,9 +26,10 @@ const SidebarItem: FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`w-full text-left px-3 py-3 border-b border-ds-border transition-colors ${
-      isActive ? 'bg-ds-surface-alt border-l-2 border-l-ds-accent' : 'hover:bg-ds-surface-alt'
+    className={`w-full text-left px-3 py-3 transition-colors ${
+      isActive ? 'bg-ds-accent/5' : 'hover:bg-ds-surface-alt'
     }`}
+    style={{ borderRadius: '8px', borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}
   >
     <div className="flex items-center gap-2">
       <span className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim shrink-0">
@@ -50,8 +51,8 @@ const SidebarItem: FC<{
 const DataSourceSidebar: FC<DataSourceSidebarProps> = ({
   sources, activeName, currentSource, onSelectSource, onUploadAnother,
 }) => (
-  <div className="w-56 border-r border-ds-border bg-ds-surface shrink-0">
-    <div className="px-3 py-4 border-b border-ds-border">
+  <div className="w-56 bg-ds-surface shrink-0" style={{ borderRight: '0.5px solid rgba(0,0,0,0.06)' }}>
+    <div className="px-3 py-4" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
       <span className="micro-label">
         Data Sources
       </span>
@@ -83,7 +84,8 @@ const DataSourceSidebar: FC<DataSourceSidebarProps> = ({
     <button
       type="button"
       onClick={onUploadAnother}
-      className="w-full px-3 py-3 text-left font-mono text-[10px] uppercase tracking-widest text-ds-text-dim hover:text-ds-text-muted hover:bg-ds-surface-alt transition-colors"
+      className="w-full px-3 py-3 text-left font-sans text-[10px] uppercase tracking-widest text-ds-text-dim hover:text-ds-text-muted hover:bg-ds-surface-alt transition-colors"
+      style={{ borderRadius: '8px' }}
     >
       + Upload another
     </button>

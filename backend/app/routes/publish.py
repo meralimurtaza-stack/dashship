@@ -40,9 +40,11 @@ class PublishRequest(BaseModel):
     allowed_emails: list[str] | None = None
     branding: BrandingConfig = BrandingConfig()
     embed_enabled: bool = True
-    sheets: list[dict[str, Any]]
-    layout: dict[str, Any]
+    jsx_code: str
     data: list[dict[str, Any]]
+    user_id: str | None = None
+    project_id: str | None = None
+    dashboard_id: str | None = None  # Link to dashboards table
 
 
 class AuthRequest(BaseModel):
@@ -71,38 +73,82 @@ async def publish_dashboard(req: PublishRequest):
     if not slug:
         raise HTTPException(400, "Slug is required")
 
+    if not req.user_id:
+        raise HTTPException(400, "user_id is required for publishing")
+
     password_hash = _hash_password(req.password) if req.access_level == "password" and req.password else None
+    now = datetime.utcnow().isoformat()
 
     record = {
         "slug": slug,
         "dashboard_name": req.dashboard_name,
+        "user_id": req.user_id,
         "access_level": req.access_level,
         "password_hash": password_hash,
         "allowed_emails": req.allowed_emails or [],
         "branding": req.branding.model_dump(),
         "embed_enabled": req.embed_enabled,
-        "sheets": req.sheets,
-        "layout": req.layout,
+        "jsx_code": req.jsx_code,
         "data": req.data,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "published_at": now,
+        "updated_at": now,
     }
+    if req.project_id:
+        record["project_id"] = req.project_id
 
     if HAS_SUPABASE:
         try:
-            # Upsert by slug
-            result = supabase.table("published_dashboards").upsert(
-                record, on_conflict="slug"
-            ).execute()
+            # Check if this slug already exists (republish = version bump)
+            existing = None
+            try:
+                result = supabase.table("published_dashboards").select(
+                    "id, version, jsx_code"
+                ).eq("slug", slug).single().execute()
+                existing = result.data
+            except Exception:
+                pass
+
+            if existing:
+                # Republish: increment version, save previous JSX for undo
+                record["version"] = (existing.get("version") or 1) + 1
+                record["previous_jsx"] = existing.get("jsx_code", "")
+                # Don't overwrite created_at on republish
+                result = supabase.table("published_dashboards").update(
+                    record
+                ).eq("slug", slug).execute()
+            else:
+                # First publish
+                record["version"] = 1
+                record["created_at"] = now
+                result = supabase.table("published_dashboards").insert(
+                    record
+                ).execute()
+
             if result.data:
-                return {"slug": slug, "url": f"/view/{slug}"}
+                published = result.data[0]
+                # Also update the dashboards table if dashboard_id provided
+                if req.dashboard_id:
+                    try:
+                        supabase.table("dashboards").update({
+                            "status": "published",
+                            "published_slug": slug,
+                            "published_at": now,
+                            "updated_at": now,
+                        }).eq("id", req.dashboard_id).execute()
+                    except Exception as e:
+                        print(f"[publish] Failed to update dashboards table: {e}")
+
+                return {
+                    "slug": slug,
+                    "url": f"/view/{slug}",
+                    "version": published.get("version", 1),
+                }
         except Exception as e:
-            # Fall back to in-memory if table doesn't exist
             print(f"[publish] Supabase error: {e}, using in-memory store")
 
     # In-memory fallback
     _published[slug] = record
-    return {"slug": slug, "url": f"/view/{slug}"}
+    return {"slug": slug, "url": f"/view/{slug}", "version": 1}
 
 
 @router.get("/view/{slug}")
@@ -125,28 +171,22 @@ async def get_published_dashboard(slug: str):
 
     requires_auth = record.get("access_level") == "password"
 
-    if requires_auth:
-        # Return metadata but not data until authenticated
-        return {
-            "id": record.get("id", slug),
-            "slug": slug,
-            "dashboard_name": record["dashboard_name"],
-            "access_level": record["access_level"],
-            "branding": record["branding"],
-            "sheets": [],
-            "layout": {"columns": 12, "rowHeight": 60, "items": []},
-            "data": [],
-            "requires_auth": True,
-        }
-
-    return {
+    base = {
         "id": record.get("id", slug),
         "slug": slug,
         "dashboard_name": record["dashboard_name"],
         "access_level": record["access_level"],
         "branding": record["branding"],
-        "sheets": record["sheets"],
-        "layout": record["layout"],
+        "version": record.get("version", 1),
+        "published_at": record.get("published_at"),
+    }
+
+    if requires_auth:
+        return {**base, "jsx_code": "", "data": [], "requires_auth": True}
+
+    return {
+        **base,
+        "jsx_code": record["jsx_code"],
         "data": record["data"],
         "requires_auth": False,
     }
@@ -187,8 +227,9 @@ def _build_dashboard_response(record: dict, slug: str) -> dict:
         "dashboard_name": record["dashboard_name"],
         "access_level": record["access_level"],
         "branding": record["branding"],
-        "sheets": record["sheets"],
-        "layout": record["layout"],
+        "jsx_code": record["jsx_code"],
         "data": record["data"],
+        "version": record.get("version", 1),
+        "published_at": record.get("published_at"),
         "requires_auth": False,
     }

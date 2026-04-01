@@ -93,6 +93,7 @@ const RolePill: FC<{ role: FieldRole; onChange: (r: FieldRole) => void }> = ({ r
     className={`font-mono text-[9px] uppercase px-2 py-0.5 cursor-pointer transition-colors hover:opacity-80 ${
       role === 'measure' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
     }`}
+    style={{ borderRadius: '4px' }}
     title={`Click to convert to ${role === 'dimension' ? 'measure' : 'dimension'}`}
   >
     {role === 'measure' ? 'Measure' : 'Dimension'}
@@ -141,7 +142,7 @@ const FieldRow: FC<FieldRowProps> = ({
   const isHidden = col.hidden ?? false
 
   return (
-    <div className={`flex items-center justify-between px-4 py-3 transition-colors ${isHidden ? 'opacity-40' : ''}`}>
+    <div className={`flex items-center justify-between px-4 py-3 transition-colors hover:bg-ds-surface-alt ${isHidden ? 'opacity-40' : ''}`} style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
       <div className="flex items-center gap-3">
         <TypeIcon type={col.type} onChange={(t) => onChangeType(col.name, t)} />
         <EditableFieldName col={col} onRename={onRename} />

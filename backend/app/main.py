@@ -8,12 +8,13 @@ from app.routes.generate import router as generate_router
 from app.routes.publish import router as publish_router
 from app.routes.email import router as email_router
 from app.routes.data_review import router as data_review_router
+from app.routes.dock import router as dock_router
 
 app = FastAPI(title="DashShip API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origin_list,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=True,
@@ -25,6 +26,7 @@ app.include_router(generate_router)
 app.include_router(publish_router)
 app.include_router(email_router)
 app.include_router(data_review_router)
+app.include_router(dock_router)
 
 
 @app.get("/health")

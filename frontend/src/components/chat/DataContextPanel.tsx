@@ -40,9 +40,9 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
   }
 
   return (
-    <div className="h-full border-l border-ds-border bg-ds-surface flex flex-col">
+    <div className="h-full bg-ds-surface flex flex-col" style={{ borderLeft: '0.5px solid rgba(0,0,0,0.06)' }}>
       {/* Header */}
-      <div className="px-4 py-4 border-b border-ds-border flex items-center justify-between">
+      <div className="px-4 py-4 flex items-center justify-between" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
         <p className="micro-label">
           Data Context
         </p>
@@ -68,7 +68,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
       </div>
 
       {/* Source info */}
-      <div className="px-4 py-4 border-b border-ds-border space-y-3">
+      <div className="px-4 py-4 space-y-3" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
         <h3 className="font-mono text-sm font-medium text-ds-text truncate">
           {dataContext.sourceName}
         </h3>
@@ -97,7 +97,8 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
         {/* Dimensions */}
         <button
           onClick={() => toggleSection('dimensions')}
-          className="w-full flex items-center justify-between px-4 py-3 border-b border-ds-border hover:bg-ds-surface-alt transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
+          style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
             <svg
@@ -122,7 +123,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
           </span>
         </button>
         {expandedSection === 'dimensions' && (
-          <div className="px-2 py-1 border-b border-ds-border">
+          <div className="px-2 py-1" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
             {dimensions.map((col) => (
               <FieldPill
                 key={col.name}
@@ -136,7 +137,8 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
         {/* Measures */}
         <button
           onClick={() => toggleSection('measures')}
-          className="w-full flex items-center justify-between px-4 py-3 border-b border-ds-border hover:bg-ds-surface-alt transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
+          style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}
         >
           <div className="flex items-center gap-2">
             <svg
@@ -161,7 +163,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
           </span>
         </button>
         {expandedSection === 'measures' && (
-          <div className="px-2 py-1 border-b border-ds-border">
+          <div className="px-2 py-1" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
             {measures.map((col) => (
               <FieldPill
                 key={col.name}
@@ -174,7 +176,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
       </div>
 
       {/* Chart types reference */}
-      <div className="px-4 py-3 border-t border-ds-border">
+      <div className="px-4 py-3" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
         <p className="micro-label mb-2">
           Supported Charts
         </p>
@@ -184,6 +186,7 @@ const DataContextPanel: FC<DataContextPanelProps> = ({
               <span
                 key={chart}
                 className="font-mono text-[10px] text-ds-text-muted bg-ds-surface-alt px-2 py-0.5"
+                style={{ borderRadius: 4 }}
               >
                 {chart}
               </span>

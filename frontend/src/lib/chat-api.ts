@@ -1,5 +1,6 @@
 import type { ChatDataContext, ChatMessage } from '../types/chat'
 import type { PlanSpec } from '../types/plan-spec'
+import type { DictionaryEntry } from '../types/data-dictionary'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -9,7 +10,9 @@ export async function streamChat(
   planSpec: PlanSpec | null,
   onChunk: (text: string) => void,
   signal?: AbortSignal,
-  isFirstMessage?: boolean
+  isFirstMessage?: boolean,
+  phase?: string,
+  dictionaryEntries?: DictionaryEntry[]
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
@@ -26,11 +29,30 @@ export async function streamChat(
               type: c.type,
               role: c.role,
               sample_values: c.sampleValues,
+              stats: c.stats ? {
+                min: c.stats.min,
+                max: c.stats.max,
+                mean: c.stats.mean,
+                median: c.stats.median,
+                unique_count: c.stats.uniqueCount,
+                null_count: c.stats.nullCount,
+                top_values: c.stats.topValues ?? [],
+                earliest: c.stats.earliest,
+                latest: c.stats.latest,
+                granularity: c.stats.granularity,
+              } : null,
             })),
           }
         : null,
       is_first_message: isFirstMessage ?? false,
       plan_spec: planSpec ?? null,
+      phase: phase ?? 'plan',
+      dictionary_entries: dictionaryEntries?.map((e) => ({
+        name: e.name,
+        formula: e.formula,
+        description: e.description,
+        source: e.source,
+      })) ?? null,
     }),
     signal,
   })

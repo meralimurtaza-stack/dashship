@@ -107,9 +107,9 @@ const MetadataGrid: FC<MetadataGridProps> = ({
     : schema.columns.filter((c) => !c.hidden)
 
   return (
-    <div className="border border-ds-border bg-ds-surface overflow-hidden">
+    <div className="bg-ds-surface overflow-hidden" style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-ds-border">
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
         <span className="micro-label">
           Metadata Grid
         </span>
@@ -133,7 +133,7 @@ const MetadataGrid: FC<MetadataGridProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-ds-border">
+            <tr style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
               {['', 'Field Name', 'Original', 'Role', 'Unique', 'Nulls', 'Sample Values', ''].map(
                 (h, i) => (
                   <th
@@ -153,9 +153,10 @@ const MetadataGrid: FC<MetadataGridProps> = ({
               return (
                 <tr
                   key={col.name}
-                  className={`border-b border-ds-border hover:bg-ds-surface-alt transition-colors ${
+                  className={`hover:bg-ds-surface-alt transition-colors ${
                     isHidden ? 'opacity-40' : ''
                   }`}
+                  style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}
                 >
                   {/* Type Icon */}
                   <td className="px-3 py-2.5">
@@ -196,6 +197,7 @@ const MetadataGrid: FC<MetadataGridProps> = ({
                           ? 'text-ds-accent bg-ds-accent-glow'
                           : 'text-ds-text-muted bg-ds-surface-alt'
                       }`}
+                      style={{ borderRadius: 4 }}
                     >
                       {col.role === 'measure' ? 'Measure' : 'Dimension'}
                     </button>

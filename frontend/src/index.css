@@ -1,46 +1,53 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Typography ─────────────────────────────────────────── */
   --font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
-  --font-pub-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-dash: "Plus Jakarta Sans", -apple-system, sans-serif;
 
-  /* ── App Colours (DashShip interface) ───────────────────── */
-  --color-ds-bg: #ECEAE4;
-  --color-ds-surface: #FAFAF6;
-  --color-ds-surface-alt: #F4F2EC;
-  --color-ds-text: #141210;
-  --color-ds-text-muted: #6D6860;
-  --color-ds-text-dim: #A19D94;
+  --color-ds-bg: #FAFAF8;
+  --color-ds-surface: #FFFFFF;
+  --color-ds-surface-alt: #F0EFEA;
+  --color-ds-text: #0E0D0D;
+  --color-ds-text-muted: #6B6B65;
+  --color-ds-text-dim: #9E9E96;
   --color-ds-accent: #1C3360;
-  --color-ds-accent-hover: #152A50;
+  --color-ds-accent-light: #E8EDF4;
+  --color-ds-accent-hover: #152847;
   --color-ds-accent-glow: rgba(28,51,96,0.06);
-  --color-ds-success: #2E7D5B;
-  --color-ds-warning: #B8860B;
-  --color-ds-error: #C1403D;
-  --color-ds-border: #D7D3C9;
-  --color-ds-border-strong: #C7C2B5;
+  --color-ds-success: #3B9B6F;
+  --color-ds-success-light: #E3F0EA;
+  --color-ds-warning: #C69026;
+  --color-ds-warning-light: #FBF0DA;
+  --color-ds-error: #C45454;
+  --color-ds-error-light: #FCEAEA;
+  --color-ds-border: rgba(0,0,0,0.06);
+  --color-ds-border-strong: rgba(0,0,0,0.10);
   --color-ds-gold: #C8963E;
 
-  /* ── Chart Colours (4-colour Economist-grade palette) ──── */
+  --radius-btn: 10px;
+  --radius-card: 12px;
+  --radius-input: 20px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+
   --color-chart-1: #1C3360;
   --color-chart-2: #141210;
   --color-chart-3: #8D8981;
   --color-chart-4: #C8963E;
 
-  /* ── Published Dashboard Colours (client-facing) ────────── */
   --color-pub-bg: #FFFFFF;
   --color-pub-surface: #FAFAFA;
   --color-pub-text: #1A1A1A;
   --color-pub-text-muted: #888888;
   --color-pub-text-dim: #BBBBBB;
   --color-pub-border: #EDEDEB;
-  --color-pub-success: #2E7D5B;
-  --color-pub-error: #C1403D;
+  --color-pub-success: #3B9B6F;
+  --color-pub-error: #C45454;
 }
-
-/* ── Base ─────────────────────────────────────────────────── */
 
 *,
 *::before,
@@ -62,8 +69,6 @@ body {
   min-height: 100vh;
 }
 
-/* ── Micro-label (the DashShip fingerprint) ───────────────── */
-
 .micro-label {
   font-family: var(--font-mono);
   font-size: 9px;
@@ -73,13 +78,9 @@ body {
   color: var(--color-ds-text-dim);
 }
 
-/* ── Tabular numbers for data displays ────────────────────── */
-
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
-
-/* ── Scrollbar — minimal ──────────────────────────────────── */
 
 ::-webkit-scrollbar {
   width: 4px;
@@ -91,22 +92,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-ds-border);
+  background: var(--color-ds-border-strong);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ds-border-strong);
+  background: rgba(0,0,0,0.18);
 }
-
-/* ── Selection ────────────────────────────────────────────── */
 
 ::selection {
   background: var(--color-ds-accent-glow);
   color: var(--color-ds-text);
 }
-
-/* ── Animations ───────────────────────────────────────────── */
 
 @keyframes fadeIn {
   from {
@@ -138,11 +135,51 @@ body {
   animation: slideUp 200ms ease-out;
 }
 
-/* ── Minimum width enforcement ────────────────────────────── */
+@keyframes slideRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideRight {
+  animation: slideRight 200ms ease-out;
+}
+
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 @media (max-width: 1023px) {
   body {
     min-width: 1024px;
     overflow-x: auto;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes dockCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

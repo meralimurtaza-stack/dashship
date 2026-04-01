@@ -45,13 +45,14 @@ const TypeIcon: FC<TypeIconProps> = ({ type, onChange, size = 'sm' }) => {
         className={`font-mono uppercase ${sizeClasses} border border-transparent hover:border-ds-border-strong transition-colors cursor-pointer ${
           type === 'number' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
         }`}
+        style={{ borderRadius: '4px' }}
         title={`Type: ${display.label}. Click to change.`}
       >
         {display.icon}
       </button>
 
       {open && onChange && (
-        <div className="absolute top-full left-0 mt-1 z-50 border border-ds-border bg-ds-surface min-w-[120px]">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-ds-surface min-w-[120px] shadow-md" style={{ borderRadius: '8px', border: '0.5px solid rgba(0,0,0,0.06)', overflow: 'hidden' }}>
           {(Object.keys(TYPE_DISPLAY) as ColumnType[]).map((t) => (
             <button
               key={t}
@@ -64,11 +65,13 @@ const TypeIcon: FC<TypeIconProps> = ({ type, onChange, size = 'sm' }) => {
               className={`w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-ds-surface-alt transition-colors ${
                 t === type ? 'bg-ds-surface-alt' : ''
               }`}
+              style={{ borderRadius: '4px' }}
             >
               <span
                 className={`font-mono text-[9px] uppercase px-1.5 py-0.5 ${
                   t === 'number' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
                 }`}
+                style={{ borderRadius: '4px' }}
               >
                 {TYPE_DISPLAY[t].icon}
               </span>

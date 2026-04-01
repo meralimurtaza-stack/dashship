@@ -41,13 +41,14 @@ const SuggestionCard: FC<SuggestionCardProps> = ({ suggestion, onApply, onDismis
 
   return (
     <div
-      className={`border border-ds-border bg-ds-surface p-4 transition-all duration-200 ${
+      className={`bg-ds-surface p-4 transition-all duration-200 ${
         leaving ? 'opacity-0 translate-x-4' : 'opacity-100 translate-x-0'
       }`}
+      style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
     >
       {/* Tag + Column */}
       <div className="flex items-center gap-2 mb-2">
-        <span className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim bg-ds-surface-alt px-2 py-0.5">
+        <span className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim bg-ds-surface-alt px-2 py-0.5" style={{ borderRadius: 4 }}>
           {label}
         </span>
         <span className="font-mono text-[10px] text-ds-text-dim truncate">
@@ -70,12 +71,14 @@ const SuggestionCard: FC<SuggestionCardProps> = ({ suggestion, onApply, onDismis
         <button
           onClick={handleApply}
           className="bg-ds-accent text-white font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:opacity-90 transition-opacity"
+          style={{ borderRadius: 6 }}
         >
           Apply
         </button>
         <button
           onClick={handleDismiss}
-          className="border border-ds-border text-ds-text-dim font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:border-ds-border-strong hover:text-ds-text-muted transition-colors"
+          className="text-ds-text-dim font-mono text-[10px] uppercase tracking-wide px-4 py-1.5 hover:border-ds-border-strong hover:text-ds-text-muted transition-colors"
+          style={{ borderRadius: 6, border: '0.5px solid var(--color-ds-border)' }}
         >
           Dismiss
         </button>

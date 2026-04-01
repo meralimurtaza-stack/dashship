@@ -32,7 +32,7 @@ function renderInline(text: string): (string | JSX.Element)[] {
       parts.push(<em key={key++} className="italic">{match[4]}</em>)
     } else if (match[5]) {
       parts.push(
-        <code key={key++} className="font-mono text-[0.85em] bg-ds-surface-alt px-1.5 py-0.5 text-ds-text">
+        <code key={key++} className="font-mono text-[0.85em] bg-ds-surface-alt px-1.5 py-0.5 text-ds-text" style={{ borderRadius: 4 }}>
           {match[6]}
         </code>
       )
@@ -175,7 +175,7 @@ const CalcCard: FC<{
   const { name, formula, description } = parseCalcLine(raw)
 
   return (
-    <div className="flex items-start justify-between gap-3 bg-ds-surface border border-ds-border p-3">
+    <div className="flex items-start justify-between gap-3 bg-ds-surface p-3" style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}>
       <div className="min-w-0 flex-1">
         <p className="font-mono text-sm font-medium text-ds-text truncate">{name}</p>
         <p className="font-mono text-xs text-ds-text-muted mt-0.5">
@@ -191,6 +191,7 @@ const CalcCard: FC<{
             <button
               onClick={() => onApprove(`Approve: ${name} = ${formula}`)}
               className="font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors"
+              style={{ borderRadius: 6 }}
             >
               Approve
             </button>
@@ -199,6 +200,7 @@ const CalcCard: FC<{
             <button
               onClick={() => onEdit(`Edit: ${name}`)}
               className="font-mono text-[10px] uppercase tracking-wide px-2.5 py-1 border border-ds-border text-ds-text-muted hover:border-ds-accent hover:text-ds-text transition-colors"
+              style={{ borderRadius: 6 }}
             >
               Edit
             </button>
@@ -208,6 +210,63 @@ const CalcCard: FC<{
     </div>
   )
 }
+
+// ── Choice detection ────────────────────────────────────────────
+
+/** True when a list item looks like a choice: "**Label** — description" or "**Label**: description" */
+function isChoiceItem(text: string): boolean {
+  return /^\*\*[^*]+\*\*\s*[—–:\-]/.test(text.trim())
+}
+
+/** True when an ordered list looks like a set of choices to pick from */
+function isChoiceBlock(items: string[], ordered?: boolean): boolean {
+  if (!ordered || !items || items.length < 2 || items.length > 6) return false
+  // At least 2 items must look like choices
+  const choiceCount = items.filter(isChoiceItem).length
+  return choiceCount >= 2 && choiceCount >= items.length * 0.6
+}
+
+/** Parse "**Label** — description" into parts */
+function parseChoiceItem(raw: string): { label: string; description: string } {
+  const match = raw.match(/^\*\*([^*]+)\*\*\s*[—–:\-]\s*(.+)$/)
+  if (match) return { label: match[1].trim(), description: match[2].trim() }
+  // Fallback: just strip bold
+  const plain = raw.replace(/\*\*/g, '').trim()
+  return { label: plain, description: '' }
+}
+
+/** Choice card — clickable option that sends the label back to Captain */
+const ChoiceCard: FC<{
+  label: string
+  description: string
+  index: number
+  onChoice?: (text: string) => void
+}> = ({ label, description, index, onChoice }) => (
+  <button
+    onClick={() => onChoice?.(label)}
+    className="w-full text-left bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
+    style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
+  >
+    <div className="flex items-start gap-3">
+      <span
+        className="shrink-0 w-5 h-5 flex items-center justify-center font-mono text-[10px] font-medium text-ds-text-dim bg-ds-surface-alt"
+        style={{ borderRadius: 4, border: '0.5px solid var(--color-ds-border)' }}
+      >
+        {index + 1}
+      </span>
+      <div className="min-w-0">
+        <p className="font-mono text-xs font-medium text-ds-text group-hover:text-ds-accent transition-colors">
+          {label}
+        </p>
+        {description && (
+          <p className="text-[11px] text-ds-text-dim mt-0.5 leading-relaxed">
+            {description}
+          </p>
+        )}
+      </div>
+    </div>
+  </button>
+)
 
 // ── Render ──────────────────────────────────────────────────────
 
@@ -237,7 +296,8 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
             return (
               <pre
                 key={idx}
-                className="bg-ds-surface-alt border border-ds-border px-4 py-3 overflow-x-auto"
+                className="bg-ds-surface-alt px-4 py-3 overflow-x-auto"
+                style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}
               >
                 <code className="font-mono text-xs text-ds-text leading-relaxed">
                   {block.content}
@@ -262,10 +322,30 @@ const Markdown: FC<MarkdownProps> = ({ content, onCalcAction }) => {
                     <button
                       onClick={() => onCalcAction('Approve all calculated fields')}
                       className="w-full font-mono text-[10px] uppercase tracking-wide px-4 py-2.5 bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors mt-1"
+                      style={{ borderRadius: 10 }}
                     >
                       Approve All
                     </button>
                   )}
+                </div>
+              )
+            }
+            // Choice block: ordered list with "**Label** — description" items
+            if (block.items && isChoiceBlock(block.items, block.ordered)) {
+              return (
+                <div key={idx} className="flex flex-col gap-2">
+                  {block.items.map((item, j) => {
+                    const { label, description } = parseChoiceItem(item)
+                    return (
+                      <ChoiceCard
+                        key={j}
+                        label={label}
+                        description={description}
+                        index={j}
+                        onChoice={onCalcAction}
+                      />
+                    )
+                  })}
                 </div>
               )
             }

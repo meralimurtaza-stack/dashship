@@ -42,6 +42,8 @@ import {
   savePlanningUnderstanding,
 } from '../lib/chat-storage';
 import { streamChat } from '../lib/chat-api';
+import { listEntries as listDictionaryEntries } from '../lib/data-dictionary-storage';
+import type { DictionaryEntry } from '../types/data-dictionary';
 import { parsePlanDeltas } from '../utils/plan-delta-parser';
 import type {
   Conversation,
@@ -136,6 +138,7 @@ export function ChatProvider({ activePhase, children }: ChatProviderProps) {
   // which causes subtle bugs with stale closures during streaming.
   const abortRef = useRef<AbortController | null>(null);
   const conversationRef = useRef<Conversation | null>(null);
+  const dictionaryRef = useRef<DictionaryEntry[]>([]);
   const messagesRef = useRef<ChatMessage[]>([]);
   const dataContextRef = useRef<ChatDataContext | null>(null);
 
@@ -152,12 +155,25 @@ export function ChatProvider({ activePhase, children }: ChatProviderProps) {
   // null and messages stays empty. The conversation gets created
   // lazily when the user sends their first message.
 
+  // Reset data context only when the project changes, not on tab switches.
+  // Data context should persist across DATA → PLAN → BUILD for the same project.
   useEffect(() => {
-    // Reset state when project changes
+    setDataContext(null);
+    // Load dictionary entries for the new project
+    if (currentProject?.id) {
+      listDictionaryEntries(currentProject.id)
+        .then((entries) => { dictionaryRef.current = entries; })
+        .catch(() => { dictionaryRef.current = []; });
+    } else {
+      dictionaryRef.current = [];
+    }
+  }, [currentProject?.id]);
+
+  useEffect(() => {
+    // Reset conversation/messages when project or phase changes
     setConversation(null);
     setMessages([]);
     setIsStreaming(false);
-    setDataContext(null);
 
     const projectId = currentProject?.id;
     if (!projectId) return;
@@ -279,9 +295,16 @@ export function ChatProvider({ activePhase, children }: ChatProviderProps) {
       // Build the message history for the API.
       // Filter out system messages (dividers) — Claude doesn't need them.
       // Only send user and assistant messages.
+      // In BUILD mode: only send build-phase messages to avoid plan history overwhelming the build prompt.
       const currentMessages = messagesRef.current;
-      const historyForApi = [...currentMessages, userMsg]
-        .filter(m => m.role === 'user' || m.role === 'assistant')
+      const allMessages = [...currentMessages, userMsg]
+        .filter(m => m.role === 'user' || m.role === 'assistant');
+
+      const filteredMessages = activePhase === 'build'
+        ? allMessages.filter(m => m.phase === 'build' || m === userMsg)
+        : allMessages;
+
+      const historyForApi = filteredMessages
         .map(m => ({
           id: m.id,
           role: m.role as 'user' | 'assistant',
@@ -298,10 +321,15 @@ export function ChatProvider({ activePhase, children }: ChatProviderProps) {
           null, // planSpec — we'll pass this when needed
           (chunk) => {
             finalContent += chunk;
-            // Strip tags in real-time so they never flash in the UI
+            // Strip tags in real-time so they never flash in the UI.
+            // Also strip INCOMPLETE plan_delta (opened but not closed yet during streaming).
             const displayContent = finalContent
               .replace(/<plan_delta>[\s\S]*?<\/plan_delta>/g, '')
+              .replace(/<plan_delta>[\s\S]*$/g, '')
               .replace(/<project-name>[\s\S]*?<\/project-name>/g, '')
+              .replace(/<project-name>[\s\S]*$/g, '')
+              .replace(/<action>[\s\S]*?<\/action>/g, '')
+              .replace(/<action>[\s\S]*$/g, '')
               .trim();
             // Update the assistant placeholder with cleaned content
             setMessages(prev => {
@@ -314,42 +342,51 @@ export function ChatProvider({ activePhase, children }: ChatProviderProps) {
             });
           },
           controller.signal,
-          currentMessages.length === 0 // isFirstMessage
+          currentMessages.length === 0, // isFirstMessage
+          activePhase, // "plan" or "build"
+          dictionaryRef.current.length > 0 ? dictionaryRef.current : undefined
         );
 
-        // ── Strip <plan_delta> tags and parse deltas ────────────
-        const { text: noDeltaContent, deltas: _deltas } = parsePlanDeltas(finalContent);
-        // TODO: apply _deltas to plan spec when wired up
-
-        // ── Strip <project-name> tag and rename project ─────────
-        let cleanContent = noDeltaContent;
-        const nameMatch = noDeltaContent.match(/<project-name>(.*?)<\/project-name>/);
+        // ── Extract <project-name> and rename project ───────────
+        const nameMatch = finalContent.match(/<project-name>([\s\S]*?)<\/project-name>/);
         if (nameMatch) {
           const projectName = nameMatch[1].trim();
-          cleanContent = noDeltaContent.replace(/<project-name>.*?<\/project-name>\s*/g, '').trim();
-
-          // Rename the project
           if (currentProject?.id && projectName) {
             updateProject(currentProject.id, { name: projectName })
               .catch(err => console.error('Failed to rename project:', err));
           }
         }
 
-        // Update the displayed message with fully cleaned content
-        if (cleanContent !== finalContent) {
-          setMessages(prev => {
-            const updated = [...prev];
-            const last = updated[updated.length - 1];
-            if (last && last.role === 'assistant') {
-              updated[updated.length - 1] = { ...last, content: cleanContent };
-            }
-            return updated;
-          });
-        }
+        // ── Store RAW content in React state ────────────────────
+        // Keep plan_delta tags in message content so ChatMessage.tsx
+        // can parse them via parsePlanMessage → trigger onPlanDelta
+        // → populate the PlanSidebar. ChatMessage handles display
+        // stripping internally.
+        console.log(
+          `Stream complete, raw content length: ${finalContent.length}, contains plan_delta: ${finalContent.includes('<plan_delta>')}`
+        );
+        setMessages(prev => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          if (last && last.role === 'assistant') {
+            // Strip project-name tags (not needed for display or parsing)
+            // but KEEP plan_delta tags for ChatMessage to extract
+            const contentForState = finalContent
+              .replace(/<project-name>[\s\S]*?<\/project-name>/g, '')
+              .trim();
+            updated[updated.length - 1] = { ...last, content: contentForState };
+          }
+          return updated;
+        });
 
-        // ── Persist assistant message ───────────────────────────
-        if (cleanContent) {
-          saveMessageToDb(conv.id, 'assistant', cleanContent, activePhase)
+        // ── Persist CLEAN content to Supabase ───────────────────
+        // Strip all tags for database storage (plan_delta is ephemeral)
+        const { text: cleanForDb } = parsePlanDeltas(finalContent);
+        const dbContent = cleanForDb
+          .replace(/<project-name>[\s\S]*?<\/project-name>/g, '')
+          .trim();
+        if (dbContent) {
+          saveMessageToDb(conv.id, 'assistant', dbContent, activePhase)
             .catch(err => console.error('Failed to persist assistant message:', err));
         }
       } catch (err) {

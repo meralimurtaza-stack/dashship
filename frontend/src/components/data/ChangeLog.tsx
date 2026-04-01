@@ -27,11 +27,12 @@ const ChangeLog: FC<ChangeLogProps> = ({ entries, onRevert }) => {
   if (entries.length === 0) return null
 
   return (
-    <div className="border border-ds-border bg-ds-surface">
+    <div className="bg-ds-surface overflow-hidden" style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
+        style={{ borderRadius: '12px 12px 0 0' }}
       >
         <div className="flex items-center gap-2">
           <span className="micro-label">
@@ -54,19 +55,21 @@ const ChangeLog: FC<ChangeLogProps> = ({ entries, onRevert }) => {
       </button>
 
       {expanded && (
-        <div className="divide-y divide-ds-border border-t border-ds-border">
+        <div style={{ borderTop: '0.5px solid var(--color-ds-border)' }}>
           {[...entries].reverse().map((entry) => (
             <div
               key={entry.id}
               className="flex items-center justify-between px-4 py-2.5"
+              style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}
             >
-              <span className="font-mono text-[11px] text-ds-text-muted">
+              <span className="font-sans text-[11px] text-ds-text-muted">
                 {formatEntry(entry)}
               </span>
               <button
                 type="button"
                 onClick={() => onRevert(entry.id)}
                 className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text transition-colors px-2 py-1 hover:bg-ds-surface-alt"
+                style={{ borderRadius: 6 }}
               >
                 Undo
               </button>

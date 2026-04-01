@@ -5,176 +5,138 @@ import {
   Scatter,
   XAxis,
   YAxis,
-  ZAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
+  ZAxis,
 } from 'recharts'
-import { autoFormat } from '../../engine/formatters'
-import ChartWrapper from './ChartWrapper'
-import {
-  AXIS_TICK_STYLE,
-  GRID_COLOR,
-  ANIMATION_DURATION,
-  getColor,
-} from './chartConfig'
+import { formatValue, type FormatConfig } from '../../lib/formatValue'
+import ChartCard, { type ChartInfo } from './ChartCard'
+import { SERIES_COLORS, AXIS_STYLE, TOOLTIP_CONFIG, GRID_STROKE, PIE_PALETTE } from './chartConfig'
 
 interface ScatterPlotProps {
   data: Record<string, unknown>[]
   xField: string
   yField: string
-  sizeField?: string
+  xFormat?: FormatConfig
+  yFormat?: FormatConfig
+  title: string
   colorField?: string
-  title?: string
+  sizeField?: string
   showLegend?: boolean
-  colors?: string[]
-  loading?: boolean
+  isSelected?: boolean
+  onClick?: () => void
+  index?: number
+  info?: ChartInfo
 }
 
-const LEGEND_STYLE = {
-  fontFamily: '"IBM Plex Mono", monospace',
-  fontSize: 10,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-}
-
-// ── Custom Tooltip ───────────────────────────────────────────────
-
-const ScatterTooltipContent: FC<{
-  active?: boolean
-  payload?: Array<{ payload: Record<string, unknown> }>
-  xField: string
-  yField: string
-  sizeField?: string
-  colorField?: string
-}> = ({ active, payload, xField, yField, sizeField, colorField }) => {
-  if (!active || !payload?.length) return null
-  const d = payload[0].payload
-
-  return (
-    <div
-      className="bg-ds-surface border border-ds-border px-3 py-2"
-      style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-    >
-      {colorField && d[colorField] != null && (
-        <p className="micro-label mb-1">
-          {String(d[colorField])}
-        </p>
-      )}
-      <p className="font-mono text-xs text-ds-text tabular-nums">
-        {xField}: {autoFormat(d[xField])}
-      </p>
-      <p className="font-mono text-xs text-ds-text tabular-nums">
-        {yField}: {autoFormat(d[yField])}
-      </p>
-      {sizeField && d[sizeField] != null && (
-        <p className="font-mono text-xs text-ds-text-muted tabular-nums">
-          {sizeField}: {autoFormat(d[sizeField])}
-        </p>
-      )}
-    </div>
-  )
-}
-
-// ── Main Component ───────────────────────────────────────────────
-
-const ScatterPlot: FC<ScatterPlotProps> = ({
+const ScatterPlotComponent: FC<ScatterPlotProps> = ({
   data,
   xField,
   yField,
-  sizeField,
-  colorField,
+  xFormat,
+  yFormat,
   title,
-  showLegend = false,
-  colors,
-  loading,
+  colorField,
+  isSelected,
+  onClick,
+  index,
+  info,
 }) => {
-  // Group data by color dimension
-  const groups = useMemo(() => {
-    if (!colorField) return [{ name: 'All', data }]
-
-    const map = new Map<string, Record<string, unknown>[]>()
-    for (const row of data) {
-      const key = String(row[colorField] ?? 'Other')
-      const group = map.get(key)
-      if (group) group.push(row)
-      else map.set(key, [row])
+  // Group data by color field if provided
+  const seriesData = useMemo(() => {
+    if (!colorField) {
+      return [{ name: 'all', data, color: SERIES_COLORS[0] }]
     }
-    return [...map.entries()].map(([name, rows]) => ({ name, data: rows }))
+
+    const groups = new Map<string, Record<string, unknown>[]>()
+    for (const row of data) {
+      const key = String(row[colorField] ?? '(empty)')
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(row)
+    }
+
+    const result: Array<{ name: string; data: Record<string, unknown>[]; color: string }> = []
+    let i = 0
+    for (const [name, rows] of groups) {
+      result.push({ name, data: rows, color: PIE_PALETTE[i % PIE_PALETTE.length] })
+      i++
+    }
+    return result
   }, [data, colorField])
 
-  const sizeRange: [number, number] = sizeField ? [40, 400] : [60, 60]
+  if (data.length === 0) {
+    return (
+      <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+        <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+        </div>
+      </ChartCard>
+    )
+  }
+
+  const xTickFormatter = (v: unknown) => {
+    if (typeof v === 'number') return formatValue(v, xFormat ?? { type: 'compact' })
+    return String(v)
+  }
+  const yTickFormatter = (v: unknown) => {
+    if (typeof v === 'number') return formatValue(v, yFormat ?? { type: 'compact' })
+    return String(v)
+  }
 
   return (
-    <ChartWrapper title={title} loading={loading} empty={data.length === 0}>
-      <div className="px-2 pb-4 pt-1" style={{ height: 320 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 8, right: 16, bottom: 4, left: 10 }}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={GRID_COLOR}
+    <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+      <ResponsiveContainer width="100%" height={240}>
+        <ScatterChart margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={GRID_STROKE}
+          />
+          <XAxis
+            dataKey={xField}
+            type="number"
+            tick={AXIS_STYLE}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={xTickFormatter}
+            name={xField}
+          />
+          <YAxis
+            dataKey={yField}
+            type="number"
+            tick={AXIS_STYLE}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={yTickFormatter}
+            width={52}
+            name={yField}
+          />
+          <ZAxis range={[36, 36]} />
+          <Tooltip
+            {...TOOLTIP_CONFIG}
+            formatter={(value: unknown, name: string) => [
+              typeof value === 'number'
+                ? formatValue(value, name === xField ? xFormat : yFormat)
+                : String(value),
+              name,
+            ]}
+          />
+
+          {seriesData.map(series => (
+            <Scatter
+              key={series.name}
+              name={series.name}
+              data={series.data}
+              fill={series.color}
+              fillOpacity={0.6}
+              isAnimationActive
+              animationDuration={400}
+              animationEasing="ease-out"
             />
-            <XAxis
-              dataKey={xField}
-              type="number"
-              tick={AXIS_TICK_STYLE}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => autoFormat(v)}
-              name={xField}
-            />
-            <YAxis
-              dataKey={yField}
-              type="number"
-              tick={AXIS_TICK_STYLE}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => autoFormat(v)}
-              width={60}
-              name={yField}
-            />
-            {sizeField && (
-              <ZAxis
-                dataKey={sizeField}
-                type="number"
-                range={sizeRange}
-                name={sizeField}
-              />
-            )}
-            <Tooltip
-              content={
-                <ScatterTooltipContent
-                  xField={xField}
-                  yField={yField}
-                  sizeField={sizeField}
-                  colorField={colorField}
-                />
-              }
-            />
-            {showLegend && groups.length > 1 && (
-              <Legend
-                wrapperStyle={LEGEND_STYLE}
-                iconType="circle"
-                iconSize={8}
-              />
-            )}
-            {groups.map((group, i) => (
-              <Scatter
-                key={group.name}
-                name={group.name}
-                data={group.data}
-                fill={colors?.[i] ?? getColor(i)}
-                fillOpacity={0.7}
-                isAnimationActive={true}
-                animationDuration={ANIMATION_DURATION}
-                animationEasing="ease-out"
-              />
-            ))}
-          </ScatterChart>
-        </ResponsiveContainer>
-      </div>
-    </ChartWrapper>
+          ))}
+        </ScatterChart>
+      </ResponsiveContainer>
+    </ChartCard>
   )
 }
 
-export default ScatterPlot
+export default ScatterPlotComponent

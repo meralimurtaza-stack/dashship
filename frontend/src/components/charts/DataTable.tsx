@@ -1,139 +1,124 @@
-import { type FC, useState, useMemo } from 'react'
-import { autoFormat } from '../../engine/formatters'
-import ChartWrapper from './ChartWrapper'
+import { type FC, useMemo } from 'react'
+import { formatValue, type FormatConfig } from '../../lib/formatValue'
+import ChartCard, { type ChartInfo } from './ChartCard'
 
 interface DataTableProps {
   data: Record<string, unknown>[]
   columns: string[]
-  title?: string
-  pageSize?: number
-  loading?: boolean
+  formats?: Record<string, FormatConfig>
+  title: string
+  isSelected?: boolean
+  onClick?: () => void
+  index?: number
+  info?: ChartInfo
 }
 
-type SortState = { field: string; order: 'asc' | 'desc' } | null
-
-// ── Cell Value Formatting ────────────────────────────────────────
-
-function formatCell(value: unknown): { text: string; color?: string } {
-  if (value == null || value === '') return { text: '\u2014' }
-  if (typeof value === 'number') {
-    const text = autoFormat(value)
-    if (value < 0) return { text, color: 'text-ds-error' }
-    return { text }
-  }
-  return { text: String(value) }
-}
-
-function isNumeric(value: unknown): boolean {
-  return typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)) && value.trim() !== '')
-}
-
-// ── Sort Icon ────────────────────────────────────────────────────
-
-const SortIcon: FC<{ active: boolean; order: 'asc' | 'desc' }> = ({ active, order }) => (
-  <span className={`ml-1 text-[10px] ${active ? 'text-ds-text' : 'text-ds-text-dim'}`}>
-    {order === 'asc' ? '\u2191' : '\u2193'}
-  </span>
-)
-
-// ── Main Component ───────────────────────────────────────────────
-
-const DataTable: FC<DataTableProps> = ({
+const DataTableComponent: FC<DataTableProps> = ({
   data,
   columns,
+  formats,
   title,
-  pageSize = 25,
-  loading,
+  isSelected,
+  onClick,
+  index,
+  info,
 }) => {
-  const [sort, setSort] = useState<SortState>(null)
-  const [page, setPage] = useState(0)
-
-  // Detect which columns are numeric for right-alignment
-  const numericColumns = useMemo(() => {
+  // Determine which columns are numeric for right-alignment
+  const numericCols = useMemo(() => {
     const set = new Set<string>()
     if (data.length === 0) return set
-    const sample = data.slice(0, 10)
     for (const col of columns) {
-      if (sample.every((r) => r[col] == null || r[col] === '' || isNumeric(r[col]))) {
-        set.add(col)
-      }
+      const sample = data[0][col]
+      if (typeof sample === 'number') set.add(col)
     }
     return set
   }, [data, columns])
 
-  // Sort
-  const sorted = useMemo(() => {
-    if (!sort) return data
-    return [...data].sort((a, b) => {
-      const va = a[sort.field]
-      const vb = b[sort.field]
-      if (va == null && vb == null) return 0
-      if (va == null) return 1
-      if (vb == null) return -1
-      const na = Number(va), nb = Number(vb)
-      if (!isNaN(na) && !isNaN(nb)) {
-        return sort.order === 'asc' ? na - nb : nb - na
-      }
-      const cmp = String(va).localeCompare(String(vb))
-      return sort.order === 'asc' ? cmp : -cmp
-    })
-  }, [data, sort])
+  if (data.length === 0 || columns.length === 0) {
+    return (
+      <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+        <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+        </div>
+      </ChartCard>
+    )
+  }
 
-  // Paginate
-  const totalPages = Math.ceil(sorted.length / pageSize)
-  const pageData = sorted.slice(page * pageSize, (page + 1) * pageSize)
+  const headerStyle: React.CSSProperties = {
+    fontFamily: '"IBM Plex Mono", monospace',
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: '0.5px',
+    textTransform: 'uppercase',
+    color: '#8A8A86',
+    padding: '8px 12px',
+    borderBottom: '0.5px solid #E8E8E6',
+    whiteSpace: 'nowrap',
+  }
 
-  const handleSort = (field: string) => {
-    setSort((prev) => {
-      if (prev?.field === field) {
-        return prev.order === 'asc' ? { field, order: 'desc' } : null
-      }
-      return { field, order: 'asc' }
-    })
-    setPage(0)
+  const cellStyle: React.CSSProperties = {
+    fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+    fontSize: 13,
+    color: '#0E0D0D',
+    padding: '7px 12px',
+    whiteSpace: 'nowrap',
   }
 
   return (
-    <ChartWrapper title={title} loading={loading} empty={data.length === 0}>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
+    <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+      <div style={{ maxHeight: 320, overflowY: 'auto', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr className="border-b border-ds-border">
-              {columns.map((col) => (
+            <tr>
+              {columns.map(col => (
                 <th
                   key={col}
-                  onClick={() => handleSort(col)}
-                  className={`px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-ds-text-dim font-medium cursor-pointer select-none hover:text-ds-text transition-colors ${
-                    numericColumns.has(col) ? 'text-right' : 'text-left'
-                  }`}
+                  style={{
+                    ...headerStyle,
+                    textAlign: numericCols.has(col) ? 'right' : 'left',
+                    position: 'sticky',
+                    top: 0,
+                    backgroundColor: '#FFFFFF',
+                    zIndex: 1,
+                  }}
                 >
                   {col}
-                  <SortIcon
-                    active={sort?.field === col}
-                    order={sort?.field === col ? sort.order : 'asc'}
-                  />
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {pageData.map((row, ri) => (
+            {data.map((row, rowIdx) => (
               <tr
-                key={ri}
-                className={`border-b border-ds-border transition-colors hover:bg-ds-surface-alt ${
-                  ri % 2 === 1 ? 'bg-ds-surface-alt/50' : ''
-                }`}
+                key={rowIdx}
+                style={{
+                  backgroundColor: rowIdx % 2 === 1 ? 'rgba(0,0,0,0.02)' : 'transparent',
+                }}
               >
-                {columns.map((col) => {
-                  const { text, color } = formatCell(row[col])
+                {columns.map(col => {
+                  const raw = row[col]
+                  const isNum = typeof raw === 'number'
+                  const isNeg = isNum && raw < 0
+
+                  let display: string
+                  if (isNum) {
+                    const fmt = formats?.[col]
+                    display = fmt ? formatValue(raw, fmt) : formatValue(raw)
+                  } else {
+                    display = raw == null ? '—' : String(raw)
+                  }
+
                   return (
                     <td
                       key={col}
-                      className={`px-4 py-2 font-mono text-xs tabular-nums ${
-                        numericColumns.has(col) ? 'text-right' : 'text-left'
-                      } ${color ?? 'text-ds-text'}`}
+                      style={{
+                        ...cellStyle,
+                        textAlign: numericCols.has(col) ? 'right' : 'left',
+                        fontFamily: isNum ? '"IBM Plex Mono", monospace' : cellStyle.fontFamily,
+                        color: isNeg ? '#C0392B' : cellStyle.color,
+                      }}
                     >
-                      {text}
+                      {display}
                     </td>
                   )
                 })}
@@ -142,33 +127,8 @@ const DataTable: FC<DataTableProps> = ({
           </tbody>
         </table>
       </div>
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-ds-border">
-          <p className="font-mono text-[10px] text-ds-text-dim tabular-nums">
-            {page * pageSize + 1}\u2013{Math.min((page + 1) * pageSize, sorted.length)} of{' '}
-            {sorted.length.toLocaleString()}
-          </p>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide border border-ds-border text-ds-text-muted hover:bg-ds-surface-alt disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Prev
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="px-2.5 py-1 font-mono text-[10px] uppercase tracking-wide border border-ds-border text-ds-text-muted hover:bg-ds-surface-alt disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-    </ChartWrapper>
+    </ChartCard>
   )
 }
 
-export default DataTable
+export default DataTableComponent

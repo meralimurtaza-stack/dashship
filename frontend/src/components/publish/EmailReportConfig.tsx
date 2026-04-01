@@ -84,7 +84,8 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
           onChange={(e) => setRecipients(e.target.value)}
           placeholder="email@example.com (one per line)"
           rows={3}
-          className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors resize-none"
+          className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors resize-none"
+          style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
         />
       </FieldGroup>
 
@@ -97,11 +98,12 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
               <button
                 key={f}
                 onClick={() => setFrequency(f)}
-                className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide border transition-colors ${
+                className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide transition-colors ${
                   frequency === f
-                    ? 'bg-ds-accent text-white border-ds-accent'
-                    : 'text-ds-text-muted border-ds-border hover:border-ds-accent hover:text-ds-text'
+                    ? 'bg-ds-accent text-white'
+                    : 'text-ds-text-muted hover:border-ds-accent hover:text-ds-text'
                 }`}
+                style={{ borderRadius: 8, border: frequency === f ? '0.5px solid var(--color-ds-accent)' : '0.5px solid var(--color-ds-border)' }}
               >
                 {f}
               </button>
@@ -116,7 +118,8 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
                 <select
                   value={dayOfWeek}
                   onChange={(e) => setDayOfWeek(Number(e.target.value))}
-                  className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors appearance-none"
+                  className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors appearance-none"
+                  style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
                 >
                   {DAYS_OF_WEEK.map((d, i) => (
                     <option key={i} value={i}>{d}</option>
@@ -130,7 +133,8 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
                 <select
                   value={dayOfMonth}
                   onChange={(e) => setDayOfMonth(Number(e.target.value))}
-                  className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors appearance-none"
+                  className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors appearance-none"
+                  style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
                 >
                   {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
                     <option key={d} value={d}>{d}</option>
@@ -146,7 +150,8 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
                 type="time"
                 value={timeUtc}
                 onChange={(e) => setTimeUtc(e.target.value)}
-                className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
+                className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors"
+                style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
               />
             </div>
           </div>
@@ -160,11 +165,12 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
             <button
               key={f}
               onClick={() => setFormat(f)}
-              className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide border transition-colors ${
+              className={`flex-1 px-3 py-2 font-mono text-xs uppercase tracking-wide transition-colors ${
                 format === f
-                  ? 'bg-ds-accent text-white border-ds-accent'
-                  : 'text-ds-text-muted border-ds-border hover:border-ds-accent hover:text-ds-text'
+                  ? 'bg-ds-accent text-white'
+                  : 'text-ds-text-muted hover:border-ds-accent hover:text-ds-text'
               }`}
+              style={{ borderRadius: 8, border: format === f ? '0.5px solid var(--color-ds-accent)' : '0.5px solid var(--color-ds-border)' }}
             >
               {f === 'html' ? 'HTML Email' : 'PDF Attachment'}
             </button>
@@ -177,7 +183,8 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
         <input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface border border-ds-border focus:border-ds-accent outline-none transition-colors"
+          className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors"
+          style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
         />
       </FieldGroup>
 
@@ -205,13 +212,15 @@ const EmailReportConfig: FC<EmailReportConfigProps> = ({ dashboardId, dashboardN
           onClick={handleSave}
           disabled={saving}
           className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors disabled:opacity-50"
+          style={{ borderRadius: 10 }}
         >
           {saving ? 'Saving...' : saved ? 'Saved' : 'Save Schedule'}
         </button>
         <button
           onClick={handleSendTest}
           disabled={sendingTest}
-          className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-ds-text-muted border border-ds-border hover:border-ds-accent hover:text-ds-text transition-colors disabled:opacity-50"
+          className="px-5 py-2.5 font-mono text-xs uppercase tracking-wide text-ds-text-muted hover:border-ds-accent hover:text-ds-text transition-colors disabled:opacity-50"
+          style={{ borderRadius: 10, border: '0.5px solid var(--color-ds-border)' }}
         >
           {sendingTest ? 'Sending...' : testSent ? 'Test Sent' : 'Send Test'}
         </button>

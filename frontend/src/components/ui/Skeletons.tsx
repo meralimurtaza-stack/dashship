@@ -9,14 +9,14 @@ const Shimmer: FC<{ className?: string; delay?: string; style?: React.CSSPropert
 }) => (
   <div
     className={`bg-ds-surface-alt animate-pulse ${className}`}
-    style={{ animationDelay: delay, ...style }}
+    style={{ animationDelay: delay, borderRadius: 4, ...style }}
   />
 )
 
 // ── Chart Skeleton ───────────────────────────────────────────────
 
 export const ChartSkeleton: FC<{ type?: 'bar' | 'line' | 'pie' }> = ({ type = 'bar' }) => (
-  <div className="bg-ds-surface border border-ds-border p-5 h-full">
+  <div className="bg-ds-surface p-5 h-full" style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 12 }}>
     {/* Title */}
     <Shimmer className="h-2 w-24 mb-1" />
     <Shimmer className="h-1.5 w-16 mb-6" delay="0.05s" />
@@ -60,7 +60,7 @@ export const ChartSkeleton: FC<{ type?: 'bar' | 'line' | 'pie' }> = ({ type = 'b
 // ── KPI Skeleton ─────────────────────────────────────────────────
 
 export const KPISkeleton: FC = () => (
-  <div className="bg-ds-surface border border-ds-border p-5">
+  <div className="bg-ds-surface p-5" style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 12 }}>
     <Shimmer className="h-2 w-20 mb-3" />
     <Shimmer className="h-7 w-28 mb-2" delay="0.1s" />
     <Shimmer className="h-2 w-16" delay="0.2s" />
@@ -73,16 +73,16 @@ export const TableSkeleton: FC<{ rows?: number; cols?: number }> = ({
   rows = 5,
   cols = 4,
 }) => (
-  <div className="bg-ds-surface border border-ds-border overflow-hidden">
+  <div className="bg-ds-surface overflow-hidden" style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 12 }}>
     {/* Header */}
-    <div className="flex gap-4 px-5 py-3 border-b border-ds-border">
+    <div className="flex gap-4 px-5 py-3" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
       {Array.from({ length: cols }).map((_, i) => (
         <Shimmer key={i} className="h-2 flex-1" delay={`${i * 0.03}s`} />
       ))}
     </div>
     {/* Rows */}
     {Array.from({ length: rows }).map((_, r) => (
-      <div key={r} className="flex gap-4 px-5 py-3 border-b border-ds-border">
+      <div key={r} className="flex gap-4 px-5 py-3" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
         {Array.from({ length: cols }).map((_, c) => (
           <Shimmer
             key={c}

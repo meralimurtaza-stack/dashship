@@ -36,10 +36,10 @@ const BarMini: FC<{ items: InsightBarItem[]; title?: string }> = ({ items, title
       {items.map((item, i) => (
         <div key={i} className="flex items-center gap-2">
           <span className="font-sans text-[11px] text-ds-text-muted w-20 truncate shrink-0 text-right">{item.label}</span>
-          <div className="flex-1 h-4 bg-ds-surface-alt relative">
+          <div className="flex-1 h-4 bg-ds-surface-alt relative" style={{ borderRadius: 4 }}>
             <div
               className="h-full bg-ds-accent/80"
-              style={{ width: `${(item.value / max) * 100}%` }}
+              style={{ width: `${(item.value / max) * 100}%`, borderRadius: 4 }}
             />
           </div>
           <span className="font-mono text-[10px] text-ds-text-dim tabular-nums w-16 shrink-0">
@@ -96,13 +96,13 @@ const InsightCard: FC<InsightCardProps> = ({ insight, onPin }) => {
   }
 
   return (
-    <div className="border border-ds-border bg-ds-surface p-3.5 my-3">
+    <div className="bg-ds-surface p-3.5 my-3" style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
       {insight.type === 'kpi' && <KpiStrip items={insight.data as InsightKpiItem[]} />}
       {insight.type === 'bar' && <BarMini items={insight.data as InsightBarItem[]} title={insight.title} />}
       {insight.type === 'line' && <Sparkline items={insight.data as InsightBarItem[]} title={insight.title} />}
 
       {onPin && (
-        <div className="mt-2.5 pt-2 border-t border-ds-border">
+        <div className="mt-2.5 pt-2" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
           <button
             onClick={handlePin}
             disabled={pinned}

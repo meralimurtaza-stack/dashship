@@ -18,16 +18,16 @@ interface AIReviewPanelProps {
 // ── Skeleton Card ───────────────────────────────────────────────
 
 const SkeletonCard: FC = () => (
-  <div className="border border-ds-border bg-ds-surface p-4 animate-pulse">
+  <div className="bg-ds-surface p-4 animate-pulse border-ds-border" style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
     <div className="flex items-center gap-2 mb-3">
-      <div className="h-3 w-12 bg-ds-surface-alt rounded-sm" />
-      <div className="h-3 w-20 bg-ds-surface-alt rounded-sm" />
+      <div className="h-3 w-12 bg-ds-surface-alt" style={{ borderRadius: 4 }} />
+      <div className="h-3 w-20 bg-ds-surface-alt" style={{ borderRadius: 4 }} />
     </div>
-    <div className="h-3 w-full bg-ds-surface-alt rounded-sm mb-2" />
-    <div className="h-3 w-3/4 bg-ds-surface-alt rounded-sm mb-4" />
+    <div className="h-3 w-full bg-ds-surface-alt mb-2" style={{ borderRadius: 4 }} />
+    <div className="h-3 w-3/4 bg-ds-surface-alt mb-4" style={{ borderRadius: 4 }} />
     <div className="flex gap-2">
-      <div className="h-6 w-16 bg-ds-surface-alt rounded-sm" />
-      <div className="h-6 w-16 bg-ds-surface-alt rounded-sm" />
+      <div className="h-6 w-16 bg-ds-surface-alt" style={{ borderRadius: 4 }} />
+      <div className="h-6 w-16 bg-ds-surface-alt" style={{ borderRadius: 4 }} />
     </div>
   </div>
 )
@@ -84,9 +84,9 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
   const allReviewed = status === 'done' && suggestions.length === 0
 
   return (
-    <div className={`border-l border-ds-border bg-ds-bg transition-all duration-300 ${collapsed ? 'w-12' : 'w-80'} flex-shrink-0 flex flex-col`}>
+    <div className={`bg-ds-bg transition-all duration-300 ${collapsed ? 'w-12' : 'w-80'} flex-shrink-0 flex flex-col`} style={{ borderLeft: '0.5px solid var(--color-ds-border)' }}>
       {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-ds-border">
+      <div className="p-4 flex items-center justify-between" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
         {!collapsed && (
           <h2 className="micro-label">
             AI Review
@@ -113,7 +113,7 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
           {status === 'loading' && (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-1.5 h-1.5 bg-ds-accent animate-pulse" />
+                <div className="w-1.5 h-1.5 bg-ds-accent rounded-full animate-pulse" />
                 <span className="micro-label">
                   Analysing your data...
                 </span>
@@ -130,7 +130,8 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
               <p className="font-mono text-[10px] text-ds-text-dim">{error}</p>
               <button
                 onClick={analyse}
-                className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors w-full"
+                className="text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors w-full"
+                style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}
               >
                 Retry
               </button>
@@ -162,7 +163,8 @@ const AIReviewPanel: FC<AIReviewPanelProps> = ({
               </p>
               <button
                 onClick={analyse}
-                className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors"
+                className="text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors"
+                style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}
               >
                 Re-analyse
               </button>

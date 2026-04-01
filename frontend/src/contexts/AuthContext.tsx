@@ -117,7 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // 2. Listen for all auth changes going forward
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session && (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED')) {
+        // Session expired or refresh failed — silently re-auth
+        // so the user is never bounced to the homepage mid-work.
+        console.warn(`[Auth] Session lost (${event}). Re-creating anonymous session.`);
+        supabase.auth.signInAnonymously();
+        return;
+      }
       setUser(session?.user ?? null);
       // Don't set loading here — it's only for the initial check
     });

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, type FC } from 'react'
 import { useParams } from 'react-router-dom'
 import type { PublishedDashboard } from '../types/publish'
 import { getPublishedDashboard, authenticateViewer } from '../lib/publish-api'
-import DashboardRenderer from '../components/dashboard/DashboardRenderer'
+import DashboardIframe from '../components/dashboard/DashboardIframe'
 
 interface ViewerPageProps {
   embed?: boolean
@@ -168,9 +168,8 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
 
       {/* Dashboard Grid */}
       <main className={`max-w-7xl mx-auto ${embed ? 'p-4' : 'px-6 py-8'}`}>
-        <DashboardRenderer
-          layout={dashboard.layout}
-          sheets={dashboard.sheets}
+        <DashboardIframe
+          jsxCode={dashboard.jsxCode}
           data={dashboard.data}
         />
       </main>

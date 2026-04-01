@@ -12,6 +12,8 @@ export interface PublishBranding {
 export interface PublishConfig {
   id?: string
   projectId?: string
+  dashboardId?: string
+  userId?: string
   dashboardName: string
   slug: string
   accessLevel: AccessLevel
@@ -19,8 +21,7 @@ export interface PublishConfig {
   allowedEmails?: string[]
   branding: PublishBranding
   embedEnabled: boolean
-  sheets: import('./sheet').Sheet[]
-  layout: import('./sheet').DashboardLayout
+  jsxCode: string
   data: Record<string, unknown>[]
   createdAt?: string
   updatedAt?: string
@@ -32,8 +33,7 @@ export interface PublishedDashboard {
   dashboardName: string
   accessLevel: AccessLevel
   branding: PublishBranding
-  sheets: import('./sheet').Sheet[]
-  layout: import('./sheet').DashboardLayout
+  jsxCode: string
   data: Record<string, unknown>[]
   requiresAuth: boolean
 }

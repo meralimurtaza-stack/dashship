@@ -13,7 +13,7 @@ const SourceSelector: FC<SourceSelectorProps> = ({ sources, loading, onSelect })
       <div className="flex-1 flex items-center justify-center">
         <div className="space-y-4 text-center">
           <div className="flex items-center gap-3 justify-center">
-            <div className="w-2 h-2 bg-ds-accent animate-pulse" />
+            <div className="w-2 h-2 bg-ds-accent animate-pulse rounded-full" style={{ borderRadius: '50%' }} />
             <span className="font-mono text-xs uppercase tracking-widest text-ds-text-muted">
               Loading data sources...
             </span>
@@ -70,7 +70,8 @@ const SourceSelector: FC<SourceSelectorProps> = ({ sources, loading, onSelect })
               <button
                 key={source.id}
                 onClick={() => onSelect(source)}
-                className="w-full text-left border border-ds-border bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
+                className="w-full text-left bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
+                style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
               >
                 <div className="flex items-center justify-between">
                   <div>

@@ -23,16 +23,22 @@ const ProjectNavBar: FC<ProjectNavBarProps> = ({
   hasDashboard,
 }) => {
   return (
-    <div className="h-11 px-5 flex items-center gap-5 border-b border-ds-border bg-ds-surface shrink-0">
+    <div
+      className="px-6 flex items-center gap-5 bg-ds-bg shrink-0"
+      style={{
+        height: '42px',
+        borderBottom: '0.5px solid rgba(0,0,0,0.06)',
+      }}
+    >
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 min-w-0 shrink-0">
-        <span className="font-mono text-xs font-medium text-ds-text truncate max-w-[180px]">
+        <span className="font-mono text-[12px] font-medium text-ds-text truncate max-w-[180px]">
           {projectName}
         </span>
       </div>
 
       {/* Separator */}
-      <div className="w-px h-4 bg-ds-border shrink-0" />
+      <div className="w-px h-4 bg-ds-border-strong shrink-0" />
 
       {/* Underline tabs */}
       <div className="flex items-center gap-0">
@@ -46,18 +52,30 @@ const ProjectNavBar: FC<ProjectNavBarProps> = ({
               onClick={() => !isDisabled && onNavigate(key)}
               disabled={isDisabled}
               className={`
-                relative px-4 py-2.5 font-mono text-xs transition-colors
+                relative px-5 text-[12px] font-medium uppercase transition-colors
                 ${isActive
-                  ? 'text-ds-text font-medium'
+                  ? 'text-ds-text'
                   : isDisabled
                     ? 'text-ds-text-dim cursor-not-allowed'
-                    : 'text-ds-text-muted hover:text-ds-text'
+                    : 'text-ds-text-dim hover:text-ds-text-muted'
                 }
               `}
+              style={{
+                paddingTop: '11px',
+                paddingBottom: '11px',
+                letterSpacing: '0.04em',
+                fontFamily: 'var(--font-sans)',
+              }}
             >
               {label}
               {isActive && (
-                <div className="absolute bottom-0 left-4 right-4 h-[2.5px] bg-ds-accent" />
+                <div
+                  className="absolute bottom-0 left-5 right-5 bg-ds-accent"
+                  style={{
+                    height: '2px',
+                    borderRadius: '2px 2px 0 0',
+                  }}
+                />
               )}
             </button>
           )

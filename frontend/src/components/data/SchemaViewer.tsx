@@ -72,10 +72,10 @@ const DraggableField: FC<DraggableFieldProps> = ({
 const DragPreview: FC<{ col: ColumnSchema }> = ({ col }) => {
   const display = col.displayName || col.name
   return (
-    <div className="border border-ds-accent bg-ds-surface px-4 py-2 flex items-center gap-2 max-w-xs cursor-grabbing">
+    <div className="bg-ds-surface px-4 py-2 flex items-center gap-2 max-w-xs cursor-grabbing" style={{ borderRadius: '8px', border: '0.5px solid rgba(0,0,0,0.10)' }}>
       <span className={`font-mono text-[9px] uppercase px-1.5 py-0.5 ${
         col.role === 'measure' ? 'text-ds-accent bg-ds-accent-glow' : 'text-ds-text-muted bg-ds-surface-alt'
-      }`}>
+      }`} style={{ borderRadius: '4px' }}>
         {col.role === 'measure' ? 'M' : 'D'}
       </span>
       <span className="font-mono text-sm text-ds-text truncate">{display}</span>
@@ -102,32 +102,33 @@ const DroppableGroup: FC<DroppableGroupProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`border bg-ds-surface transition-all duration-200 ${
+      className={`bg-ds-surface transition-all duration-200 ${
         isOver && canDrop
-          ? 'border-ds-accent ring-2 ring-ds-accent/20'
-          : 'border-ds-border'
+          ? 'ring-2 ring-ds-accent/20'
+          : ''
       }`}
+      style={{ borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
     >
-      <div className={`px-4 py-3 border-b transition-colors duration-200 ${
-        isOver && canDrop ? 'border-ds-accent/30 bg-ds-accent/4' : 'border-ds-border'
-      }`}>
+      <div className={`px-4 py-3 transition-colors duration-200 ${
+        isOver && canDrop ? 'bg-ds-accent/4' : ''
+      }`} style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-2">
           <span className="micro-label">
             {label} ({count})
           </span>
           {isOver && canDrop && (
-            <span className="font-mono text-[9px] uppercase tracking-widest text-ds-accent animate-pulse">
+            <span className="font-sans text-[9px] uppercase tracking-widest text-ds-accent animate-pulse">
               Drop to reclassify
             </span>
           )}
         </div>
       </div>
-      <div className="divide-y divide-ds-border">
+      <div>
         {children}
       </div>
       {count === 0 && (
         <div className="px-4 py-6 text-center">
-          <span className="font-mono text-[10px] text-ds-text-dim uppercase tracking-widest">
+          <span className="font-sans text-[10px] text-ds-text-dim uppercase tracking-widest">
             {isOver && canDrop ? 'Drop here' : 'No fields'}
           </span>
         </div>
@@ -210,14 +211,14 @@ const SchemaViewer: FC<SchemaViewerProps> = ({
   return (
     <div className="space-y-6">
       {/* Quality summary */}
-      <div className="grid grid-cols-4 gap-px bg-ds-border">
+      <div className="grid grid-cols-4 gap-px" style={{ borderRadius: '12px', overflow: 'hidden', border: '0.5px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
         {[
           { label: 'Rows', value: formatStat(schema.rowCount) },
           { label: 'Columns', value: String(schema.columns.length) },
           { label: 'Complete', value: `${profile.qualitySummary.completenessPercent}%` },
           { label: 'Duplicates', value: formatStat(profile.duplicateRowCount) },
         ].map((item) => (
-          <div key={item.label} className="bg-ds-surface p-4">
+          <div key={item.label} className="bg-ds-surface p-4" style={{ borderRadius: '8px' }}>
             <p className="micro-label">
               {item.label}
             </p>
@@ -240,7 +241,7 @@ const SchemaViewer: FC<SchemaViewerProps> = ({
       )}
 
       {/* Drag hint */}
-      <p className="font-mono text-[9px] text-ds-text-dim tracking-wide">
+      <p className="font-sans text-[9px] text-ds-text-dim tracking-wide">
         Drag fields between groups to reclassify
       </p>
 

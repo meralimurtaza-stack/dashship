@@ -84,6 +84,18 @@ export interface DataContextColumn {
   type: string;
   role: 'dimension' | 'measure';
   sampleValues: string[];
+  stats?: {
+    min?: number;
+    max?: number;
+    mean?: number;
+    median?: number;
+    uniqueCount?: number;
+    nullCount?: number;
+    topValues?: string[];  // most frequent values for dimensions
+    earliest?: string;     // for date columns
+    latest?: string;       // for date columns
+    granularity?: string;  // for date columns (daily, weekly, monthly, yearly)
+  };
 }
 
 export interface ChatDataContext {
@@ -91,4 +103,8 @@ export interface ChatDataContext {
   sourceId: string;
   rowCount: number;
   columns: DataContextColumn[];
+  /** Storage path for downloading the raw file from Supabase Storage */
+  filePath: string | null;
+  /** Original file name (needed to re-parse the downloaded blob) */
+  fileName: string;
 }

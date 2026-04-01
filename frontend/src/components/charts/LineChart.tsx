@@ -1,153 +1,177 @@
 import { type FC } from 'react'
 import {
   ResponsiveContainer,
-  LineChart as RechartsLine,
+  ComposedChart,
   Line,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  ComposedChart,
+  ReferenceDot,
 } from 'recharts'
-import { autoFormat, formatDate } from '../../engine/formatters'
-import ChartWrapper from './ChartWrapper'
-import {
-  AXIS_TICK_STYLE,
-  TOOLTIP_STYLE,
-  GRID_COLOR,
-  ANIMATION_DURATION,
-  ANIMATION_EASING,
-  getColor,
-} from './chartConfig'
+import { formatValue, type FormatConfig } from '../../lib/formatValue'
+import ChartCard, { type ChartInfo } from './ChartCard'
+import { SERIES_COLORS, AXIS_STYLE, TOOLTIP_CONFIG, GRID_STROKE } from './chartConfig'
 
 interface LineChartProps {
   data: Record<string, unknown>[]
   xField: string
   yFields: string[]
-  title?: string
+  format?: FormatConfig
+  title: string
   areaFill?: boolean
   smooth?: boolean
-  showDots?: boolean
   showLegend?: boolean
   isDateAxis?: boolean
-  dateFormat?: string
-  colors?: string[]
-  loading?: boolean
+  isSelected?: boolean
+  onClick?: () => void
+  index?: number
+  info?: ChartInfo
 }
 
-const LEGEND_STYLE = {
-  fontFamily: '"IBM Plex Mono", monospace',
-  fontSize: 10,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
+// Custom label for the final data point
+const FinalValueLabel = ({ viewBox, value, color }: any) => {
+  if (!viewBox || value == null) return null
+  return (
+    <text
+      x={viewBox.x + 8}
+      y={viewBox.y - 8}
+      style={{
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: 11,
+        fontWeight: 500,
+        fill: color || '#0E0D0D',
+      }}
+    >
+      {value}
+    </text>
+  )
 }
 
 const LineChartComponent: FC<LineChartProps> = ({
   data,
   xField,
   yFields,
+  format,
   title,
-  areaFill = false,
-  smooth = true,
-  showDots = false,
-  showLegend = false,
-  isDateAxis = false,
-  dateFormat = 'MMM yyyy',
-  colors,
-  loading,
+  areaFill = true,
+  isSelected,
+  onClick,
+  index,
+  info,
 }) => {
-  const curveType = smooth ? 'monotone' : 'linear'
+  if (data.length === 0) {
+    return (
+      <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+        <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+        </div>
+      </ChartCard>
+    )
+  }
 
-  const tickFormatter = isDateAxis
-    ? (v: string) => formatDate(v, dateFormat)
-    : (v: unknown) => String(v)
+  const tickFormatter = (v: unknown) => {
+    if (typeof v === 'number') return formatValue(v, format ?? { type: 'compact' })
+    return String(v)
+  }
 
-  // Use ComposedChart when area fill is needed, otherwise LineChart
-  const ChartComponent = areaFill ? ComposedChart : RechartsLine
+  // Get last data point for end-of-line labels
+  const lastRow = data[data.length - 1]
 
   return (
-    <ChartWrapper title={title} loading={loading} empty={data.length === 0}>
-      <div className="px-2 pb-4 pt-1" style={{ height: 320 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <ChartComponent
-            data={data}
-            margin={{ top: 8, right: 16, bottom: 4, left: 10 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={GRID_COLOR}
-              vertical={false}
-            />
-            <XAxis
-              dataKey={xField}
-              tick={AXIS_TICK_STYLE}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={tickFormatter}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tick={AXIS_TICK_STYLE}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => autoFormat(v)}
-              width={60}
-            />
-            <Tooltip
-              {...TOOLTIP_STYLE}
-              labelFormatter={isDateAxis ? (l) => formatDate(String(l), 'dd MMM yyyy') : undefined}
-              formatter={(value: unknown) => [autoFormat(value)]}
-            />
-            {showLegend && (
-              <Legend
-                wrapperStyle={LEGEND_STYLE}
-                iconType="line"
-                iconSize={12}
+    <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+      <ResponsiveContainer width="100%" height={240}>
+        <ComposedChart data={data} margin={{ top: 16, right: 56, bottom: 4, left: 4 }}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={GRID_STROKE}
+            vertical={false}
+          />
+          <XAxis
+            dataKey={xField}
+            tick={AXIS_STYLE}
+            axisLine={false}
+            tickLine={false}
+            interval="preserveStartEnd"
+          />
+          <YAxis
+            tick={AXIS_STYLE}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={tickFormatter}
+            width={52}
+          />
+          <Tooltip
+            {...TOOLTIP_CONFIG}
+            formatter={(value: unknown) => [
+              typeof value === 'number' ? formatValue(value, format) : String(value),
+            ]}
+          />
+
+          {yFields.map((field, i) => {
+            const color = SERIES_COLORS[i % SERIES_COLORS.length]
+            const lastValue = lastRow ? Number(lastRow[field]) : null
+            const formattedLast = lastValue != null && !isNaN(lastValue)
+              ? formatValue(lastValue, format ?? { type: 'compact' })
+              : null
+
+            return areaFill ? (
+              <Area
+                key={field}
+                type="monotone"
+                dataKey={field}
+                stroke={color}
+                strokeWidth={2}
+                fill={color}
+                fillOpacity={0.08}
+                dot={false}
+                activeDot={{ r: 4, strokeWidth: 0, fill: color }}
+                isAnimationActive
+                animationDuration={400}
+                animationEasing="ease-out"
               />
-            )}
-            {yFields.map((field, i) => {
-              const color = colors?.[i] ?? getColor(i)
+            ) : (
+              <Line
+                key={field}
+                type="monotone"
+                dataKey={field}
+                stroke={color}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, strokeWidth: 0, fill: color }}
+                isAnimationActive
+                animationDuration={400}
+                animationEasing="ease-out"
+              />
+            )
+          })}
 
-              if (areaFill) {
-                return (
-                  <Area
-                    key={field}
-                    type={curveType}
-                    dataKey={field}
-                    stroke={color}
-                    strokeWidth={2}
-                    fill={color}
-                    fillOpacity={0.06}
-                    dot={showDots ? { r: 3, fill: color, strokeWidth: 0 } : false}
-                    activeDot={{ r: 4, fill: color, strokeWidth: 2, stroke: '#fff' }}
-                    isAnimationActive={true}
-                    animationDuration={ANIMATION_DURATION}
-                    animationEasing={ANIMATION_EASING}
-                  />
-                )
-              }
+          {/* End-of-line value dots + labels */}
+          {lastRow && yFields.map((field, i) => {
+            const color = SERIES_COLORS[i % SERIES_COLORS.length]
+            const lastValue = Number(lastRow[field])
+            if (isNaN(lastValue)) return null
 
-              return (
-                <Line
-                  key={field}
-                  type={curveType}
-                  dataKey={field}
-                  stroke={color}
-                  strokeWidth={2}
-                  dot={showDots ? { r: 3, fill: color, strokeWidth: 0 } : false}
-                  activeDot={{ r: 4, fill: color, strokeWidth: 2, stroke: '#fff' }}
-                  isAnimationActive={true}
-                  animationDuration={ANIMATION_DURATION}
-                  animationEasing={ANIMATION_EASING}
-                />
-              )
-            })}
-          </ChartComponent>
-        </ResponsiveContainer>
-      </div>
-    </ChartWrapper>
+            const formattedLast = formatValue(lastValue, format ?? { type: 'compact' })
+            const lastX = lastRow[xField]
+
+            return (
+              <ReferenceDot
+                key={`end-${field}`}
+                x={lastX as any}
+                y={lastValue}
+                r={4}
+                fill={color}
+                stroke="white"
+                strokeWidth={2}
+                label={<FinalValueLabel value={formattedLast} color={color} />}
+              />
+            )
+          })}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </ChartCard>
   )
 }
 

@@ -16,11 +16,12 @@ const AdvancedStats: FC<AdvancedStatsProps> = ({ profile }) => {
   if (significant.length === 0) return null
 
   return (
-    <div className="border border-ds-border bg-ds-surface">
+    <div className="bg-ds-surface overflow-hidden" style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
+        style={{ borderRadius: '12px 12px 0 0' }}
       >
         <span className="micro-label">
           Advanced Statistics
@@ -38,19 +39,20 @@ const AdvancedStats: FC<AdvancedStatsProps> = ({ profile }) => {
       </button>
 
       {expanded && (
-        <div className="border-t border-ds-border">
-          <div className="px-4 py-2 border-b border-ds-border">
+        <div style={{ borderTop: '0.5px solid var(--color-ds-border)' }}>
+          <div className="px-4 py-2" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
             <span className="font-mono text-[9px] uppercase tracking-widest text-ds-text-dim">
               Correlations ({significant.length})
             </span>
           </div>
-          <div className="divide-y divide-ds-border">
+          <div>
             {significant.map((c) => (
               <div
                 key={`${c.col1}-${c.col2}`}
                 className="flex items-center justify-between px-4 py-2"
+                style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}
               >
-                <span className="font-mono text-sm text-ds-text-muted">
+                <span className="font-sans text-sm text-ds-text-muted">
                   {c.col1} × {c.col2}
                 </span>
                 <span

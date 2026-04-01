@@ -47,7 +47,10 @@ const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadDa
         {/* Sample data card */}
         <button
           onClick={onUseSampleData}
-          className="text-left border-[1.5px] border-ds-border bg-ds-surface p-4 hover:border-ds-accent hover:bg-ds-accent-glow transition-colors group"
+          className="text-left bg-ds-surface p-4 hover:bg-ds-accent-glow transition-all group"
+          style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
         >
           <p className="font-sans text-[13px] font-medium text-ds-text mb-1.5">
             Use sample data
@@ -63,11 +66,12 @@ const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadDa
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
-          className={`text-left border-[1.5px] bg-ds-surface p-4 transition-colors group ${
-            isDragging
-              ? 'border-ds-accent bg-ds-accent-glow'
-              : 'border-ds-border hover:border-ds-accent hover:bg-ds-accent-glow'
+          className={`text-left bg-ds-surface p-4 transition-all group ${
+            isDragging ? 'bg-ds-accent-glow' : 'hover:bg-ds-accent-glow'
           }`}
+          style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05)' }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
         >
           <input
             ref={inputRef}
@@ -77,7 +81,7 @@ const DataChoiceCards: FC<DataChoiceCardsProps> = ({ onUseSampleData, onUploadDa
             className="hidden"
           />
           <p className="font-sans text-[13px] font-medium text-ds-text mb-1.5">
-            Upload my data
+            Connect to your data
           </p>
           <p className="font-sans text-[13px] text-ds-text-muted leading-relaxed">
             {isDragging

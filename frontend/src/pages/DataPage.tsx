@@ -99,6 +99,42 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
   const isDone = ds.stage === 'done' && ds.schema && ds.profile
   const isProcessing = ds.stage === 'parsing' || ds.stage === 'profiling'
 
+  // Auto-save data source as soon as profiling completes.
+  // This ensures data is in Supabase even if user navigates to Plan tab
+  // via the nav bar instead of clicking "Start Planning".
+  const autoSaveTriggeredRef = useRef(false)
+  useEffect(() => {
+    if (isDone && ds.file && currentProject?.id && !isSaved && !autoSaveTriggeredRef.current && saveStatus !== 'saving') {
+      autoSaveTriggeredRef.current = true
+      const doAutoSave = async () => {
+        setSaveStatus('saving')
+        try {
+          const filePath = `uploads/${Date.now()}_${ds.file!.name}`
+          await uploadFileToStorage(ds.file!, filePath)
+          await saveDataSource({
+            projectId: currentProject!.id,
+            name: ds.sourceName,
+            fileName: ds.file!.name,
+            fileType: ds.schema!.fileType,
+            fileSizeBytes: ds.schema!.fileSizeBytes,
+            filePath,
+            schema: ds.schema!,
+            profile: ds.profile!,
+          })
+          setSaveStatus('saved')
+          setIsSaved(true)
+          await loadProjects()
+          console.log('[DataPage] Auto-saved data source')
+        } catch (err) {
+          console.error('[DataPage] Auto-save failed:', err)
+          autoSaveTriggeredRef.current = false
+          setSaveStatus('idle')
+        }
+      }
+      doAutoSave()
+    }
+  }, [isDone, ds.file, ds.sourceName, ds.schema, ds.profile, currentProject?.id, isSaved, saveStatus, loadProjects])
+
   // ── Data context for Captain ───────────────────────────────
 
   const dataContext: ChatDataContext | null = useMemo(() => {
@@ -107,15 +143,49 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
       sourceId: 'local',
       sourceName: ds.sourceName,
       rowCount: ds.schema.rowCount,
+      filePath: null,
+      fileName: ds.file?.name ?? '',
       columns: ds.schema.columns
         .filter((c) => !c.hidden)
-        .map((c) => ({
-          name: c.name,
-          displayName: c.displayName || null,
-          type: c.type,
-          role: c.role,
-          sampleValues: c.sampleValues,
-        })),
+        .map((c) => {
+          // Pull stats from profile if available
+          const prof = ds.profile?.columns[c.name]
+          let stats: Record<string, unknown> | undefined
+
+          if (prof) {
+            if (prof.type === 'numeric') {
+              stats = {
+                min: prof.min,
+                max: prof.max,
+                mean: prof.mean,
+                median: prof.median,
+                nullCount: prof.nullCount,
+              }
+            } else if (prof.type === 'categorical') {
+              stats = {
+                uniqueCount: prof.uniqueCount,
+                nullCount: prof.nullCount,
+                topValues: prof.topValues.slice(0, 15).map(tv => tv.value),
+              }
+            } else if (prof.type === 'date') {
+              stats = {
+                nullCount: prof.nullCount,
+                earliest: prof.earliest,
+                latest: prof.latest,
+                granularity: prof.granularity,
+              }
+            }
+          }
+
+          return {
+            name: c.name,
+            displayName: c.displayName || null,
+            type: c.type,
+            role: c.role,
+            sampleValues: c.sampleValues,
+            stats,
+          }
+        }),
     }
   }, [isDone, ds.schema, ds.sourceName])
 
@@ -252,16 +322,6 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
 
   return (
     <div className="flex h-full">
-      {(savedSources.length > 0 || isDone) && (
-        <DataSourceSidebar
-          sources={savedSources}
-          activeName={ds.sourceName}
-          currentSource={currentSource}
-          onSelectSource={() => {}}
-          onUploadAnother={handleUploadAnother}
-        />
-      )}
-
       <div className="flex-1 min-w-0 flex">
         <div className={`flex-1 min-w-0 px-6 py-12 overflow-y-auto ${isDone ? '' : 'max-w-4xl mx-auto'}`}>
           <div className="space-y-8">
@@ -286,9 +346,9 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
             {!isDone && <FileUpload onFileSelected={ds.processFile} isLoading={isProcessing} />}
 
             {isProcessing && (
-              <div className="border border-ds-border bg-ds-surface p-6">
+              <div className="bg-ds-surface p-6" style={{ borderRadius: 12, border: '0.5px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
                 <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-ds-accent animate-pulse" />
+                  <div className="w-2 h-2 bg-ds-accent animate-pulse" style={{ borderRadius: '50%' }} />
                   <span className="font-mono text-xs uppercase tracking-widest text-ds-text-muted">
                     {ds.stage === 'parsing' ? 'Parsing file...' : 'Generating profile...'}
                   </span>
@@ -297,9 +357,9 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
             )}
 
             {ds.stage === 'error' && ds.error && (
-              <div className="border border-ds-border bg-ds-surface p-6">
+              <div className="bg-ds-surface p-6" style={{ borderRadius: 12, border: '0.5px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
                 <p className="font-mono text-xs text-ds-error">{ds.error}</p>
-                <button onClick={ds.reset} className="mt-3 border border-ds-accent text-ds-text font-mono text-xs uppercase tracking-wide px-4 py-2 hover:bg-ds-accent hover:text-white transition-colors">
+                <button onClick={ds.reset} className="mt-3 border border-ds-accent text-ds-text font-mono text-xs uppercase tracking-wide px-4 py-2 hover:bg-ds-accent hover:text-white transition-colors" style={{ borderRadius: 8 }}>
                   Try Again
                 </button>
               </div>
@@ -330,7 +390,7 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
                     ))}
                   </div>
                   <div className="flex items-center gap-3">
-                    <button onClick={handleUploadAnother} className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors">
+                    <button onClick={handleUploadAnother} className="border border-ds-border text-ds-text-muted font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:border-ds-accent hover:text-ds-text transition-colors" style={{ borderRadius: 8 }}>
                       Upload Another
                     </button>
                     {saveStatus === 'saving' && (
@@ -352,11 +412,12 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
 
                 {/* Next Step: Start Planning */}
                 {onStartPlanning && (
-                  <div className="border-t border-ds-border pt-8 pb-4">
+                  <div className="pt-8 pb-4" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
                     <button
                       onClick={handleStartPlanning}
                       disabled={saveStatus === 'saving'}
                       className="flex items-center gap-2 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-ds-accent-hover transition-colors disabled:opacity-40"
+                      style={{ borderRadius: 10 }}
                     >
                       Start Planning
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -372,11 +433,11 @@ const DataPage: FC<DataPageProps> = ({ initialFile, onStartPlanning }) => {
 
         {/* Captain Data Review Sidebar */}
         {isDone && (
-          <div className="w-80 shrink-0 border-l border-ds-border bg-ds-surface overflow-y-auto">
+          <div className="w-80 shrink-0 bg-ds-surface overflow-y-auto" style={{ borderLeft: '0.5px solid rgba(0,0,0,0.06)' }}>
             <div className="p-4 space-y-5">
               {/* Header */}
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 bg-ds-accent flex items-center justify-center">
+                <div className="w-5 h-5 bg-ds-accent flex items-center justify-center" style={{ borderRadius: '9999px' }}>
                   <span className="text-white text-[10px] font-mono font-medium">C</span>
                 </div>
                 <span className="font-mono text-[10px] uppercase tracking-widest text-ds-text-dim">

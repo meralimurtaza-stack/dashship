@@ -75,7 +75,8 @@ const ConversationStarters: FC<ConversationStartersProps> = ({
             <button
               key={starter.label}
               onClick={() => onSend(starter.message)}
-              className="text-left border border-ds-border bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
+              className="text-left bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
+              style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
             >
               <p className="font-mono text-xs font-medium text-ds-text group-hover:text-ds-text">
                 {starter.label}

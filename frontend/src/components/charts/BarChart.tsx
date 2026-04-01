@@ -7,148 +7,217 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
+  Cell,
+  LabelList,
 } from 'recharts'
-import { autoFormat } from '../../engine/formatters'
-import ChartWrapper from './ChartWrapper'
-import {
-  AXIS_TICK_STYLE,
-  TOOLTIP_STYLE,
-  GRID_COLOR,
-  ANIMATION_DURATION,
-  ANIMATION_EASING,
-  getColor,
-} from './chartConfig'
+import { formatValue, type FormatConfig } from '../../lib/formatValue'
+import ChartCard, { type ChartInfo } from './ChartCard'
+import { SERIES_COLORS, AXIS_STYLE, TOOLTIP_CONFIG, GRID_STROKE } from './chartConfig'
 
 interface BarChartProps {
   data: Record<string, unknown>[]
   categoryField: string
   valueFields: string[]
-  title?: string
+  format?: FormatConfig
+  title: string
   orientation?: 'vertical' | 'horizontal'
   stacked?: boolean
   showLegend?: boolean
   showLabels?: boolean
-  colors?: string[]
-  loading?: boolean
+  isSelected?: boolean
+  onClick?: () => void
+  index?: number
+  info?: ChartInfo
 }
 
-const LEGEND_STYLE = {
-  fontFamily: '"IBM Plex Mono", monospace',
-  fontSize: 10,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
+// Custom label renderer for bar values
+const renderBarLabel = (props: any, format?: FormatConfig) => {
+  const { x, y, width, height, value } = props
+  if (value == null || value === 0) return null
+
+  const formatted = typeof value === 'number'
+    ? formatValue(value, format ?? { type: 'compact' })
+    : String(value)
+
+  return (
+    <text
+      x={x + width + 6}
+      y={y + height / 2}
+      dominantBaseline="central"
+      style={{
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: 10,
+        fill: '#0E0D0D',
+      }}
+    >
+      {formatted}
+    </text>
+  )
+}
+
+const renderVerticalBarLabel = (props: any, format?: FormatConfig) => {
+  const { x, y, width, value } = props
+  if (value == null || value === 0) return null
+
+  const formatted = typeof value === 'number'
+    ? formatValue(value, format ?? { type: 'compact' })
+    : String(value)
+
+  return (
+    <text
+      x={x + width / 2}
+      y={y - 6}
+      textAnchor="middle"
+      style={{
+        fontFamily: '"IBM Plex Mono", monospace',
+        fontSize: 10,
+        fill: '#0E0D0D',
+      }}
+    >
+      {formatted}
+    </text>
+  )
 }
 
 const BarChartComponent: FC<BarChartProps> = ({
   data,
   categoryField,
   valueFields,
+  format,
   title,
   orientation = 'vertical',
   stacked = false,
-  showLegend = false,
-  showLabels = false,
-  colors,
-  loading,
+  isSelected,
+  onClick,
+  index,
+  info,
 }) => {
   const isHorizontal = orientation === 'horizontal'
-  const maxLabelLength = useMemo(() => {
-    if (!data.length) return 6
-    return Math.max(
-      ...data.map((d) => String(d[categoryField] ?? '').length)
-    )
-  }, [data, categoryField])
 
-  const leftMargin = isHorizontal ? Math.min(maxLabelLength * 6, 120) : 10
+  // Calculate consistent label width for horizontal bars
+  const labelWidth = useMemo(() => {
+    if (!data.length || !isHorizontal) return 80
+    const maxLen = Math.max(...data.map(d => String(d[categoryField] ?? '').length))
+    // Clamp between 80 and 160px, ~7px per character
+    return Math.max(80, Math.min(maxLen * 7, 160))
+  }, [data, categoryField, isHorizontal])
+
+  if (data.length === 0) {
+    return (
+      <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+        <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+        </div>
+      </ChartCard>
+    )
+  }
+
+  const tickFormatter = (v: unknown) => {
+    if (typeof v === 'number') return formatValue(v, format ?? { type: 'compact' })
+    return String(v)
+  }
+
+  const chartHeight = isHorizontal
+    ? Math.max(240, data.length * 36)
+    : 240
+
+  // For value labels at end of bars, add right margin
+  const rightMargin = isHorizontal ? 60 : 12
 
   return (
-    <ChartWrapper title={title} loading={loading} empty={data.length === 0}>
-      <div className="px-2 pb-4 pt-1" style={{ height: 320 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <RechartsBar
-            data={data}
-            layout={isHorizontal ? 'vertical' : 'horizontal'}
-            margin={{ top: 8, right: 16, bottom: 4, left: leftMargin }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={GRID_COLOR}
-              vertical={!isHorizontal}
-              horizontal={isHorizontal}
-            />
-            {isHorizontal ? (
-              <>
-                <YAxis
-                  dataKey={categoryField}
-                  type="category"
-                  tick={AXIS_TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  width={leftMargin}
-                />
-                <XAxis
-                  type="number"
-                  tick={AXIS_TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => autoFormat(v)}
-                />
-              </>
-            ) : (
-              <>
-                <XAxis
-                  dataKey={categoryField}
-                  tick={AXIS_TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tick={AXIS_TICK_STYLE}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => autoFormat(v)}
-                  width={60}
-                />
-              </>
-            )}
-            <Tooltip
-              {...TOOLTIP_STYLE}
-              formatter={(value: unknown) => [autoFormat(value)]}
-            />
-            {showLegend && (
-              <Legend
-                wrapperStyle={LEGEND_STYLE}
-                iconType="square"
-                iconSize={8}
+    <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <RechartsBar
+          data={data}
+          layout={isHorizontal ? 'vertical' : 'horizontal'}
+          margin={{ top: 8, right: rightMargin, bottom: 4, left: 4 }}
+          barSize={isHorizontal ? 20 : 32}
+        >
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={GRID_STROKE}
+            vertical={!isHorizontal}
+            horizontal={isHorizontal}
+          />
+
+          {isHorizontal ? (
+            <>
+              <YAxis
+                dataKey={categoryField}
+                type="category"
+                tick={{
+                  ...AXIS_STYLE,
+                  textAnchor: 'end',
+                }}
+                axisLine={false}
+                tickLine={false}
+                width={labelWidth}
               />
-            )}
-            {valueFields.map((field, i) => (
-              <Bar
-                key={field}
-                dataKey={field}
-                fill={colors?.[i] ?? getColor(i)}
-                stackId={stacked ? 'stack' : undefined}
-                radius={stacked ? undefined : [1, 1, 0, 0]}
-                isAnimationActive={true}
-                animationDuration={ANIMATION_DURATION}
-                animationEasing={ANIMATION_EASING}
-                label={
-                  showLabels
-                    ? {
-                        position: isHorizontal ? 'right' as const : 'top' as const,
-                        style: { ...AXIS_TICK_STYLE, fontSize: 9 },
-                        formatter: (v: unknown) => autoFormat(v),
-                      }
-                    : false
-                }
+              <XAxis
+                type="number"
+                tick={AXIS_STYLE}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={tickFormatter}
+                domain={[0, 'auto']}
               />
-            ))}
-          </RechartsBar>
-        </ResponsiveContainer>
-      </div>
-    </ChartWrapper>
+            </>
+          ) : (
+            <>
+              <XAxis
+                dataKey={categoryField}
+                tick={AXIS_STYLE}
+                axisLine={false}
+                tickLine={false}
+                interval="preserveStartEnd"
+              />
+              <YAxis
+                tick={AXIS_STYLE}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={tickFormatter}
+                width={52}
+                domain={[0, 'auto']}
+              />
+            </>
+          )}
+
+          <Tooltip
+            {...TOOLTIP_CONFIG}
+            formatter={(value: unknown) => [
+              typeof value === 'number' ? formatValue(value, format) : String(value),
+            ]}
+          />
+
+          {valueFields.map((field, i) => (
+            <Bar
+              key={field}
+              dataKey={field}
+              fill={SERIES_COLORS[i % SERIES_COLORS.length]}
+              fillOpacity={0.85}
+              stackId={stacked ? 'stack' : undefined}
+              radius={isHorizontal ? [0, 3, 3, 0] : [3, 3, 0, 0]}
+              isAnimationActive
+              animationDuration={400}
+              animationEasing="ease-out"
+            >
+              {/* Value labels at end of each bar */}
+              {!stacked && (
+                <LabelList
+                  dataKey={field}
+                  position={isHorizontal ? 'right' : 'top'}
+                  content={(props: any) =>
+                    isHorizontal
+                      ? renderBarLabel(props, format)
+                      : renderVerticalBarLabel(props, format)
+                  }
+                />
+              )}
+            </Bar>
+          ))}
+        </RechartsBar>
+      </ResponsiveContainer>
+    </ChartCard>
   )
 }
 

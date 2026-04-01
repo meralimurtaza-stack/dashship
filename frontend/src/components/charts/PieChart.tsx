@@ -1,168 +1,249 @@
-import { type FC } from 'react'
+import { type FC, useState, useCallback } from 'react'
 import {
   ResponsiveContainer,
   PieChart as RechartsPie,
   Pie,
   Cell,
-  Tooltip,
-  Legend,
+  Sector,
 } from 'recharts'
-import { autoFormat } from '../../engine/formatters'
-import ChartWrapper from './ChartWrapper'
-import {
-  TOOLTIP_STYLE,
-  ANIMATION_DURATION,
-  getColor,
-} from './chartConfig'
+import { formatValue, type FormatConfig } from '../../lib/formatValue'
+import ChartCard, { type ChartInfo } from './ChartCard'
+import { PIE_PALETTE } from './chartConfig'
 
 interface PieChartProps {
   data: Record<string, unknown>[]
   nameField: string
   valueField: string
-  title?: string
-  donut?: boolean
-  showLabels?: boolean
+  format?: FormatConfig
+  title: string
   showLegend?: boolean
-  colors?: string[]
-  loading?: boolean
+  showLabels?: boolean
+  isSelected?: boolean
+  onClick?: () => void
+  index?: number
+  info?: ChartInfo
 }
 
-const LEGEND_STYLE = {
-  fontFamily: '"IBM Plex Mono", monospace',
-  fontSize: 10,
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-}
+const RADIAN = Math.PI / 180
 
-// ── Label Renderer ───────────────────────────────────────────────
+// ── Outside label with connector line ───────────────────────────
+const renderCustomLabel = (props: any) => {
+  const {
+    cx, cy, midAngle, innerRadius, outerRadius, name, value,
+    index: _idx, percent,
+  } = props
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const renderLabel = (props: any) => {
-  const cx = Number(props.cx ?? 0)
-  const cy = Number(props.cy ?? 0)
-  const midAngle = Number(props.midAngle ?? 0)
-  const outerRadius = Number(props.outerRadius ?? 0)
-  const percent = Number(props.percent ?? 0)
-  const name = String(props.name ?? '')
-  if (percent < 0.04) return null
-  const RADIAN = Math.PI / 180
-  const radius = outerRadius + 20
-  const x = cx + radius * Math.cos(-midAngle * RADIAN)
-  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+  // Skip tiny slices (< 3%)
+  if (percent < 0.03) return null
+
+  const sin = Math.sin(-RADIAN * midAngle)
+  const cos = Math.cos(-RADIAN * midAngle)
+
+  // Start point on outer edge of pie
+  const sx = cx + outerRadius * cos
+  const sy = cy + outerRadius * sin
+
+  // Middle point (connector elbow)
+  const mx = cx + (outerRadius + 14) * cos
+  const my = cy + (outerRadius + 14) * sin
+
+  // End point (label anchor)
+  const ex = mx + (cos >= 0 ? 1 : -1) * 16
+  const ey = my
+
+  const textAnchor = cos >= 0 ? 'start' : 'end'
 
   return (
-    <text
-      x={x}
-      y={y}
-      textAnchor={x > cx ? 'start' : 'end'}
-      fontFamily='"IBM Plex Mono", monospace'
-      fontSize={10}
-      fill="#737373"
-    >
-      {name} {(percent * 100).toFixed(0)}%
-    </text>
+    <g>
+      {/* Connector line */}
+      <path
+        d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+        stroke="#8A8A86"
+        fill="none"
+        strokeWidth={1}
+      />
+      {/* Dot at end of connector */}
+      <circle cx={ex} cy={ey} r={2} fill="#8A8A86" />
+      {/* Label: "Name: Value" */}
+      <text
+        x={ex + (cos >= 0 ? 5 : -5)}
+        y={ey}
+        textAnchor={textAnchor}
+        dominantBaseline="central"
+        style={{
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: 11,
+          fill: '#0E0D0D',
+        }}
+      >
+        {name}: {typeof value === 'number' ? value.toLocaleString() : value}
+      </text>
+    </g>
   )
 }
 
-// ── Donut Center Label ───────────────────────────────────────────
+// ── Active shape on hover — expanded slice ──────────────────────
+const renderActiveShape = (props: any) => {
+  const {
+    cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill,
+  } = props
 
-const DonutCenter: FC<{ data: { name: string; value: number }[] }> = ({ data }) => {
-  const total = data.reduce((s, d) => s + d.value, 0)
   return (
-    <text
-      x="50%"
-      y="50%"
-      textAnchor="middle"
-      dominantBaseline="central"
-    >
-      <tspan
-        x="50%"
-        dy="-0.4em"
-        fontFamily='"IBM Plex Mono", monospace'
-        fontSize={22}
-        fontWeight={600}
-        fill="#0E0D0D"
-      >
-        {autoFormat(total)}
-      </tspan>
-      <tspan
-        x="50%"
-        dy="1.6em"
-        fontFamily='"IBM Plex Mono", monospace'
-        fontSize={10}
-        fill="#a1a1a0"
-      >
-        TOTAL
-      </tspan>
-    </text>
+    <Sector
+      cx={cx}
+      cy={cy}
+      innerRadius={innerRadius}
+      outerRadius={outerRadius + 4}
+      startAngle={startAngle}
+      endAngle={endAngle}
+      fill={fill}
+      fillOpacity={1}
+    />
   )
 }
-
-// ── Main Component ───────────────────────────────────────────────
 
 const PieChartComponent: FC<PieChartProps> = ({
   data,
   nameField,
   valueField,
+  format,
   title,
-  donut = false,
-  showLabels = true,
-  showLegend = false,
-  colors,
-  loading,
+  isSelected,
+  onClick,
+  index,
+  info,
 }) => {
-  const chartData = data.map((d) => ({
-    name: String(d[nameField] ?? ''),
-    value: Number(d[valueField] ?? 0),
+  const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined)
+
+  const onPieEnter = useCallback((_: unknown, idx: number) => setActiveIndex(idx), [])
+  const onPieLeave = useCallback(() => setActiveIndex(undefined), [])
+
+  // Prepare data with name/value keys for Recharts
+  const chartData = data.map(row => ({
+    name: String(row[nameField] ?? ''),
+    value: Number(row[valueField] ?? 0),
   }))
 
-  const innerRadius = donut ? '55%' : 0
+  const total = chartData.reduce((sum, d) => sum + d.value, 0)
+
+  if (chartData.length === 0) {
+    return (
+      <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+        <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+        </div>
+      </ChartCard>
+    )
+  }
+
+  const formattedTotal = format
+    ? formatValue(total, format)
+    : total.toLocaleString()
 
   return (
-    <ChartWrapper title={title} loading={loading} empty={data.length === 0}>
-      <div className="px-2 pb-4 pt-1" style={{ height: 320 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <RechartsPie>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={innerRadius}
-              outerRadius="70%"
-              dataKey="value"
-              nameKey="name"
-              paddingAngle={1}
-              label={showLabels && !donut ? renderLabel : undefined}
-              isAnimationActive={true}
-              animationDuration={ANIMATION_DURATION}
-              animationEasing="ease-out"
-              style={{ cursor: 'pointer' }}
-            >
-              {chartData.map((_, i) => (
-                <Cell
-                  key={i}
-                  fill={colors?.[i] ?? getColor(i)}
-                  stroke="#fff"
-                  strokeWidth={1}
-                />
-              ))}
-            </Pie>
-            {donut && <DonutCenter data={chartData} />}
-            <Tooltip
-              {...TOOLTIP_STYLE}
-              formatter={(value: unknown) => [autoFormat(value)]}
-            />
-            {showLegend && (
-              <Legend
-                wrapperStyle={LEGEND_STYLE}
-                iconType="circle"
-                iconSize={8}
+    <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
+      <ResponsiveContainer width="100%" height={240}>
+        <RechartsPie>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            innerRadius="42%"
+            outerRadius="62%"
+            paddingAngle={2}
+            dataKey="value"
+            activeIndex={activeIndex}
+            activeShape={renderActiveShape}
+            onMouseEnter={onPieEnter}
+            onMouseLeave={onPieLeave}
+            label={renderCustomLabel}
+            labelLine={false}
+            isAnimationActive
+            animationDuration={400}
+            animationEasing="ease-out"
+          >
+            {chartData.map((_, i) => (
+              <Cell
+                key={i}
+                fill={PIE_PALETTE[i % PIE_PALETTE.length]}
+                fillOpacity={activeIndex !== undefined && activeIndex !== i ? 0.45 : 0.85}
+                stroke="none"
               />
-            )}
-          </RechartsPie>
-        </ResponsiveContainer>
+            ))}
+          </Pie>
+
+          {/* Center total label */}
+          <text
+            x="50%"
+            y="46%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{
+              fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+              fontSize: 20,
+              fontWeight: 500,
+              fill: '#0E0D0D',
+            }}
+          >
+            {formattedTotal}
+          </text>
+          <text
+            x="50%"
+            y="56%"
+            textAnchor="middle"
+            dominantBaseline="central"
+            style={{
+              fontFamily: '"IBM Plex Mono", monospace',
+              fontSize: 9,
+              fill: '#8A8A86',
+              textTransform: 'uppercase' as any,
+              letterSpacing: '0.05em',
+            }}
+          >
+            TOTAL
+          </text>
+        </RechartsPie>
+      </ResponsiveContainer>
+
+      {/* Custom legend */}
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '6px 14px',
+          marginTop: 4,
+        }}
+      >
+        {chartData.map((item, i) => {
+          const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0'
+          return (
+            <div
+              key={item.name}
+              style={{ display: 'flex', alignItems: 'center', gap: 5 }}
+            >
+              <div
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 2,
+                  backgroundColor: PIE_PALETTE[i % PIE_PALETTE.length],
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontSize: 11,
+                  color: '#8A8A86',
+                }}
+              >
+                {item.name} · {pct}%
+              </span>
+            </div>
+          )
+        })}
       </div>
-    </ChartWrapper>
+    </ChartCard>
   )
 }
 

@@ -78,9 +78,9 @@ const DataPreview: FC<DataPreviewProps> = ({
   }, [rows, maxRows, sortCol, sortDir])
 
   return (
-    <div className="border border-ds-border bg-ds-surface overflow-hidden">
+    <div className="bg-ds-surface overflow-hidden" style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-ds-border">
+      <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
         <span className="micro-label">
           Data Grid
         </span>
@@ -93,7 +93,7 @@ const DataPreview: FC<DataPreviewProps> = ({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-ds-border">
+            <tr style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
               {visibleCols.map((col) => {
                 const display = col.displayName || col.name
                 const isRenamed = !!col.displayName && col.displayName !== col.name
@@ -154,6 +154,7 @@ const DataPreview: FC<DataPreviewProps> = ({
                                 ? 'text-ds-accent bg-ds-accent-glow'
                                 : 'text-ds-text-dim bg-ds-surface-alt'
                             }`}
+                            style={{ borderRadius: 4 }}
                           >
                             {col.role === 'measure' ? 'M' : 'D'}
                           </span>
@@ -202,7 +203,8 @@ const DataPreview: FC<DataPreviewProps> = ({
             {sortedRows.map((row, i) => (
               <tr
                 key={i}
-                className="border-b border-ds-border hover:bg-ds-surface-alt/50 transition-colors"
+                className="hover:bg-ds-surface-alt/50 transition-colors"
+                style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}
               >
                 {visibleCols.map((col) => {
                   const val = row[col.name]

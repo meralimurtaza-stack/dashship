@@ -15,36 +15,21 @@ interface HomeProps {
 const SAMPLES = [
   {
     key: 'sales',
-    name: 'Sales Dashboard',
-    file: '/samples/sales-data.csv',
-    desc: '24 rows — revenue, regions, products',
-    icon: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.306a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-      </svg>
-    ),
+    name: 'Superstore Sales',
+    desc: '9,994 rows · 21 fields',
+    fields: 'Orders, Profit, Shipping, Category, Region',
   },
   {
     key: 'hr',
-    name: 'HR Overview',
-    file: '/samples/hr-data.csv',
-    desc: '20 rows — employees, salaries, attrition',
-    icon: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-      </svg>
-    ),
+    name: 'SaaS Metrics',
+    desc: '2,400 rows · 14 fields',
+    fields: 'MRR, Churn, Signups, Plan, Cohort',
   },
   {
     key: 'ecommerce',
     name: 'E-Commerce Analytics',
-    file: '/samples/ecommerce-data.csv',
-    desc: '20 rows — orders, products, countries',
-    icon: (
-      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-      </svg>
-    ),
+    desc: '5,200 rows · 12 fields',
+    fields: 'Amount, Campaign, Source, Order type',
   },
 ]
 
@@ -98,9 +83,27 @@ const UploadZone: FC<{ onFile: (file: File) => void }> = ({ onFile }) => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`w-full border border-dashed p-6 text-center transition-colors cursor-pointer ${
-        isDragging ? 'border-ds-accent bg-ds-accent-glow' : 'border-ds-border-strong hover:border-ds-accent'
-      }`}
+      className="w-full text-center transition-all cursor-pointer"
+      style={{
+        border: isDragging ? '1.5px dashed var(--color-ds-accent)' : '1.5px dashed rgba(0,0,0,0.10)',
+        borderRadius: '12px',
+        padding: '24px',
+        background: isDragging ? 'var(--color-ds-accent-light)' : 'var(--color-ds-surface)',
+      }}
+      onMouseEnter={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.borderColor = 'var(--color-ds-accent)'
+          e.currentTarget.style.background = 'var(--color-ds-accent-light)'
+          e.currentTarget.style.transform = 'translateY(-1px)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isDragging) {
+          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
+          e.currentTarget.style.background = 'var(--color-ds-surface)'
+          e.currentTarget.style.transform = 'translateY(0)'
+        }
+      }}
     >
       <input
         ref={inputRef}
@@ -113,12 +116,30 @@ const UploadZone: FC<{ onFile: (file: File) => void }> = ({ onFile }) => {
         className="hidden"
       />
       <div className="flex items-center justify-center gap-3">
-        <svg className="w-4 h-4 text-ds-text-dim" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-        </svg>
-        <span className="font-mono text-xs text-ds-text-muted">
-          Drop CSV or Excel here, or click to browse
-        </span>
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '8px',
+            background: isDragging ? 'white' : 'var(--color-ds-surface-alt)',
+            transition: 'background 0.2s',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-text-dim">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </div>
+        <div className="text-left">
+          <span style={{ fontSize: '13.5px', color: 'var(--color-ds-text-muted)' }}>
+            Connect your data — drop <strong style={{ color: 'var(--color-ds-text)', fontWeight: 500 }}>CSV</strong> or <strong style={{ color: 'var(--color-ds-text)', fontWeight: 500 }}>Excel</strong>, or click to browse
+          </span>
+          <div style={{ fontSize: '11px', color: 'var(--color-ds-text-dim)', marginTop: '2px' }}>
+            Up to 50MB · .csv, .xlsx, .xls
+          </div>
+        </div>
       </div>
     </button>
   )
@@ -144,32 +165,88 @@ const HomeChatInput: FC<{ onSend: (msg: string) => void }> = ({ onSend }) => {
   }, [handleSend])
 
   return (
-    <div className="relative border border-ds-border-strong bg-ds-surface">
+    <div
+      className="transition-shadow"
+      style={{
+        background: 'var(--color-ds-surface)',
+        borderRadius: '20px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)',
+        overflow: 'hidden',
+      }}
+    >
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Build me a customer retention dashboard..."
-        rows={3}
-        className="w-full px-4 py-3 pr-12 border-0 bg-transparent text-sm text-ds-text font-sans placeholder:font-mono placeholder:text-ds-text-dim resize-none focus:outline-none"
+        rows={2}
+        className="w-full bg-transparent text-ds-text resize-none focus:outline-none placeholder:text-ds-text-dim"
+        style={{
+          padding: '20px 22px 14px',
+          fontSize: '14.5px',
+          fontFamily: 'var(--font-sans)',
+          lineHeight: '1.5',
+          minHeight: '72px',
+          border: 'none',
+        }}
       />
-      <div className="px-4 pb-3 flex items-center justify-between">
-        <span className="font-sans text-[11px] text-ds-text-dim">Captain will take the wheel</span>
-        <button
-          onClick={handleSend}
-          disabled={!value.trim()}
-          className="px-4 py-1.5 bg-ds-accent text-white font-mono text-xs font-medium tracking-wider hover:bg-ds-accent-hover disabled:opacity-30 transition-colors"
-          aria-label="Send message"
-        >
-          Start
-        </button>
+      <div
+        className="flex items-center justify-between"
+        style={{ padding: '0 18px 14px' }}
+      >
+        <div className="flex items-center gap-1.5" style={{ fontSize: '12px', color: 'var(--color-ds-text-dim)' }}>
+          <div
+            style={{
+              width: '7px',
+              height: '7px',
+              borderRadius: '50%',
+              background: 'var(--color-ds-success)',
+              animation: 'pulse 2s ease infinite',
+            }}
+          />
+          <span>Captain will take the wheel</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="flex items-center justify-center text-ds-text-muted hover:text-ds-text transition-colors"
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '9999px',
+              border: '0.5px solid rgba(0,0,0,0.10)',
+              background: 'transparent',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+          <button
+            onClick={handleSend}
+            disabled={!value.trim()}
+            className="disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            style={{
+              padding: '7px 20px',
+              borderRadius: '9999px',
+              background: 'var(--color-ds-text)',
+              color: 'var(--color-ds-bg)',
+              fontSize: '13px',
+              fontWeight: 500,
+              fontFamily: 'var(--font-sans)',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Start
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
 // ── Project Card ─────────────────────────────────────────────────
-// Updated for new Project type (no more .dataSource or .dashboards)
 
 const ProjectCard: FC<{
   project: Project
@@ -178,28 +255,69 @@ const ProjectCard: FC<{
   const bars = [40, 65, 30, 80, 55, 70, 45]
 
   return (
-    <div className="relative group shrink-0 w-56">
+    <div className="relative group shrink-0 w-52">
       <button
         onClick={onClick}
-        className="w-full text-left border border-ds-border bg-ds-surface hover:border-ds-border-strong transition-colors"
+        className="w-full text-left bg-ds-surface transition-all"
+        style={{
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+          overflow: 'hidden',
+          border: '0.5px solid transparent',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)'
+          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)'
+          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)'
+          e.currentTarget.style.borderColor = 'transparent'
+        }}
       >
-        <div className="h-24 bg-ds-bg border-b border-ds-border flex items-end justify-center gap-1 px-4 pb-3">
+        <div
+          className="flex items-end justify-center gap-1 px-4 pb-3"
+          style={{
+            height: '90px',
+            background: 'var(--color-ds-surface-alt)',
+          }}
+        >
           {bars.map((h, i) => (
             <div
               key={i}
-              className="flex-1 bg-ds-border group-hover:bg-ds-border-strong transition-colors"
-              style={{ height: `${h}%`, maxWidth: 14 }}
+              className="flex-1 transition-colors"
+              style={{
+                height: `${h}%`,
+                maxWidth: 14,
+                background: 'var(--color-ds-text-dim)',
+                opacity: 0.2,
+                borderRadius: '2px 2px 0 0',
+              }}
             />
           ))}
         </div>
-        <div className="p-3 space-y-1">
-          <h3 className="font-mono text-xs font-medium text-ds-text truncate">{project.name}</h3>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
+        <div style={{ padding: '10px 14px' }}>
+          <h3
+            className="text-ds-text truncate"
+            style={{ fontSize: '13px', fontWeight: 500, marginBottom: '3px' }}
+          >
+            {project.name}
+          </h3>
+          <div className="flex items-center gap-2" style={{ fontSize: '11px', color: 'var(--color-ds-text-dim)' }}>
+            <span className="font-mono tabular-nums">
               {project.data_source_count ?? 0} source{(project.data_source_count ?? 0) !== 1 ? 's' : ''}
             </span>
-            <span className="text-[10px] text-ds-text-dim">&middot;</span>
-            <span className="font-mono text-[10px] text-ds-text-dim">
+            <span
+              style={{
+                width: '3px',
+                height: '3px',
+                borderRadius: '50%',
+                background: 'var(--color-ds-text-dim)',
+                display: 'inline-block',
+              }}
+            />
+            <span className="font-mono tabular-nums">
               {timeAgo(project.updated_at)}
             </span>
           </div>
@@ -230,18 +348,29 @@ const Home: FC<HomeProps> = ({
 
   return (
     <div className="flex-1 overflow-auto">
-      <div className={`max-w-2xl mx-auto px-6 ${hasProjects ? 'py-12' : 'py-20'}`}>
-        <div className="space-y-8">
-          {/* Greeting */}
-          <div className="space-y-3">
-            <h1 className="font-mono text-[30px] font-medium text-ds-text leading-tight">
-              Dashboards worth publishing.
+      <div className="max-w-[680px] mx-auto px-6" style={{ paddingTop: hasProjects ? '48px' : '72px', paddingBottom: '60px' }}>
+        <div className="space-y-6">
+
+          {/* Hero */}
+          <div className="text-center" style={{ paddingBottom: '12px' }}>
+            <h1
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '50px',
+                fontWeight: 400,
+                lineHeight: 1.12,
+                letterSpacing: '-0.02em',
+                marginBottom: '12px',
+              }}
+            >
+              Dashboards worth<br />
+              <em style={{ fontStyle: 'italic', color: 'var(--color-ds-accent)' }}>publishing.</em>
             </h1>
-            <p className="font-sans text-[13px] text-ds-text-muted leading-relaxed">
-              Upload data, talk to Captain, publish under your brand.
+            <p style={{ fontSize: '15px', color: 'var(--color-ds-text-muted)', lineHeight: 1.6, maxWidth: '420px', margin: '0 auto' }}>
+              Connect your data, talk to Captain, publish under your brand.
             </p>
             {hasProjects && (
-              <p className="font-sans text-sm text-ds-text-dim">
+              <p style={{ fontSize: '13px', color: 'var(--color-ds-text-dim)', marginTop: '8px' }}>
                 {projects.length} project{projects.length === 1 ? '' : 's'} in your workspace
               </p>
             )}
@@ -253,14 +382,34 @@ const Home: FC<HomeProps> = ({
           {/* Chat Input */}
           <HomeChatInput onSend={handleChat} />
 
-          {/* Sample prompts as pills */}
+          {/* Example Prompts */}
           {!hasProjects && !loading && (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 justify-center">
               {PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
                   onClick={() => handleChat(prompt)}
-                  className="px-3 py-1.5 font-mono text-[11px] text-ds-text-muted border border-ds-border hover:border-ds-accent hover:text-ds-text transition-colors"
+                  className="transition-all"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '9999px',
+                    border: '0.5px solid rgba(0,0,0,0.10)',
+                    background: 'var(--color-ds-surface)',
+                    fontSize: '12px',
+                    color: 'var(--color-ds-text-muted)',
+                    fontFamily: 'var(--font-sans)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--color-ds-accent)'
+                    e.currentTarget.style.color = 'var(--color-ds-accent)'
+                    e.currentTarget.style.background = 'var(--color-ds-accent-light)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
+                    e.currentTarget.style.color = 'var(--color-ds-text-muted)'
+                    e.currentTarget.style.background = 'var(--color-ds-surface)'
+                  }}
                 >
                   {prompt}
                 </button>
@@ -268,39 +417,86 @@ const Home: FC<HomeProps> = ({
             </div>
           )}
 
-          {/* Sample Data Cards — new users only */}
+          {/* Sample Data Cards */}
           {!hasProjects && !loading && (
-            <div className="space-y-3">
-              <p className="micro-label">Try with sample data</p>
+            <div style={{ marginTop: '32px' }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase' as const,
+                    color: 'var(--color-ds-text-dim)',
+                  }}
+                >
+                  Try with sample data
+                </span>
+              </div>
               <div className="grid grid-cols-3 gap-3">
                 {SAMPLES.map((sample) => (
                   <button
                     key={sample.key}
                     onClick={() => onSampleSelected(sample.key, sample.name)}
-                    className="text-left border border-ds-border bg-ds-surface p-4 hover:border-ds-border-strong transition-colors group"
+                    className="text-left transition-all"
+                    style={{
+                      background: 'var(--color-ds-surface)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+                      border: '0.5px solid transparent',
+                      cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)'
+                      e.currentTarget.style.borderColor = 'var(--color-ds-accent)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)'
+                      e.currentTarget.style.borderColor = 'transparent'
+                    }}
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-ds-text-dim group-hover:text-ds-text-muted transition-colors">
-                        {sample.icon}
-                      </span>
-                      <span className="micro-label">Sample CSV</span>
-                    </div>
-                    <h3 className="font-mono text-xs font-medium text-ds-text">
+                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
                       {sample.name}
-                    </h3>
-                    <p className="text-[11px] text-ds-text-dim mt-1 font-sans">
+                    </div>
+                    <div
+                      className="font-mono"
+                      style={{ fontSize: '11px', color: 'var(--color-ds-text-dim)', marginBottom: '6px' }}
+                    >
                       {sample.desc}
-                    </p>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-ds-text-muted)', lineHeight: 1.5 }}>
+                      {sample.fields}
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Your Projects — returning users */}
+          {/* Your Projects */}
           {hasProjects && (
-            <div className="space-y-3">
-              <p className="micro-label">Your Projects</p>
+            <div style={{ marginTop: '16px' }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase' as const,
+                    color: 'var(--color-ds-text-dim)',
+                  }}
+                >
+                  Your projects
+                </span>
+                <span
+                  style={{ fontSize: '12px', color: 'var(--color-ds-accent)', cursor: 'pointer', fontWeight: 500 }}
+                >
+                  View all →
+                </span>
+              </div>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
                 {projects.map((project) => (
                   <ProjectCard
@@ -313,10 +509,17 @@ const Home: FC<HomeProps> = ({
             </div>
           )}
 
-          {/* Trust line */}
+          {/* Footer line */}
           {!hasProjects && !loading && (
-            <p className="font-sans text-xs text-ds-text-dim text-center pt-4">
-              From &pound;29/mo &middot; No credit card &middot; Your data stays yours
+            <p
+              className="text-center"
+              style={{
+                fontSize: '12px',
+                color: 'var(--color-ds-text-dim)',
+                paddingTop: '8px',
+              }}
+            >
+              From £29/mo · No credit card · Your data stays yours
             </p>
           )}
 
@@ -324,9 +527,19 @@ const Home: FC<HomeProps> = ({
           {loading && (
             <div className="grid grid-cols-3 gap-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="border border-ds-border bg-ds-surface p-4">
-                  <div className="h-3 w-20 bg-ds-surface-alt animate-pulse mb-3" />
-                  <div className="h-2 w-32 bg-ds-surface-alt animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
+                <div
+                  key={i}
+                  className="bg-ds-surface"
+                  style={{ borderRadius: '12px', padding: '16px' }}
+                >
+                  <div
+                    className="bg-ds-surface-alt animate-pulse"
+                    style={{ height: '12px', width: '80px', borderRadius: '4px', marginBottom: '12px' }}
+                  />
+                  <div
+                    className="bg-ds-surface-alt animate-pulse"
+                    style={{ height: '8px', width: '128px', borderRadius: '4px', animationDelay: `${i * 0.1}s` }}
+                  />
                 </div>
               ))}
             </div>

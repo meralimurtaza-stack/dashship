@@ -1,21 +1,24 @@
 import { useState, useRef, useEffect, useCallback, type FC } from 'react'
-import DashboardRenderer from '../components/dashboard/DashboardRenderer'
+import DashboardIframe from '../components/dashboard/DashboardIframe'
 import ChatMessageComponent from '../components/chat/ChatMessage'
 import ChatInput from '../components/chat/ChatInput'
+import PublishModal from '../components/publish/PublishModal'
+import DataDictionaryPanel from '../components/data/DataDictionaryPanel'
 import { useChatContext } from '../contexts/ChatContext'
 import { useProject } from '../contexts/ProjectContext'
-import type { GeneratedDashboard } from '../lib/generate-api'
-import type { ColumnSchema } from '../types/datasource'
-import type { CalculatedField } from '../engine/formulaParser'
 
 // ── Props ────────────────────────────────────────────────────────
 
 interface BuildPageProps {
-  dashboard: GeneratedDashboard
+  jsxCode: string
   data: Record<string, unknown>[]
-  columns: ColumnSchema[]
-  calculatedFields?: CalculatedField[]
+  dashboardName: string
+  dashboardId?: string
+  projectId?: string
   onPublished?: () => void
+  onRegenerate?: (buildMessages?: Array<{ role: string; content: string }>) => void
+  isRegenerating?: boolean
+  onUndo?: () => void
 }
 
 // ── Divider ──────────────────────────────────────────────────────
@@ -33,10 +36,15 @@ const PhaseDivider: FC<{ label: string }> = ({ label }) => (
 // ── Main BuildPage ───────────────────────────────────────────────
 
 const BuildPage: FC<BuildPageProps> = ({
-  dashboard,
+  jsxCode,
   data,
-  calculatedFields,
+  dashboardName: initialName,
+  dashboardId,
+  projectId,
   onPublished,
+  onRegenerate,
+  isRegenerating = false,
+  onUndo,
 }) => {
   const {
     messages, isStreaming, sendMessage, stopStreaming,
@@ -44,16 +52,56 @@ const BuildPage: FC<BuildPageProps> = ({
   const { currentProject } = useProject()
 
   const [captainOpen, setCaptainOpen] = useState(true)
-  const [dashboardName, setDashboardName] = useState(dashboard.name)
+  const [dictionaryOpen, setDictionaryOpen] = useState(false)
+  const [dashboardName, setDashboardName] = useState(initialName)
   const [isEditingName, setIsEditingName] = useState(false)
+  const [showPublishModal, setShowPublishModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const prevStreamingRef = useRef(isStreaming)
+  const userSentMessageRef = useRef(false)
 
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Track when Captain finishes responding to a user change request
+  // so we can show the "Update Dashboard" button
+  const [_showUpdateButton, _setShowUpdateButton] = useState(false) // Kept for compat, auto-apply replaces this
+
+  useEffect(() => {
+    const wasStreaming = prevStreamingRef.current
+    prevStreamingRef.current = isStreaming
+
+    // Auto-apply: when Captain finishes responding, check if it's an edit action
+    if (wasStreaming && !isStreaming && userSentMessageRef.current && onRegenerate) {
+      userSentMessageRef.current = false
+
+      // Check last assistant message for <action>edit</action>
+      const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant')
+      if (lastAssistant?.content?.includes('<action>edit</action>')) {
+        const buildMessages = messages
+          .filter(m => m.role === 'user' || m.role === 'assistant')
+          .filter(m => m.phase !== 'plan' && !(m.role === 'system'))
+          .map(m => ({ role: m.role, content: m.content.replace(/<action>[\s\S]*?<\/action>/g, '').trim() }))
+        onRegenerate(buildMessages)
+      }
+      // If <action>none</action> or no tag — just a question/suggestion, no edit triggered
+    }
+  }, [isStreaming, onRegenerate, messages])
+
+  // Wrap sendMessage to track user-initiated messages
+  const handleSendMessage = useCallback((content: string) => {
+    userSentMessageRef.current = true
+    sendMessage(content)
+  }, [sendMessage])
+
   const handlePublish = useCallback(() => {
+    setShowPublishModal(true)
+  }, [])
+
+  const handlePublished = useCallback((_slug: string) => {
+    // Don't close the modal — let user copy the URL first.
     onPublished?.()
   }, [onPublished])
 
@@ -62,7 +110,7 @@ const BuildPage: FC<BuildPageProps> = ({
       {/* Dashboard Area */}
       <div className="flex-1 min-w-0 flex flex-col bg-ds-bg">
         {/* Header */}
-        <div className="h-11 px-5 flex items-center justify-between border-b border-ds-border bg-ds-surface shrink-0">
+        <div className="h-11 px-5 flex items-center justify-between bg-ds-surface shrink-0" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
           <div className="flex items-center gap-3">
             {isEditingName ? (
               <input
@@ -81,16 +129,36 @@ const BuildPage: FC<BuildPageProps> = ({
                 {dashboardName}
               </button>
             )}
-            <span className="font-mono text-[10px] text-ds-text-dim tabular-nums">
-              {dashboard.sheets.length} charts
-            </span>
           </div>
 
           <div className="flex items-center gap-2">
+            {onRegenerate && (
+              <button
+                onClick={() => onRegenerate()}
+                disabled={isRegenerating}
+                className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-ds-text-muted hover:text-ds-text transition-colors disabled:opacity-40"
+                style={{ border: '0.5px solid var(--color-ds-border)' }}
+              >
+                <svg className={`w-3 h-3 ${isRegenerating ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182" />
+                </svg>
+                {isRegenerating ? 'Regenerating…' : 'Regenerate'}
+              </button>
+            )}
+            {currentProject?.id && (
+              <button
+                onClick={() => setDictionaryOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-ds-text-muted hover:text-ds-text transition-colors"
+                style={{ border: '0.5px solid var(--color-ds-border)' }}
+              >
+                Dictionary
+              </button>
+            )}
             {!captainOpen && (
               <button
                 onClick={() => setCaptainOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-ds-text-muted border border-ds-border hover:border-ds-accent hover:text-ds-text transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] uppercase tracking-wide text-ds-text-muted hover:border-ds-accent hover:text-ds-text transition-colors"
+                style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
               >
                 <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
                   <circle cx="12" cy="12" r="3" />
@@ -101,7 +169,8 @@ const BuildPage: FC<BuildPageProps> = ({
             )}
             <button
               onClick={handlePublish}
-              className="flex items-center gap-2 px-5 py-1.5 font-mono text-[10px] uppercase tracking-wide bg-ds-accent text-white border border-ds-accent hover:bg-ds-accent-hover transition-colors"
+              className="flex items-center gap-2 px-5 py-1.5 font-mono text-[10px] uppercase tracking-wide bg-ds-accent text-white hover:bg-ds-accent-hover transition-colors"
+              style={{ border: '0.5px solid var(--color-ds-accent)', borderRadius: 10 }}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
@@ -114,26 +183,19 @@ const BuildPage: FC<BuildPageProps> = ({
           </div>
         </div>
 
-        {/* Dashboard Canvas */}
-        <div className="flex-1 overflow-auto p-6">
-          <div className="max-w-6xl mx-auto">
-            <DashboardRenderer
-              layout={dashboard.layout}
-              sheets={dashboard.sheets}
-              data={data}
-              calculatedFields={calculatedFields}
-            />
-          </div>
+        {/* Dashboard Canvas — iframe */}
+        <div className="flex-1 overflow-auto">
+          <DashboardIframe jsxCode={jsxCode} data={data} />
         </div>
       </div>
 
       {/* Captain Sidebar */}
       {captainOpen && (
-        <div className="w-80 shrink-0 border-l border-ds-border bg-ds-surface flex flex-col">
+        <div className="w-80 shrink-0 bg-ds-surface flex flex-col" style={{ borderLeft: '0.5px solid rgba(0,0,0,0.06)' }}>
           {/* Sidebar Header */}
-          <div className="h-11 px-4 flex items-center justify-between border-b border-ds-border shrink-0">
+          <div className="h-11 px-4 flex items-center justify-between shrink-0" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-ds-accent flex items-center justify-center">
+              <div className="w-5 h-5 bg-ds-accent flex items-center justify-center" style={{ borderRadius: '9999px' }}>
                 <span className="text-white text-[10px] font-mono font-medium">C</span>
               </div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-ds-text-dim">
@@ -162,51 +224,87 @@ const BuildPage: FC<BuildPageProps> = ({
               </div>
             )}
             <div className="space-y-4">
-              {messages.map((msg, i) => {
-                const isLastAssistant = msg.role === 'assistant' && !isStreaming && i === messages.length - 1
-                const isPlanPhase = msg.phase === 'plan'
+              {messages
+                .filter(msg => msg.phase !== 'plan' && !(msg.role === 'system' && msg.metadata?.type === 'divider'))
+                .map((msg, i, filtered) => {
+                const isLast = i === filtered.length - 1
+                const isLastAssistantMsg = msg.role === 'assistant' && !isStreaming && isLast
 
-                // Divider messages
-                if (msg.role === 'system' && msg.metadata?.type === 'divider') {
-                  return <PhaseDivider key={msg.id} label={msg.metadata.label} />
-                }
+                // Strip <action> tags from build messages before display
+                const displayMsg = msg.role === 'assistant' && msg.content?.includes('<action>')
+                  ? { ...msg, content: msg.content.replace(/<action>[\s\S]*?<\/action>/g, '').trim() }
+                  : msg
 
-                // Wrap plan-phase messages in opacity container, render smaller
-                if (isPlanPhase) {
-                  return (
-                    <div key={msg.id} className="opacity-50 text-[11px]">
-                      <ChatMessageComponent
-                        message={msg}
-                        isStreaming={isStreaming && i === messages.length - 1}
-                      />
-                    </div>
-                  )
-                }
-
-                // Build-phase messages render normally
                 return (
                   <ChatMessageComponent
                     key={msg.id}
-                    message={msg}
-                    isStreaming={isStreaming && i === messages.length - 1}
-                    onCalcAction={isLastAssistant ? sendMessage : undefined}
+                    message={displayMsg}
+                    isStreaming={isStreaming && isLast}
+                    suppressPlanDelta
+                    isLastAssistant={isLastAssistantMsg}
+                    onChoiceSelect={isLastAssistantMsg ? handleSendMessage : undefined}
                   />
                 )
               })}
             </div>
+            {isRegenerating && (
+              <div className="py-3 text-center">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-ds-text-dim animate-pulse">
+                  Regenerating dashboard…
+                </span>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
 
+          {/* Undo Button */}
+          {onUndo && !isRegenerating && (
+            <div className="shrink-0 px-3 pt-3" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
+              <button
+                onClick={onUndo}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 font-mono text-[10px] uppercase tracking-wide text-ds-text-muted hover:text-ds-text transition-colors"
+                style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 10 }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+                </svg>
+                Undo last change
+              </button>
+            </div>
+          )}
+
           {/* Chat Input */}
-          <div className="shrink-0 px-3 py-3 border-t border-ds-border">
+          <div className="shrink-0 px-3 py-3" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
             <ChatInput
-              onSend={sendMessage}
+              onSend={handleSendMessage}
               disabled={false}
               isStreaming={isStreaming}
               onStop={stopStreaming}
             />
           </div>
         </div>
+      )}
+
+      {/* Publish Modal */}
+      {showPublishModal && (
+        <PublishModal
+          dashboardId={dashboardId}
+          projectId={projectId || currentProject?.id}
+          dashboardName={dashboardName}
+          jsxCode={jsxCode}
+          data={data}
+          onClose={() => setShowPublishModal(false)}
+          onPublished={handlePublished}
+        />
+      )}
+
+      {/* Data Dictionary Panel */}
+      {(projectId || currentProject?.id) && (
+        <DataDictionaryPanel
+          projectId={(projectId || currentProject?.id)!}
+          isOpen={dictionaryOpen}
+          onClose={() => setDictionaryOpen(false)}
+        />
       )}
     </div>
   )

@@ -76,11 +76,12 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         disabled={isLoading}
-        className={`w-full border border-dashed p-10 text-center transition-colors cursor-pointer ${
+        className={`w-full p-10 text-center transition-colors cursor-pointer ${
           isDragging
-            ? 'border-ds-accent bg-ds-surface-alt'
-            : 'border-ds-border-strong hover:border-ds-accent'
+            ? 'bg-ds-surface-alt'
+            : ''
         } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+        style={{ borderRadius: '12px', border: `0.5px dashed ${isDragging ? 'var(--color-ds-accent)' : 'rgba(0,0,0,0.10)'}` }}
       >
         <input
           ref={inputRef}
@@ -91,7 +92,7 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
         />
 
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border border-ds-border-strong flex items-center justify-center">
+          <div className="w-10 h-10 flex items-center justify-center" style={{ borderRadius: '8px', border: '0.5px solid rgba(0,0,0,0.10)' }}>
             <svg
               className="w-4 h-4 text-ds-text-dim"
               fill="none"
@@ -119,11 +120,11 @@ const FileUpload: FC<FileUploadProps> = ({ onFileSelected, isLoading }) => {
       </button>
 
       {error && (
-        <p className="font-mono text-xs text-ds-error">{error}</p>
+        <p className="font-mono text-xs text-ds-error" style={{ borderRadius: '8px' }}>{error}</p>
       )}
 
       {selectedFile && !error && (
-        <div className="flex items-center justify-between border border-ds-border bg-ds-surface px-4 py-3">
+        <div className="flex items-center justify-between bg-ds-surface px-4 py-3" style={{ borderRadius: '8px', border: '0.5px solid rgba(0,0,0,0.06)' }}>
           <div className="flex items-center gap-3">
             <span className="micro-label">
               {selectedFile.name.split('.').pop()}

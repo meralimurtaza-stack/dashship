@@ -17,14 +17,18 @@ const MessageBubble: FC<{ message: ChatMessage; isStreaming?: boolean }> = ({
           max-w-[90%] px-3 py-2 text-xs leading-relaxed
           ${isUser
             ? 'bg-ds-accent text-white'
-            : 'bg-ds-surface border border-ds-border text-ds-text'}
+            : 'bg-ds-surface text-ds-text'}
         `}
+        style={{
+          borderRadius: 12,
+          ...(isUser ? {} : { border: '0.5px solid rgba(0,0,0,0.06)' }),
+        }}
       >
         {!isUser && !message.content && isStreaming && (
           <div className="flex gap-1 py-1">
-            <span className="w-1 h-1 bg-ds-text-dim animate-pulse" />
-            <span className="w-1 h-1 bg-ds-text-dim animate-pulse" style={{ animationDelay: '150ms' }} />
-            <span className="w-1 h-1 bg-ds-text-dim animate-pulse" style={{ animationDelay: '300ms' }} />
+            <span className="w-1 h-1 bg-ds-text-dim rounded-full animate-pulse" />
+            <span className="w-1 h-1 bg-ds-text-dim rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+            <span className="w-1 h-1 bg-ds-text-dim rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
           </div>
         )}
         {message.content && (
@@ -92,7 +96,7 @@ const CaptainSidebar: FC<CaptainSidebarProps> = ({
 
   if (collapsed) {
     return (
-      <div className="w-10 border-l border-ds-border bg-ds-bg flex flex-col items-center pt-3 shrink-0">
+      <div className="w-10 bg-ds-bg flex flex-col items-center pt-3 shrink-0" style={{ borderLeft: '0.5px solid rgba(0,0,0,0.06)' }}>
         <button
           onClick={onToggleCollapse}
           className="p-1.5 text-ds-text-dim hover:text-ds-text transition-colors"
@@ -108,9 +112,9 @@ const CaptainSidebar: FC<CaptainSidebarProps> = ({
   }
 
   return (
-    <div className="w-[350px] border-l border-ds-border bg-ds-surface flex flex-col shrink-0">
+    <div className="w-[350px] bg-ds-surface flex flex-col shrink-0" style={{ borderLeft: '0.5px solid rgba(0,0,0,0.06)' }}>
       {/* Header */}
-      <div className="px-3 py-2.5 border-b border-ds-border flex items-center justify-between">
+      <div className="px-3 py-2.5 flex items-center justify-between" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 text-ds-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
             <circle cx="12" cy="12" r="3" />
@@ -170,13 +174,14 @@ const CaptainSidebar: FC<CaptainSidebarProps> = ({
             onClick={onGenerate}
             disabled={isGenerating}
             className="w-full flex items-center justify-center gap-2 bg-ds-accent text-white font-mono text-[10px] uppercase tracking-wide px-4 py-2.5 hover:bg-ds-accent-hover transition-colors disabled:opacity-50"
+            style={{ borderRadius: 10 }}
           >
             {isGenerating ? (
               <>
                 <div className="flex gap-1">
-                  <div className="w-1 h-1 bg-white animate-pulse" />
-                  <div className="w-1 h-1 bg-white animate-pulse" style={{ animationDelay: '150ms' }} />
-                  <div className="w-1 h-1 bg-white animate-pulse" style={{ animationDelay: '300ms' }} />
+                  <div className="w-1 h-1 bg-white rounded-full animate-pulse" />
+                  <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1 h-1 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
                 </div>
                 Building dashboard...
               </>
@@ -193,7 +198,7 @@ const CaptainSidebar: FC<CaptainSidebarProps> = ({
       )}
 
       {/* Input */}
-      <div className="px-3 py-2.5 border-t border-ds-border">
+      <div className="px-3 py-2.5" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
@@ -202,13 +207,15 @@ const CaptainSidebar: FC<CaptainSidebarProps> = ({
             onKeyDown={handleKeyDown}
             placeholder="Ask Captain..."
             rows={1}
-            className="flex-1 resize-none px-3 py-2 text-xs font-mono bg-ds-surface-alt border border-ds-border outline-none focus:border-ds-accent placeholder:text-ds-text-dim transition-colors"
+            className="flex-1 resize-none px-3 py-2 text-xs font-mono bg-ds-surface-alt outline-none focus:border-ds-accent placeholder:text-ds-text-dim transition-colors"
+            style={{ borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.06)' }}
             disabled={isStreaming}
           />
           {isStreaming ? (
             <button
               onClick={onStop}
-              className="px-3 py-2 text-xs font-mono uppercase tracking-wide text-ds-text-muted border border-ds-border hover:border-ds-accent hover:text-ds-text transition-colors shrink-0"
+              className="px-3 py-2 text-xs font-mono uppercase tracking-wide text-ds-text-muted hover:border-ds-accent hover:text-ds-text transition-colors shrink-0"
+              style={{ borderRadius: 8, border: '0.5px solid rgba(0,0,0,0.06)' }}
             >
               Stop
             </button>
@@ -217,6 +224,7 @@ const CaptainSidebar: FC<CaptainSidebarProps> = ({
               onClick={handleSend}
               disabled={!input.trim()}
               className="px-3 py-2 bg-ds-accent text-white text-xs font-mono uppercase tracking-wide hover:bg-ds-accent-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors shrink-0"
+              style={{ borderRadius: 8 }}
             >
               Send
             </button>

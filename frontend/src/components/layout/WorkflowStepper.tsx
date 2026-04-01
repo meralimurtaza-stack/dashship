@@ -30,7 +30,7 @@ const WorkflowStepper: FC<WorkflowStepperProps> = ({
   const currentIndex = steps.findIndex((s) => s.key === currentStep)
 
   return (
-    <div className="h-10 border-b border-ds-border bg-ds-surface flex items-center justify-center px-4 shrink-0">
+    <div className="h-10 bg-ds-surface flex items-center justify-center px-4 shrink-0" style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}>
       <div className="flex items-center gap-1">
         {steps.map((step, i) => {
           const isCompleted = completedSteps.includes(step.key)
@@ -41,29 +41,32 @@ const WorkflowStepper: FC<WorkflowStepperProps> = ({
           return (
             <div key={step.key} className="flex items-center">
               {i > 0 && (
-                <div
-                  className={`w-8 h-px mx-1 transition-colors ${
-                    isCompleted || isCurrent ? 'bg-ds-accent' : 'bg-ds-border'
-                  }`}
-                />
+                <div className="flex items-center mx-1">
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                      isCompleted || isCurrent ? 'bg-ds-accent' : 'bg-ds-border'
+                    }`}
+                  />
+                </div>
               )}
               <button
                 onClick={() => isClickable && onStepClick?.(step.key)}
                 disabled={!isClickable}
                 className={`
-                  relative flex items-center gap-1.5 px-3 py-2.5 font-mono text-xs transition-all
+                  relative flex items-center gap-1.5 px-3 py-1.5 font-sans text-xs transition-all
                   ${isCurrent
-                    ? 'text-ds-text font-medium'
+                    ? 'text-ds-accent font-medium bg-ds-accent/10'
                     : isCompleted
                     ? 'text-ds-text hover:opacity-70 cursor-pointer'
                     : 'text-ds-text-dim cursor-default'}
                 `}
+                style={{
+                  borderRadius: '8px',
+                  border: isCurrent ? '0.5px solid var(--color-ds-accent)' : '0.5px solid transparent',
+                }}
               >
                 {isCompleted && !isCurrent && <CheckIcon />}
                 <span>{step.label}</span>
-                {isCurrent && (
-                  <div className="absolute bottom-0 left-3 right-3 h-[2.5px] bg-ds-accent" />
-                )}
               </button>
             </div>
           )

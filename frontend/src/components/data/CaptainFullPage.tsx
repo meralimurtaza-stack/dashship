@@ -65,7 +65,7 @@ const CaptainFullPage: FC<CaptainFullPageProps> = ({
   return (
     <div className="fixed inset-0 z-40 bg-ds-bg flex flex-col">
       {/* Header */}
-      <div className="h-11 px-5 flex items-center justify-between border-b border-ds-border bg-ds-surface shrink-0">
+      <div className="h-11 px-5 flex items-center justify-between bg-ds-surface shrink-0" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center gap-3">
           {/* Minimize button */}
           <button
@@ -92,7 +92,8 @@ const CaptainFullPage: FC<CaptainFullPageProps> = ({
           {!contextPanelOpen && (
             <button
               onClick={() => setContextPanelOpen(true)}
-              className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 border border-ds-border hover:border-ds-accent transition-colors"
+              className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 hover:border-ds-accent transition-colors"
+              style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 8 }}
             >
               Data
             </button>
@@ -126,13 +127,14 @@ const CaptainFullPage: FC<CaptainFullPageProps> = ({
                   onClick={onGenerate}
                   disabled={isGenerating}
                   className="flex items-center gap-2 bg-ds-accent text-white font-mono text-xs uppercase tracking-wide px-6 py-3 hover:bg-ds-accent-hover transition-colors disabled:opacity-50"
+                  style={{ borderRadius: 10 }}
                 >
                   {isGenerating ? (
                     <>
                       <div className="flex gap-1">
-                        <div className="w-1.5 h-1.5 bg-white animate-pulse" />
-                        <div className="w-1.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '150ms' }} />
-                        <div className="w-1.5 h-1.5 bg-white animate-pulse" style={{ animationDelay: '300ms' }} />
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
                       </div>
                       Building dashboard...
                     </>
@@ -152,7 +154,7 @@ const CaptainFullPage: FC<CaptainFullPageProps> = ({
           {/* Input */}
           <div className="shrink-0 px-5 pb-4 pt-2">
             <div className="max-w-2xl mx-auto">
-              <div className="border border-ds-border bg-ds-surface">
+              <div className="bg-ds-surface" style={{ borderRadius: 12, border: '0.5px solid rgba(0,0,0,0.06)' }}>
                 <div className="flex items-end">
                   <textarea
                     ref={textareaRef}
@@ -169,6 +171,7 @@ const CaptainFullPage: FC<CaptainFullPageProps> = ({
                       <button
                         onClick={onStop}
                         className="font-mono text-[10px] uppercase tracking-wide px-4 py-2 border border-ds-accent text-ds-text hover:bg-ds-accent hover:text-white transition-colors"
+                        style={{ borderRadius: 8 }}
                       >
                         Stop
                       </button>
@@ -177,6 +180,7 @@ const CaptainFullPage: FC<CaptainFullPageProps> = ({
                         onClick={handleSend}
                         disabled={!input.trim()}
                         className="font-mono text-[10px] uppercase tracking-wide px-4 py-2 bg-ds-accent text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-ds-accent-hover transition-colors"
+                        style={{ borderRadius: 8 }}
                       >
                         Send
                       </button>

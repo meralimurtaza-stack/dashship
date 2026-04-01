@@ -33,7 +33,7 @@ const Section: FC<{
 }> = ({ label, count, defaultOpen = true, onAdd, children }) => {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <div className="border-b border-ds-border">
+    <div style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-ds-surface-alt transition-colors"
@@ -82,7 +82,7 @@ const FieldPill: FC<{
       : 'bg-[#534AB7]/[0.06]'
 
   return (
-    <span className={`inline-flex items-center gap-1 border-l-2 ${borderColor} ${bgColor} px-2 py-0.5`}>
+    <span className={`inline-flex items-center gap-1 border-l-2 ${borderColor} ${bgColor} px-2 py-0.5`} style={{ borderRadius: 4 }}>
       <span className="font-mono text-[10px] text-ds-text">{field}</span>
       {agg && onAggChange && (
         <select
@@ -113,11 +113,11 @@ const BusinessRuleCard: FC<{
   }
 
   return (
-    <div className="border border-ds-border bg-ds-surface p-3 space-y-1.5">
+    <div className="bg-ds-surface p-3 space-y-1.5" style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 8 }}>
       <p className="font-mono text-xs font-medium text-ds-text">{group.name}</p>
       {group.rules.map((rule, i) => (
         <div key={i} className="flex items-start gap-2 text-[11px]">
-          <span className={`w-1.5 h-1.5 mt-1 shrink-0 ${statusColor(rule.status)}`} />
+          <span className={`w-1.5 h-1.5 mt-1 shrink-0 ${statusColor(rule.status)}`} style={{ borderRadius: '50%' }} />
           <span
             className="font-sans text-ds-text-muted cursor-text"
             contentEditable
@@ -160,18 +160,18 @@ const CalcFieldCard: FC<{
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="border border-ds-border bg-ds-surface">
+    <div className="bg-ds-surface" style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 8 }}>
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-ds-surface-alt transition-colors"
       >
         <span className="flex items-center gap-2">
           <span className="font-mono text-[13px] font-medium text-ds-text">{field.name}</span>
-          <span className="font-mono text-[9px] uppercase tracking-wide text-ds-text-dim border border-ds-border px-1.5 py-0.5">
+          <span className="font-mono text-[9px] uppercase tracking-wide text-ds-text-dim px-1.5 py-0.5" style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 4 }}>
             {field.type}
           </span>
           {field.lod && (
-            <span className="font-mono text-[9px] uppercase tracking-wide text-ds-warning border border-ds-warning/30 bg-ds-warning/[0.06] px-1.5 py-0.5">
+            <span className="font-mono text-[9px] uppercase tracking-wide text-ds-warning bg-ds-warning/[0.06] px-1.5 py-0.5" style={{ border: '0.5px solid rgba(184,134,11,0.3)', borderRadius: 4 }}>
               LOD
             </span>
           )}
@@ -182,7 +182,7 @@ const CalcFieldCard: FC<{
         </span>
       </button>
       {expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-ds-border">
+        <div className="px-3 pb-3 space-y-2" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
           <div
             className="font-mono text-[11px] text-ds-text bg-ds-surface-alt p-2 mt-2 cursor-text whitespace-pre-wrap"
             contentEditable
@@ -197,7 +197,7 @@ const CalcFieldCard: FC<{
             </p>
           )}
           <div className="flex items-center gap-1.5">
-            <span className={`w-1.5 h-1.5 ${hasWarning ? 'bg-ds-error' : 'bg-ds-success'}`} />
+            <span className={`w-1.5 h-1.5 ${hasWarning ? 'bg-ds-error' : 'bg-ds-success'}`} style={{ borderRadius: '50%' }} />
             <span className="font-mono text-[10px] text-ds-text-dim">
               {hasWarning ? 'Field reference error' : 'All fields found'}
             </span>
@@ -225,7 +225,7 @@ const SheetCard: FC<{
   }
 
   return (
-    <div className="border border-ds-border bg-ds-surface p-3 space-y-2 group relative">
+    <div className="bg-ds-surface p-3 space-y-2 group relative" style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 8 }}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[13px] font-medium text-ds-text">{sheet.intent}</span>
@@ -299,14 +299,14 @@ const PlanPanel: FC<PlanPanelProps> = ({
   const calcCount = spec.calculatedFields.length
 
   return (
-    <div className="h-full flex flex-col bg-ds-surface border-l border-ds-border overflow-hidden">
+    <div className="h-full flex flex-col bg-ds-surface overflow-hidden" style={{ borderLeft: '0.5px solid rgba(0,0,0,0.06)' }}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-ds-border shrink-0">
+      <div className="px-4 py-3 shrink-0" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
         <div className="flex items-center justify-between mb-1">
           <p className="font-mono text-sm font-medium text-ds-text">Dashboard plan</p>
           <span
             className="font-mono text-[8px] uppercase tracking-widest px-2 py-0.5"
-            style={{ color: 'var(--color-ds-warning)', background: 'rgba(184,134,11,0.06)' }}
+            style={{ color: 'var(--color-ds-warning)', background: 'rgba(184,134,11,0.06)', borderRadius: 4 }}
           >
             PLANNING
           </span>
@@ -401,7 +401,7 @@ const PlanPanel: FC<PlanPanelProps> = ({
 
       {/* Field warnings */}
       {fieldWarnings.length > 0 && (
-        <div className="px-4 py-2 border-t border-ds-border shrink-0" style={{ background: 'rgba(193,64,61,0.04)' }}>
+        <div className="px-4 py-2 shrink-0" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)', background: 'rgba(193,64,61,0.04)' }}>
           <p className="font-mono text-[10px] text-ds-error">
             {fieldWarnings.length} field error{fieldWarnings.length !== 1 ? 's' : ''}
           </p>
@@ -412,11 +412,12 @@ const PlanPanel: FC<PlanPanelProps> = ({
       )}
 
       {/* Generate button */}
-      <div className="px-4 py-3 border-t border-ds-border shrink-0">
+      <div className="px-4 py-3 shrink-0" style={{ borderTop: '0.5px solid rgba(0,0,0,0.06)' }}>
         <button
           onClick={onGenerate}
           disabled={!isValid || isGenerating}
           className="w-full bg-ds-accent text-white font-mono text-[13px] font-medium py-2.5 hover:bg-ds-accent-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ borderRadius: 10 }}
         >
           {isGenerating ? 'Generating…' : 'Generate dashboard'}
         </button>

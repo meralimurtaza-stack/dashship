@@ -40,11 +40,12 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
   }, [file, expanded])
 
   return (
-    <div className="border border-ds-border bg-ds-surface">
+    <div className="bg-ds-surface overflow-hidden" style={{ borderRadius: 12, border: '0.5px solid var(--color-ds-border)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}>
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-ds-surface-alt transition-colors"
+        style={{ borderRadius: '12px 12px 0 0' }}
       >
         <span className="micro-label">
           Import Options
@@ -62,14 +63,14 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
       </button>
 
       {expanded && (
-        <div className="px-4 pb-4 pt-1 border-t border-ds-border space-y-4">
+        <div className="px-4 pb-4 pt-1 space-y-4" style={{ borderTop: '0.5px solid var(--color-ds-border)' }}>
           {/* Raw row preview */}
           {rawRows.length > 0 && (
             <div className="space-y-1.5">
               <span className="micro-label">
                 Raw file preview
               </span>
-              <div className="overflow-x-auto border border-ds-border">
+              <div className="overflow-x-auto" style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}>
                 <table className="w-full text-[11px]">
                   <tbody>
                     {rawRows.map((row, rowIdx) => {
@@ -78,13 +79,14 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                       return (
                         <tr
                           key={rowIdx}
-                          className={`border-b border-ds-border transition-colors ${
+                          className={`transition-colors ${
                             isHeader
                               ? 'bg-ds-accent text-white'
                               : isSkipped
                               ? 'bg-ds-surface-alt text-ds-text-dim line-through'
                               : ''
                           }`}
+                          style={{ borderBottom: '0.5px solid var(--color-ds-border)' }}
                         >
                           <td className={`px-2 py-1 font-mono tabular-nums w-8 text-right ${
                             isHeader ? 'text-ds-text-dim' : 'text-ds-text-dim'
@@ -140,7 +142,8 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                     onChange({ headerRow: options.headerRow })
                   }
                 }}
-                className="w-full border border-ds-border px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors tabular-nums"
+                className="w-full px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors tabular-nums"
+                style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}
               />
               <p className="font-mono text-[9px] text-ds-text-dim tracking-wide">
                 Row {options.headerRow} = headers, data from row {options.headerRow + 1}
@@ -163,7 +166,8 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                   <select
                     value={options.delimiter}
                     onChange={(e) => onChange({ delimiter: e.target.value as Delimiter })}
-                    className="w-full border border-ds-border px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors bg-ds-surface"
+                    className="w-full px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors bg-ds-surface"
+                    style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}
                   >
                     {DELIMITERS.map((d) => (
                       <option key={d.value} value={d.value}>
@@ -181,7 +185,8 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
                   <select
                     value={options.encoding}
                     onChange={(e) => onChange({ encoding: e.target.value as Encoding })}
-                    className="w-full border border-ds-border px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors bg-ds-surface"
+                    className="w-full px-3 py-2 font-mono text-sm text-ds-text outline-none focus:border-ds-accent transition-colors bg-ds-surface"
+                    style={{ borderRadius: 8, border: '0.5px solid var(--color-ds-border)' }}
                   >
                     {ENCODINGS.map((enc) => (
                       <option key={enc} value={enc}>
@@ -198,7 +203,8 @@ const ImportOptionsPanel: FC<ImportOptionsPanelProps> = ({
             <button
               type="button"
               onClick={() => onChange(options)}
-              className="border border-ds-accent text-ds-text font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:bg-ds-accent hover:text-white transition-colors"
+              className="text-ds-text font-mono text-[10px] uppercase tracking-wide px-4 py-2 hover:bg-ds-accent hover:text-white transition-colors"
+              style={{ borderRadius: 10, border: '0.5px solid var(--color-ds-accent)' }}
             >
               Re-parse
             </button>

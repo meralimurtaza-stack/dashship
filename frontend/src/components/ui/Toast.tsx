@@ -54,12 +54,12 @@ const ToastNotification: FC<{
   return (
     <div
       className={`
-        flex items-center gap-3 px-4 py-3 bg-ds-surface border border-ds-border
+        flex items-center gap-3 px-4 py-3 bg-ds-surface
         font-mono text-xs text-ds-text
         transition-all duration-150 ease-out
         ${isVisible && !isLeaving ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}
       `}
-      style={{ minWidth: 260, maxWidth: 400 }}
+      style={{ minWidth: 260, maxWidth: 400, border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)' }}
     >
       {/* Icon */}
       <span className={`shrink-0 ${iconColor}`}>

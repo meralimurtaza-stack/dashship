@@ -43,7 +43,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           </p>
           <button
             onClick={this.handleRetry}
-            className="font-mono text-[10px] uppercase tracking-wide text-ds-text-muted border border-ds-border-strong px-4 py-1.5 hover:border-ds-accent hover:text-ds-text transition-colors"
+            className="font-mono text-[10px] uppercase tracking-wide text-ds-text-muted px-4 py-1.5 hover:border-ds-accent hover:text-ds-text transition-colors"
+            style={{ border: '0.5px solid var(--color-ds-border-strong)', borderRadius: 8 }}
           >
             Retry
           </button>
