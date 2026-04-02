@@ -45,9 +45,9 @@ const renderBarLabel = (props: any, format?: FormatConfig) => {
       y={y + height / 2}
       dominantBaseline="central"
       style={{
-        fontFamily: '"IBM Plex Mono", monospace',
+        fontFamily: '"Space Grotesk", monospace',
         fontSize: 10,
-        fill: '#0E0D0D',
+        fill: '#1b1c19',
       }}
     >
       {formatted}
@@ -69,9 +69,9 @@ const renderVerticalBarLabel = (props: any, format?: FormatConfig) => {
       y={y - 6}
       textAnchor="middle"
       style={{
-        fontFamily: '"IBM Plex Mono", monospace',
+        fontFamily: '"Space Grotesk", monospace',
         fontSize: 10,
-        fill: '#0E0D0D',
+        fill: '#1b1c19',
       }}
     >
       {formatted}
@@ -106,7 +106,7 @@ const BarChartComponent: FC<BarChartProps> = ({
     return (
       <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
         <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+          <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
         </div>
       </ChartCard>
     )

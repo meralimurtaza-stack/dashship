@@ -517,7 +517,7 @@ const AppLayout: FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-ds-bg">
+    <div className="min-h-screen" style={{ backgroundColor: (activePage === 'Home' || activePage === 'Data' || activePage === 'Chat') ? 'var(--color-lp-surface)' : 'var(--color-ds-bg)' }}>
       {isGenerating && <GeneratingOverlay />}
       <Header
         onToggleSidebar={() => setSidebarCollapsed(prev => !prev)}

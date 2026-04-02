@@ -60,7 +60,7 @@ export interface EmailScheduleConfig {
 // ── Google Fonts presets ────────────────────────────────────────
 
 export const FONT_PRESETS = [
-  { label: 'IBM Plex Sans', value: 'IBM Plex Sans' },
+  { label: 'Manrope', value: 'Manrope' },
   { label: 'Inter', value: 'Inter' },
   { label: 'DM Sans', value: 'DM Sans' },
   { label: 'Source Sans 3', value: 'Source Sans 3' },
@@ -71,7 +71,7 @@ export const FONT_PRESETS = [
 ] as const
 
 export const DEFAULT_BRANDING: PublishBranding = {
-  primaryColor: '#0E0D0D',
-  fontFamily: 'IBM Plex Sans',
+  primaryColor: '#3D82F6',
+  fontFamily: 'Manrope',
   poweredByDashShip: true,
 }

@@ -1,5 +1,4 @@
 import { useState, useRef, type FC, type KeyboardEvent } from 'react'
-import { ArrowIcon } from '../icons'
 
 interface ChatInputProps {
   onSend: (message: string) => void
@@ -14,7 +13,7 @@ const ChatInput: FC<ChatInputProps> = ({
   disabled = false,
   isStreaming = false,
   onStop,
-  placeholder = 'Ask about your data...',
+  placeholder = 'Ask The Captain to refine your dashboard...',
 }) => {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -37,126 +36,78 @@ const ChatInput: FC<ChatInputProps> = ({
   }
 
   return (
-    <div className="px-4 pb-4 pt-2">
+    <div>
       <div
-        className="flex items-end gap-2"
-        style={{
-          border: '0.5px solid rgba(0,0,0,0.10)',
-          borderRadius: '20px',
-          padding: '10px 14px',
-          transition: 'border-color 0.15s, box-shadow 0.15s',
-          background: 'var(--color-ds-surface)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.18)'
-        }}
-        onMouseLeave={(e) => {
-          if (!e.currentTarget.contains(document.activeElement)) {
-            e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
-          }
-        }}
-        onFocusCapture={(e) => {
-          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.22)'
-          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)'
-        }}
-        onBlurCapture={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-            e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
-            e.currentTarget.style.boxShadow = 'none'
-          }
-        }}
+        className="glass-panel p-2 rounded-2xl border shadow-2xl flex items-center gap-2 ring-1 ring-black/5"
+        style={{ borderColor: 'rgba(255,255,255,0.6)' }}
       >
         {/* Attach button */}
         <button
-          className="shrink-0 flex items-center justify-center text-ds-text-muted hover:text-ds-text transition-colors"
-          style={{
-            width: '26px',
-            height: '26px',
-            borderRadius: '9999px',
-            border: '0.5px solid rgba(0,0,0,0.10)',
-            background: 'transparent',
-          }}
+          className="p-3 transition-colors"
+          style={{ color: 'var(--color-lp-outline)' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-lp-primary)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-lp-outline)' }}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <span className="material-symbols-outlined">add_circle</span>
         </button>
 
-        {/* Textarea */}
-        <textarea
-          ref={textareaRef}
+        {/* Input */}
+        <input
+          ref={textareaRef as unknown as React.RefObject<HTMLInputElement>}
           value={value}
-          onChange={(e) => {
-            setValue(e.target.value)
-            // Auto-resize
-            e.target.style.height = 'auto'
-            e.target.style.height = e.target.scrollHeight + 'px'
-          }}
-          onKeyDown={handleKeyDown}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyDown as unknown as React.KeyboardEventHandler<HTMLInputElement>}
           placeholder={placeholder}
           disabled={disabled || isStreaming}
-          rows={1}
-          className="flex-1 text-ds-text bg-transparent resize-none outline-none placeholder:text-ds-text-dim disabled:opacity-50"
+          className="flex-grow bg-transparent border-none focus:ring-0 text-base placeholder:text-stone-400 disabled:opacity-50"
           style={{
-            fontSize: '12.5px',
-            fontFamily: 'var(--font-sans)',
-            lineHeight: '1.4',
-            minHeight: '18px',
-            maxHeight: '120px',
-            border: 'none',
-            padding: '0',
+            fontFamily: 'var(--font-body)',
+            color: 'var(--color-lp-on-surface)',
+            outline: 'none',
           }}
         />
 
-        {/* Send / Stop button */}
+        {/* Send / Stop */}
         {isStreaming ? (
           <button
             onClick={onStop}
-            className="shrink-0 flex items-center justify-center"
+            className="w-12 h-12 rounded-xl flex items-center justify-center transition-all"
             style={{
-              width: '26px',
-              height: '26px',
-              borderRadius: '9999px',
-              border: '0.5px solid rgba(0,0,0,0.10)',
-              background: 'transparent',
+              border: '1px solid var(--color-lp-outline-variant)',
+              color: 'var(--color-lp-on-surface-variant)',
             }}
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-ds-text-muted">
-              <rect x="4" y="4" width="16" height="16" rx="2" />
-            </svg>
+            <span className="material-symbols-outlined text-lg">stop</span>
           </button>
         ) : (
           <button
             onClick={handleSend}
             disabled={!value.trim() || disabled}
-            className="shrink-0 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
-            style={{
-              width: '26px',
-              height: '26px',
-              borderRadius: '9999px',
-              background: 'var(--color-ds-text)',
-              border: 'none',
-              transition: 'transform 0.15s',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            className="w-12 h-12 rounded-xl flex items-center justify-center hover:scale-[1.02] active:scale-95 transition-all shadow-lg disabled:opacity-30 disabled:cursor-not-allowed"
+            style={{ backgroundColor: 'var(--color-lp-primary)' }}
           >
-            <ArrowIcon size={12} className="text-ds-bg" />
+            <span className="material-symbols-outlined text-white">send</span>
           </button>
         )}
       </div>
 
-      {/* Hint */}
-      <p
-        className="text-ds-text-dim text-center"
-        style={{
-          fontSize: '9px',
-          marginTop: '4px',
-        }}
-      >
-        Enter to send · Shift+Enter for newline
-      </p>
+      {/* Action bar below input */}
+      <div className="mt-3 flex justify-center gap-8">
+        <span
+          className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold cursor-pointer transition-colors"
+          style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-outline)' }}
+        >
+          <span className="material-symbols-outlined text-[16px]">history</span>
+          History
+        </span>
+        <span
+          className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold cursor-pointer transition-opacity hover:opacity-80"
+          style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-primary)' }}
+        >
+          <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+          Generate Bridge
+        </span>
+      </div>
     </div>
   )
 }

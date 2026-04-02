@@ -122,7 +122,7 @@ const KPIWireframe: FC<{ kpi: PlanKPI }> = ({ kpi }) => (
   >
     <span
       style={{
-        fontFamily: '"IBM Plex Mono", monospace',
+        fontFamily: '"Space Grotesk", monospace',
         fontSize: 13,
         color: '#A19D94',
         lineHeight: 1,
@@ -132,7 +132,7 @@ const KPIWireframe: FC<{ kpi: PlanKPI }> = ({ kpi }) => (
     </span>
     <span
       style={{
-        fontFamily: '"IBM Plex Sans", sans-serif',
+        fontFamily: '"Manrope", sans-serif',
         fontSize: 12,
         fontWeight: 500,
         color: '#3A3833',
@@ -168,7 +168,7 @@ const ChartWireframe: FC<{ chart: PlanChart; isFullWidth?: boolean }> = ({ chart
   >
     <span
       style={{
-        fontFamily: '"IBM Plex Sans", sans-serif',
+        fontFamily: '"Manrope", sans-serif',
         fontSize: 12,
         fontWeight: 500,
         color: '#1A1917',
@@ -182,7 +182,7 @@ const ChartWireframe: FC<{ chart: PlanChart; isFullWidth?: boolean }> = ({ chart
     </span>
     <span
       style={{
-        fontFamily: '"IBM Plex Mono", monospace',
+        fontFamily: '"Space Grotesk", monospace',
         fontSize: 10,
         color: '#A19D94',
         marginTop: 2,
@@ -200,7 +200,7 @@ const ChartWireframe: FC<{ chart: PlanChart; isFullWidth?: boolean }> = ({ chart
 const FilterChip: FC<{ label: string }> = ({ label }) => (
   <div
     style={{
-      fontFamily: '"IBM Plex Mono", monospace',
+      fontFamily: '"Space Grotesk", monospace',
       fontSize: 10,
       color: '#6D6860',
       padding: '3px 8px',

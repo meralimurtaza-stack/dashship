@@ -479,13 +479,13 @@ const PublishForm: FC<{
           <div className="flex items-center gap-2">
             <input
               type="color"
-              value={branding.primaryColor || '#0E0D0D'}
+              value={branding.primaryColor || '#1b1c19'}
               onChange={(e) => onBrandingChange({ ...branding, primaryColor: e.target.value })}
               className="w-8 h-8 cursor-pointer p-0"
               style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 6 }}
             />
             <input
-              value={branding.primaryColor || '#0E0D0D'}
+              value={branding.primaryColor || '#1b1c19'}
               onChange={(e) => onBrandingChange({ ...branding, primaryColor: e.target.value })}
               className="flex-1 px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors"
               style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
@@ -499,7 +499,7 @@ const PublishForm: FC<{
             Font
           </label>
           <select
-            value={branding.fontFamily || 'IBM Plex Sans'}
+            value={branding.fontFamily || 'Manrope'}
             onChange={(e) => onBrandingChange({ ...branding, fontFamily: e.target.value })}
             className="w-full px-3 py-2 font-mono text-sm text-ds-text bg-ds-surface focus:border-ds-accent outline-none transition-colors appearance-none"
             style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}

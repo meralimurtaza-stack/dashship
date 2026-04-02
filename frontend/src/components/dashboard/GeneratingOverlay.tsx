@@ -41,7 +41,7 @@ const GeneratingOverlay: FC = () => {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#ECEAE4',
+        backgroundColor: '#fbf9f3',
         gap: 32,
       }}
     >
@@ -60,7 +60,7 @@ const GeneratingOverlay: FC = () => {
         >
           <path
             d="M0 20 Q25 10 50 20 Q75 30 100 20 Q125 10 150 20 Q175 30 200 20 L200 40 L0 40Z"
-            fill="#1C3360"
+            fill="#3D82F6"
             fillOpacity={0.12}
           >
             <animate
@@ -76,7 +76,7 @@ const GeneratingOverlay: FC = () => {
           </path>
           <path
             d="M0 25 Q25 18 50 25 Q75 32 100 25 Q125 18 150 25 Q175 32 200 25 L200 40 L0 40Z"
-            fill="#1C3360"
+            fill="#3D82F6"
             fillOpacity={0.08}
           >
             <animate
@@ -105,12 +105,12 @@ const GeneratingOverlay: FC = () => {
           }}
         >
           {/* Mast */}
-          <line x1="40" y1="8" x2="40" y2="62" stroke="#1C3360" strokeWidth="2" />
+          <line x1="40" y1="8" x2="40" y2="62" stroke="#3D82F6" strokeWidth="2" />
 
           {/* Sail */}
           <path
             d="M42 12 L42 55 L68 48Z"
-            fill="#C8963E"
+            fill="#8127cf"
             fillOpacity={0.7}
           >
             <animate
@@ -128,7 +128,7 @@ const GeneratingOverlay: FC = () => {
           {/* Small sail */}
           <path
             d="M38 18 L38 50 L18 44Z"
-            fill="#1C3360"
+            fill="#3D82F6"
             fillOpacity={0.15}
           >
             <animate
@@ -146,7 +146,7 @@ const GeneratingOverlay: FC = () => {
           {/* Flag */}
           <path
             d="M40 8 L54 13 L40 18Z"
-            fill="#C8963E"
+            fill="#8127cf"
           >
             <animate
               attributeName="d"
@@ -163,11 +163,11 @@ const GeneratingOverlay: FC = () => {
           {/* Hull */}
           <path
             d="M12 62 L68 62 L60 76 L20 76Z"
-            fill="#1C3360"
+            fill="#3D82F6"
           />
 
           {/* Hull stripe */}
-          <line x1="18" y1="68" x2="62" y2="68" stroke="#C8963E" strokeWidth="1.5" strokeOpacity={0.6} />
+          <line x1="18" y1="68" x2="62" y2="68" stroke="#8127cf" strokeWidth="1.5" strokeOpacity={0.6} />
 
           {/* Whole boat rocks */}
           <animateTransform
@@ -184,10 +184,10 @@ const GeneratingOverlay: FC = () => {
       <div style={{ textAlign: 'center', maxWidth: 320 }}>
         <p
           style={{
-            fontFamily: '"IBM Plex Mono", monospace',
+            fontFamily: '"Space Grotesk", monospace',
             fontSize: 13,
             fontWeight: 500,
-            color: '#1C3360',
+            color: '#3D82F6',
             letterSpacing: '0.02em',
             opacity: fade ? 1 : 0,
             transition: 'opacity 300ms ease',
@@ -197,7 +197,7 @@ const GeneratingOverlay: FC = () => {
         </p>
         <p
           style={{
-            fontFamily: '"IBM Plex Sans", sans-serif',
+            fontFamily: '"Manrope", sans-serif',
             fontSize: 12,
             color: '#A19D94',
             marginTop: 8,
@@ -215,7 +215,7 @@ const GeneratingOverlay: FC = () => {
             style={{
               width: 6,
               height: 6,
-              backgroundColor: '#1C3360',
+              backgroundColor: '#3D82F6',
               opacity: 0.2,
               animation: `dotPulse 1.4s ease-in-out ${i * 0.2}s infinite`,
             }}

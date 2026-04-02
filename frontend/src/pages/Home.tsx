@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, type FC, type DragEvent, type KeyboardEvent } from 'react'
 import { useProject, type Project } from '../contexts/ProjectContext'
+import WorkspacePage from './WorkspacePage'
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -15,28 +16,28 @@ interface HomeProps {
 const SAMPLES = [
   {
     key: 'sales',
-    name: 'Superstore Sales',
+    name: 'Global Superstore',
     desc: '9,994 rows · 21 fields',
-    fields: 'Orders, Profit, Shipping, Category, Region',
+    fields: 'Retail · Logistics · Daily Trends',
+    icon: 'storefront',
+    color: 'var(--color-lp-primary)',
   },
   {
     key: 'hr',
-    name: 'SaaS Metrics',
+    name: 'Team Growth Engine',
     desc: '2,400 rows · 14 fields',
-    fields: 'MRR, Churn, Signups, Plan, Cohort',
+    fields: 'LTV · MRR · Active Team Usage',
+    icon: 'insights',
+    color: 'var(--color-lp-tertiary)',
   },
   {
     key: 'ecommerce',
-    name: 'E-Commerce Analytics',
+    name: 'E-Commerce Flow',
     desc: '5,200 rows · 12 fields',
-    fields: 'Amount, Campaign, Source, Order type',
+    fields: 'Conversions · Live Inventory Feed',
+    icon: 'shopping_bag',
+    color: 'var(--color-lp-secondary)',
   },
-]
-
-const PROMPTS = [
-  'Build a sales performance dashboard',
-  'Show me customer ordering patterns',
-  'Create a KPI tracker for monthly metrics',
 ]
 
 // ── Relative Time ────────────────────────────────────────────────
@@ -53,7 +54,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
 }
 
-// ── Upload Zone ──────────────────────────────────────────────────
+// ── Upload Zone (glass-panel style) ─────────────────────────────
 
 const UploadZone: FC<{ onFile: (file: File) => void }> = ({ onFile }) => {
   const [isDragging, setIsDragging] = useState(false)
@@ -83,26 +84,11 @@ const UploadZone: FC<{ onFile: (file: File) => void }> = ({ onFile }) => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="w-full text-center transition-all cursor-pointer"
+      className="w-full glass-panel rounded-xl p-10 flex flex-col items-center justify-center border-dashed cursor-pointer group transition-colors"
       style={{
-        border: isDragging ? '1.5px dashed var(--color-ds-accent)' : '1.5px dashed rgba(0,0,0,0.10)',
-        borderRadius: '12px',
-        padding: '24px',
-        background: isDragging ? 'var(--color-ds-accent-light)' : 'var(--color-ds-surface)',
-      }}
-      onMouseEnter={(e) => {
-        if (!isDragging) {
-          e.currentTarget.style.borderColor = 'var(--color-ds-accent)'
-          e.currentTarget.style.background = 'var(--color-ds-accent-light)'
-          e.currentTarget.style.transform = 'translateY(-1px)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isDragging) {
-          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
-          e.currentTarget.style.background = 'var(--color-ds-surface)'
-          e.currentTarget.style.transform = 'translateY(0)'
-        }
+        borderWidth: '1px',
+        borderColor: isDragging ? 'var(--color-lp-primary)' : 'var(--color-lp-outline-variant)',
+        background: isDragging ? 'rgba(61,130,246,0.06)' : 'rgba(255,255,255,0.4)',
       }}
     >
       <input
@@ -115,32 +101,19 @@ const UploadZone: FC<{ onFile: (file: File) => void }> = ({ onFile }) => {
         }}
         className="hidden"
       />
-      <div className="flex items-center justify-center gap-3">
-        <div
-          className="flex items-center justify-center"
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '8px',
-            background: isDragging ? 'white' : 'var(--color-ds-surface-alt)',
-            transition: 'background 0.2s',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-ds-text-dim">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-        </div>
-        <div className="text-left">
-          <span style={{ fontSize: '13.5px', color: 'var(--color-ds-text-muted)' }}>
-            Connect your data — drop <strong style={{ color: 'var(--color-ds-text)', fontWeight: 500 }}>CSV</strong> or <strong style={{ color: 'var(--color-ds-text)', fontWeight: 500 }}>Excel</strong>, or click to browse
-          </span>
-          <div style={{ fontSize: '11px', color: 'var(--color-ds-text-dim)', marginTop: '2px' }}>
-            Up to 50MB · .csv, .xlsx, .xls
-          </div>
-        </div>
-      </div>
+      <span
+        className="material-symbols-outlined text-5xl mb-4 transition-colors"
+        style={{ color: isDragging ? 'var(--color-lp-primary)' : 'var(--color-lp-outline-variant)' }}
+      >
+        upload_file
+      </span>
+      <p className="font-semibold text-lg mb-1" style={{ fontFamily: 'var(--font-body)' }}>Hand over your data files</p>
+      <p
+        className="text-[10px] uppercase tracking-wider text-center"
+        style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}
+      >
+        XLSX, CSV, or Google Sheets links &bull; Processed in seconds
+      </p>
     </button>
   )
 }
@@ -165,82 +138,23 @@ const HomeChatInput: FC<{ onSend: (msg: string) => void }> = ({ onSend }) => {
   }, [handleSend])
 
   return (
-    <div
-      className="transition-shadow"
-      style={{
-        background: 'var(--color-ds-surface)',
-        borderRadius: '20px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)',
-        overflow: 'hidden',
-      }}
-    >
+    <div className="relative">
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Build me a customer retention dashboard..."
-        rows={2}
-        className="w-full bg-transparent text-ds-text resize-none focus:outline-none placeholder:text-ds-text-dim"
-        style={{
-          padding: '20px 22px 14px',
-          fontSize: '14.5px',
-          fontFamily: 'var(--font-sans)',
-          lineHeight: '1.5',
-          minHeight: '72px',
-          border: 'none',
-        }}
+        className="w-full bg-white border-none rounded-xl p-6 shadow-sm focus:ring-2 focus:ring-lp-primary h-32 resize-none transition-all"
+        style={{ fontFamily: 'var(--font-body)', color: 'var(--color-lp-on-surface)' }}
+        placeholder="Tell The Captain what you need to see... 'Map our daily sales velocity against project milestones for the whole team'"
       />
-      <div
-        className="flex items-center justify-between"
-        style={{ padding: '0 18px 14px' }}
-      >
-        <div className="flex items-center gap-1.5" style={{ fontSize: '12px', color: 'var(--color-ds-text-dim)' }}>
-          <div
-            style={{
-              width: '7px',
-              height: '7px',
-              borderRadius: '50%',
-              background: 'var(--color-ds-success)',
-              animation: 'pulse 2s ease infinite',
-            }}
-          />
-          <span>Captain will take the wheel</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            className="flex items-center justify-center text-ds-text-muted hover:text-ds-text transition-colors"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '9999px',
-              border: '0.5px solid rgba(0,0,0,0.10)',
-              background: 'transparent',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
-          <button
-            onClick={handleSend}
-            disabled={!value.trim()}
-            className="disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-            style={{
-              padding: '7px 20px',
-              borderRadius: '9999px',
-              background: 'var(--color-ds-text)',
-              color: 'var(--color-ds-bg)',
-              fontSize: '13px',
-              fontWeight: 500,
-              fontFamily: 'var(--font-sans)',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Start
-          </button>
-        </div>
+      <div className="absolute bottom-4 right-4">
+        <button
+          onClick={handleSend}
+          disabled={!value.trim()}
+          className="bg-lp-primary text-white p-4 rounded-full flex items-center justify-center hover:bg-lp-primary/90 shadow-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <span className="material-symbols-outlined">send</span>
+        </button>
       </div>
     </div>
   )
@@ -252,77 +166,26 @@ const ProjectCard: FC<{
   project: Project
   onClick: () => void
 }> = ({ project, onClick }) => {
-  const bars = [40, 65, 30, 80, 55, 70, 45]
-
   return (
-    <div className="relative group shrink-0 w-52">
-      <button
-        onClick={onClick}
-        className="w-full text-left bg-ds-surface transition-all"
-        style={{
-          borderRadius: '12px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
-          overflow: 'hidden',
-          border: '0.5px solid transparent',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'translateY(-2px)'
-          e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)'
-          e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'translateY(0)'
-          e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)'
-          e.currentTarget.style.borderColor = 'transparent'
-        }}
-      >
-        <div
-          className="flex items-end justify-center gap-1 px-4 pb-3"
-          style={{
-            height: '90px',
-            background: 'var(--color-ds-surface-alt)',
-          }}
-        >
-          {bars.map((h, i) => (
-            <div
-              key={i}
-              className="flex-1 transition-colors"
-              style={{
-                height: `${h}%`,
-                maxWidth: 14,
-                background: 'var(--color-ds-text-dim)',
-                opacity: 0.2,
-                borderRadius: '2px 2px 0 0',
-              }}
-            />
-          ))}
-        </div>
-        <div style={{ padding: '10px 14px' }}>
-          <h3
-            className="text-ds-text truncate"
-            style={{ fontSize: '13px', fontWeight: 500, marginBottom: '3px' }}
-          >
-            {project.name}
-          </h3>
-          <div className="flex items-center gap-2" style={{ fontSize: '11px', color: 'var(--color-ds-text-dim)' }}>
-            <span className="font-mono tabular-nums">
-              {project.data_source_count ?? 0} source{(project.data_source_count ?? 0) !== 1 ? 's' : ''}
-            </span>
-            <span
-              style={{
-                width: '3px',
-                height: '3px',
-                borderRadius: '50%',
-                background: 'var(--color-ds-text-dim)',
-                display: 'inline-block',
-              }}
-            />
-            <span className="font-mono tabular-nums">
-              {timeAgo(project.updated_at)}
-            </span>
-          </div>
-        </div>
-      </button>
+    <div
+      className="group flex items-center gap-6 p-6 rounded-xl transition-all cursor-pointer border border-transparent hover:border-lp-outline-variant/30"
+      style={{ backgroundColor: 'var(--color-lp-surface-container)' }}
+      onClick={onClick}
+      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-lp-surface-container-high)')}
+      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-lp-surface-container)')}
+    >
+      <div className="w-14 h-14 rounded-lg bg-white flex items-center justify-center shadow-sm" style={{ color: 'var(--color-lp-primary)' }}>
+        <span className="material-symbols-outlined">dashboard</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <h4 className="font-bold truncate" style={{ fontFamily: 'var(--font-body)' }}>{project.name}</h4>
+        <p className="text-[11px] uppercase tracking-wider" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+          {project.data_source_count ?? 0} source{(project.data_source_count ?? 0) !== 1 ? 's' : ''} &bull; {timeAgo(project.updated_at)}
+        </p>
+      </div>
+      <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--color-lp-primary)' }}>
+        play_circle
+      </span>
     </div>
   )
 }
@@ -346,206 +209,359 @@ const Home: FC<HomeProps> = ({
     onChatStarted(message)
   }, [onChatStarted])
 
-  return (
-    <div className="flex-1 overflow-auto">
-      <div className="max-w-[680px] mx-auto px-6" style={{ paddingTop: hasProjects ? '48px' : '72px', paddingBottom: '60px' }}>
-        <div className="space-y-6">
+  // Show workspace view when user has projects
+  if (hasProjects && !loading) {
+    return (
+      <WorkspacePage
+        projects={projects}
+        onProjectSelected={onProjectSelected}
+        onFileUploaded={onFileUploaded}
+        onChatStarted={onChatStarted}
+        onSampleSelected={onSampleSelected}
+      />
+    )
+  }
 
-          {/* Hero */}
-          <div className="text-center" style={{ paddingBottom: '12px' }}>
-            <h1
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '50px',
-                fontWeight: 400,
-                lineHeight: 1.12,
-                letterSpacing: '-0.02em',
-                marginBottom: '12px',
-              }}
+  return (
+    <div
+      className="flex-1 overflow-auto"
+      style={{
+        fontFamily: 'var(--font-body)',
+        backgroundColor: 'var(--color-lp-surface)',
+        color: 'var(--color-lp-on-surface)',
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-8 pt-12 pb-24">
+        {/* Hero Section */}
+        <section className="mb-16 text-center">
+          <div
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-8"
+            style={{ backgroundColor: 'var(--color-lp-tertiary-fixed)', color: 'var(--color-lp-on-tertiary-fixed)' }}
+          >
+            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
+            <span className="text-[10px] uppercase tracking-widest font-bold" style={{ fontFamily: 'var(--font-label)' }}>AI Data Consultant in Command</span>
+          </div>
+          <h1
+            className="text-5xl md:text-7xl mb-8 tracking-tight max-w-5xl mx-auto leading-[0.95]"
+            style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-lp-on-surface)' }}
+          >
+            Self-service analytics <span className="italic font-light">in minutes</span>.
+          </h1>
+          <p
+            className="text-lg max-w-2xl mx-auto leading-relaxed mb-8"
+            style={{ color: 'var(--color-lp-on-surface-variant)' }}
+          >
+            Live daily for you and your team. Turn your static spreadsheets into professional, narrative-driven analytics powered by <strong>The Captain</strong>—your personal AI consultant.
+          </p>
+        </section>
+
+        {/* Main Interaction Area */}
+        <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-24 items-start">
+          {/* Upload & Command Console */}
+          <div className="lg:col-span-7">
+            <div
+              className="rounded-[2rem] p-10 relative overflow-hidden ring-1 ring-lp-primary/10"
+              style={{ backgroundColor: 'var(--color-lp-surface-container-low)' }}
             >
-              Dashboards worth<br />
-              <em style={{ fontStyle: 'italic', color: 'var(--color-ds-accent)' }}>publishing.</em>
-            </h1>
-            <p style={{ fontSize: '15px', color: 'var(--color-ds-text-muted)', lineHeight: 1.6, maxWidth: '420px', margin: '0 auto' }}>
-              Connect your data, talk to Captain, publish under your brand.
-            </p>
-            {hasProjects && (
-              <p style={{ fontSize: '13px', color: 'var(--color-ds-text-dim)', marginTop: '8px' }}>
-                {projects.length} project{projects.length === 1 ? '' : 's'} in your workspace
-              </p>
-            )}
+              <div className="relative z-10">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="w-16 h-16 rounded-full bg-white shadow-xl ring-2 ring-lp-primary/20 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-lp-primary text-4xl">sailing</span>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl" style={{ fontFamily: 'var(--font-headline)' }}>Command The Captain</h3>
+                    <p className="text-[10px] text-lp-primary uppercase tracking-widest font-bold" style={{ fontFamily: 'var(--font-label)' }}>Standing by for your mission briefing</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <UploadZone onFile={handleFile} />
+                  <HomeChatInput onSend={handleChat} />
+                </div>
+              </div>
+              <div className="absolute top-0 right-0 w-80 h-80 bg-lp-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+            </div>
           </div>
 
-          {/* Upload Zone */}
-          <UploadZone onFile={handleFile} />
+          {/* Right Column: Projects or Samples */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="p-8">
+              {hasProjects ? (
+                <>
+                  <h2 className="text-2xl mb-4" style={{ fontFamily: 'var(--font-headline)' }}>Your Projects</h2>
+                  <p className="mb-6" style={{ color: 'var(--color-lp-on-surface-variant)' }}>
+                    {projects.length} project{projects.length !== 1 ? 's' : ''} in your workspace. Pick up where you left off.
+                  </p>
+                  <div className="space-y-3">
+                    {projects.slice(0, 5).map((project) => (
+                      <ProjectCard
+                        key={project.id}
+                        project={project}
+                        onClick={() => onProjectSelected(project.id)}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl mb-4" style={{ fontFamily: 'var(--font-headline)' }}>No data? Test the Bridge.</h2>
+                  <p className="mb-6" style={{ color: 'var(--color-lp-on-surface-variant)' }}>
+                    See how The Captain transforms complex datasets into live daily briefings for teams.
+                  </p>
+                </>
+              )}
 
-          {/* Chat Input */}
-          <HomeChatInput onSend={handleChat} />
-
-          {/* Example Prompts */}
-          {!hasProjects && !loading && (
-            <div className="flex flex-wrap gap-2 justify-center">
-              {PROMPTS.map((prompt) => (
-                <button
-                  key={prompt}
-                  onClick={() => handleChat(prompt)}
-                  className="transition-all"
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '9999px',
-                    border: '0.5px solid rgba(0,0,0,0.10)',
-                    background: 'var(--color-ds-surface)',
-                    fontSize: '12px',
-                    color: 'var(--color-ds-text-muted)',
-                    fontFamily: 'var(--font-sans)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = 'var(--color-ds-accent)'
-                    e.currentTarget.style.color = 'var(--color-ds-accent)'
-                    e.currentTarget.style.background = 'var(--color-ds-accent-light)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = 'rgba(0,0,0,0.10)'
-                    e.currentTarget.style.color = 'var(--color-ds-text-muted)'
-                    e.currentTarget.style.background = 'var(--color-ds-surface)'
-                  }}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Sample Data Cards */}
-          {!hasProjects && !loading && (
-            <div style={{ marginTop: '32px' }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase' as const,
-                    color: 'var(--color-ds-text-dim)',
-                  }}
-                >
-                  Try with sample data
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {SAMPLES.map((sample) => (
-                  <button
-                    key={sample.key}
-                    onClick={() => onSampleSelected(sample.key, sample.name)}
-                    className="text-left transition-all"
-                    style={{
-                      background: 'var(--color-ds-surface)',
-                      borderRadius: '12px',
-                      padding: '14px 16px',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
-                      border: '0.5px solid transparent',
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)'
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)'
-                      e.currentTarget.style.borderColor = 'var(--color-ds-accent)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)'
-                      e.currentTarget.style.borderColor = 'transparent'
-                    }}
-                  >
-                    <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
-                      {sample.name}
-                    </div>
+              {/* Sample Cards — always show */}
+              {!loading && (
+                <div className={`space-y-3 ${hasProjects ? 'mt-6' : ''}`}>
+                  {hasProjects && (
+                    <p className="text-[10px] uppercase tracking-widest font-bold mb-2" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+                      Or try sample data
+                    </p>
+                  )}
+                  {SAMPLES.map((sample) => (
                     <div
-                      className="font-mono"
-                      style={{ fontSize: '11px', color: 'var(--color-ds-text-dim)', marginBottom: '6px' }}
+                      key={sample.key}
+                      className="group flex items-center gap-6 p-5 rounded-xl transition-all cursor-pointer border border-transparent hover:border-lp-outline-variant/30"
+                      style={{ backgroundColor: 'var(--color-lp-surface-container)' }}
+                      onClick={() => onSampleSelected(sample.key, sample.name)}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-lp-surface-container-high)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'var(--color-lp-surface-container)')}
                     >
-                      {sample.desc}
+                      <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center shadow-sm" style={{ color: sample.color }}>
+                        <span className="material-symbols-outlined">{sample.icon}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-sm">{sample.name}</h4>
+                        <p className="text-[11px] uppercase tracking-wider" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+                          {sample.fields}
+                        </p>
+                      </div>
+                      <span className="material-symbols-outlined opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: sample.color }}>
+                        play_circle
+                      </span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-ds-text-muted)', lineHeight: 1.5 }}>
-                      {sample.fields}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Your Projects */}
-          {hasProjects && (
-            <div style={{ marginTop: '16px' }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase' as const,
-                    color: 'var(--color-ds-text-dim)',
-                  }}
-                >
-                  Your projects
-                </span>
-                <span
-                  style={{ fontSize: '12px', color: 'var(--color-ds-accent)', cursor: 'pointer', fontWeight: 500 }}
-                >
-                  View all →
-                </span>
-              </div>
-              <div className="flex gap-3 overflow-x-auto pb-2 -mx-2 px-2">
-                {projects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    onClick={() => onProjectSelected(project.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Footer line */}
-          {!hasProjects && !loading && (
-            <p
-              className="text-center"
-              style={{
-                fontSize: '12px',
-                color: 'var(--color-ds-text-dim)',
-                paddingTop: '8px',
-              }}
-            >
-              From £29/mo · No credit card · Your data stays yours
-            </p>
-          )}
-
-          {/* Loading skeletons */}
-          {loading && (
-            <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-ds-surface"
-                  style={{ borderRadius: '12px', padding: '16px' }}
-                >
-                  <div
-                    className="bg-ds-surface-alt animate-pulse"
-                    style={{ height: '12px', width: '80px', borderRadius: '4px', marginBottom: '12px' }}
-                  />
-                  <div
-                    className="bg-ds-surface-alt animate-pulse"
-                    style={{ height: '8px', width: '128px', borderRadius: '4px', animationDelay: `${i * 0.1}s` }}
-                  />
+                  ))}
                 </div>
-              ))}
+              )}
+
+              {/* Loading skeletons */}
+              {loading && (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="p-5 rounded-xl"
+                      style={{ backgroundColor: 'var(--color-lp-surface-container)' }}
+                    >
+                      <div className="h-3 w-32 rounded-full mb-2" style={{ backgroundColor: 'var(--color-lp-surface-container-high)', animation: `pulse 2s ease infinite ${i * 0.1}s` }} />
+                      <div className="h-2 w-48 rounded-full" style={{ backgroundColor: 'var(--color-lp-surface-container-high)', animation: `pulse 2s ease infinite ${i * 0.15}s` }} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        </section>
+
+        {/* Bento Grid: Dashboard Previews & Features */}
+        <section className="mb-24">
+          <div className="flex justify-between items-end mb-12">
+            <div className="max-w-xl">
+              <h2 className="text-3xl mb-3 leading-tight" style={{ fontFamily: 'var(--font-headline)' }}>Live daily for you and your team.</h2>
+              <p style={{ color: 'var(--color-lp-on-surface-variant)' }}>The Captain ensures your data is always fresh, accessible, and ready for your next big decision.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Dashboard Preview 1 */}
+            <div className="md:col-span-2 rounded-[2rem] overflow-hidden border shadow-sm" style={{ backgroundColor: 'var(--color-lp-surface-container-low)', borderColor: 'rgba(194,198,214,0.1)' }}>
+              <div className="p-6 border-b flex justify-between items-center bg-white/50" style={{ borderColor: 'var(--color-lp-surface-container-highest)' }}>
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-lp-primary font-bold" style={{ fontFamily: 'var(--font-label)' }}>Team Performance</span>
+                  <h3 className="text-xl" style={{ fontFamily: 'var(--font-headline)' }}>Daily Operational Briefing</h3>
+                </div>
+                <span className="material-symbols-outlined" style={{ color: 'var(--color-lp-on-surface-variant)' }}>open_in_new</span>
+              </div>
+              <div className="aspect-[16/10] relative overflow-hidden p-6 flex flex-col gap-4" style={{ backgroundColor: 'var(--color-lp-surface)' }}>
+                <div className="grid grid-cols-4 gap-3">
+                  {[
+                    { label: 'Total Revenue', value: '$239.1K' },
+                    { label: 'Profit Margin', value: '30.0%' },
+                    { label: 'Avg Deal Size', value: '$39.9K' },
+                    { label: 'Units Sold', value: '5.4K' },
+                  ].map((kpi) => (
+                    <div key={kpi.label} className="bg-white p-3 rounded-xl border shadow-sm" style={{ borderColor: 'rgba(194,198,214,0.2)' }}>
+                      <p className="text-[9px] uppercase tracking-wider mb-1" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>{kpi.label}</p>
+                      <p className="text-xl font-bold" style={{ fontFamily: 'var(--font-headline)' }}>{kpi.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-4 flex-1">
+                  <div className="bg-white p-5 rounded-xl border shadow-sm flex flex-col" style={{ borderColor: 'rgba(194,198,214,0.2)' }}>
+                    <p className="text-[9px] uppercase tracking-widest font-bold mb-4" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>Revenue &amp; Profit</p>
+                    <div className="flex-1 flex items-end gap-3 px-4">
+                      <div className="w-1/4 h-[80%] bg-lp-primary rounded-t-sm opacity-90" />
+                      <div className="w-1/4 h-[60%] bg-lp-primary/40 rounded-t-sm" />
+                      <div className="w-1/4 h-[45%] bg-lp-primary rounded-t-sm opacity-90" />
+                      <div className="w-1/4 h-[30%] bg-lp-primary/40 rounded-t-sm" />
+                    </div>
+                    <div className="flex justify-between mt-3 text-[8px] uppercase px-2" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+                      <span>North</span><span>South</span><span>East</span><span>West</span>
+                    </div>
+                  </div>
+                  <div className="bg-white p-5 rounded-xl border shadow-sm flex flex-col" style={{ borderColor: 'rgba(194,198,214,0.2)' }}>
+                    <p className="text-[9px] uppercase tracking-widest font-bold mb-4" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>Margin Trend</p>
+                    <div className="flex-1 relative flex items-center">
+                      <svg className="w-full h-full" viewBox="0 0 200 100">
+                        <path d="M0,80 Q25,70 50,75 T100,50 T150,60 T200,30" fill="none" stroke="#3D82F6" strokeWidth="2.5" />
+                        <circle cx="200" cy="30" fill="#3D82F6" r="4" />
+                      </svg>
+                    </div>
+                    <div className="flex justify-between mt-3 text-[8px] uppercase" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+                      <span>Jan</span><span>Mar</span><span>May</span><span>Jul</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature Card 1 */}
+            <div className="rounded-[2rem] p-8 flex flex-col justify-between border-t-4 border-lp-primary shadow-sm" style={{ backgroundColor: 'var(--color-lp-surface-container-low)' }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center text-lp-primary mb-6" style={{ backgroundColor: 'var(--color-lp-primary-fixed)' }}>
+                <span className="material-symbols-outlined text-3xl">sailing</span>
+              </div>
+              <div>
+                <h3 className="text-2xl mb-3" style={{ fontFamily: 'var(--font-headline)' }}>Captain's Interpretation</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-lp-on-surface-variant)' }}>Our AI consultant automatically highlights key shifts in your daily operations, providing minutes-fast insights for the whole team.</p>
+              </div>
+            </div>
+
+            {/* Feature Card 2 */}
+            <div className="rounded-[2rem] p-8 flex flex-col justify-between shadow-sm" style={{ backgroundColor: 'var(--color-lp-surface-container-low)', borderTop: '4px solid var(--color-lp-secondary)' }}>
+              <div className="w-14 h-14 rounded-full flex items-center justify-center mb-6" style={{ backgroundColor: 'var(--color-lp-secondary-container)', color: 'var(--color-lp-secondary)' }}>
+                <span className="material-symbols-outlined text-2xl">timer</span>
+              </div>
+              <div>
+                <h3 className="text-2xl mb-3" style={{ fontFamily: 'var(--font-headline)' }}>Built in Minutes</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--color-lp-on-surface-variant)' }}>No more waiting for data teams. Self-service analytics means you get what you need, when you need it, with professional polish.</p>
+              </div>
+            </div>
+
+            {/* Dashboard Preview 2 */}
+            <div className="md:col-span-2 rounded-[2rem] overflow-hidden border shadow-sm" style={{ backgroundColor: 'var(--color-lp-surface-container-low)', borderColor: 'rgba(194,198,214,0.1)' }}>
+              <div className="p-6 border-b flex justify-between items-center bg-white/50" style={{ borderColor: 'var(--color-lp-surface-container-highest)' }}>
+                <div>
+                  <span className="text-[10px] uppercase tracking-widest text-lp-primary font-bold" style={{ fontFamily: 'var(--font-label)' }}>Daily Sync</span>
+                  <h3 className="text-xl" style={{ fontFamily: 'var(--font-headline)' }}>Team Retention &amp; LTV</h3>
+                </div>
+                <span className="material-symbols-outlined" style={{ color: 'var(--color-lp-on-surface-variant)' }}>open_in_new</span>
+              </div>
+              <div className="aspect-[16/10] bg-white relative overflow-hidden flex flex-col">
+                <div className="flex h-full">
+                  <div className="w-14 border-r flex flex-col items-center py-5 gap-5" style={{ borderColor: 'rgba(194,198,214,0.1)', backgroundColor: '#fafaf9' }}>
+                    <span className="material-symbols-outlined text-stone-300 text-base">grid_view</span>
+                    <span className="material-symbols-outlined text-lp-primary text-base">sailing</span>
+                    <span className="material-symbols-outlined text-stone-300 text-base">description</span>
+                    <span className="material-symbols-outlined text-stone-300 text-base">settings</span>
+                  </div>
+                  <div className="flex-1 flex flex-col">
+                    <div className="h-10 border-b px-5 flex items-center justify-between" style={{ borderColor: 'rgba(194,198,214,0.1)' }}>
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 w-20 bg-stone-100 rounded-full" />
+                        <span className="text-[10px] text-stone-400" style={{ fontFamily: 'var(--font-label)' }}>/</span>
+                        <div className="h-2 w-28 bg-stone-100 rounded-full" />
+                      </div>
+                      <div className="h-5 w-14 bg-lp-primary/10 rounded-lg" />
+                    </div>
+                    <div className="flex-1 p-6" style={{ backgroundColor: 'rgba(251,249,243,0.4)' }}>
+                      <div className="max-w-2xl mx-auto space-y-5">
+                        <div className="flex flex-col items-center justify-center p-10 border-2 border-dashed border-stone-200 rounded-2xl bg-white/50">
+                          <span className="material-symbols-outlined text-3xl text-stone-200 mb-3">analytics</span>
+                          <div className="h-3 w-40 bg-stone-100 rounded-full mb-2" />
+                          <div className="h-2 w-28 bg-stone-50 rounded-full" />
+                        </div>
+                        <div className="bg-stone-900 rounded-2xl p-5 shadow-xl relative ml-10">
+                          <div className="absolute -left-3 top-5 w-5 h-5 bg-stone-900 rotate-45" />
+                          <div className="flex items-start gap-3">
+                            <span className="material-symbols-outlined text-lp-primary text-lg mt-1">sailing</span>
+                            <div className="space-y-2 flex-1">
+                              <div className="h-2 w-full bg-white/20 rounded-full" />
+                              <div className="h-2 w-4/5 bg-white/20 rounded-full" />
+                              <div className="h-2 w-2/3 bg-white/20 rounded-full" />
+                              <div className="mt-5 flex gap-2">
+                                <div className="h-7 w-20 bg-lp-primary rounded-lg" />
+                                <div className="h-7 w-20 bg-white/10 rounded-lg" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="text-white rounded-[3rem] p-12 text-center relative overflow-hidden" style={{ backgroundColor: 'var(--color-lp-on-surface)' }}>
+          <div className="relative z-10">
+            <div className="w-20 h-20 bg-white rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
+              <span className="material-symbols-outlined text-lp-primary text-4xl">sailing</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl mb-6 leading-[0.95] max-w-3xl mx-auto" style={{ fontFamily: 'var(--font-headline)' }}>
+              The bridge between <span style={{ color: 'var(--color-lp-primary-fixed-dim)' }}>raw data</span> and <span className="italic font-light">team action</span>.
+            </h2>
+            <p className="text-lg max-w-xl mx-auto mb-8" style={{ color: 'rgba(234,232,226,0.8)' }}>
+              Set up your self-service analytics in minutes. Live daily for you and your team.
+            </p>
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="bg-lp-primary text-white px-8 py-4 rounded-xl text-sm font-bold uppercase tracking-widest hover:bg-white hover:text-lp-primary transition-colors"
+              style={{ fontFamily: 'var(--font-label)' }}
+            >
+              Get Started
+            </button>
+          </div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[120%] h-48 bg-lp-primary/20 blur-[120px] rounded-full" />
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-16 pt-12 border-t" style={{ borderColor: 'var(--color-lp-surface-container-highest)' }}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="material-symbols-outlined text-lp-primary text-xl">sailing</span>
+                <span className="text-xl font-bold text-stone-800" style={{ fontFamily: 'var(--font-headline)', fontStyle: 'italic' }}>Dashship</span>
+              </div>
+              <p className="text-[11px] uppercase tracking-widest leading-loose" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+                Self-Service Analytics<br />for High-Growth Teams.
+              </p>
+            </div>
+            <FooterColumn title="Platform" links={['Dashboard Builder', 'The Captain AI', 'Team Access']} />
+            <FooterColumn title="Resources" links={['Case Studies', 'Documentation', 'Design Philosophy']} />
+            <FooterColumn title="Legal" links={['Privacy Policy', 'Terms of Service']} />
+          </div>
+          <div className="mt-12 pt-6 border-t flex justify-between items-center" style={{ borderColor: 'var(--color-lp-surface-container-highest)' }}>
+            <span className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-label)', color: 'rgba(66,71,84,0.5)' }}>&copy; 2025 Dashship Analytical Systems</span>
+          </div>
+        </footer>
       </div>
+    </div>
+  )
+}
+
+function FooterColumn({ title, links }: { title: string; links: string[] }) {
+  return (
+    <div className="space-y-3">
+      <h4 className="font-bold text-sm">{title}</h4>
+      <nav className="flex flex-col gap-1.5">
+        {links.map((link) => (
+          <a key={link} className="text-sm hover:text-lp-primary transition-colors cursor-pointer" style={{ color: 'var(--color-lp-on-surface-variant)' }}>{link}</a>
+        ))}
+      </nav>
     </div>
   )
 }

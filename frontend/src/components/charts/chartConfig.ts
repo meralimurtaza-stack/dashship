@@ -35,8 +35,8 @@ export const POSITIVE_COLOR = '#2A9D8F' // teal green — upward arrows, positiv
 export const NEGATIVE_COLOR = '#C0392B' // muted red — downward arrows, negative variance
 export const NEUTRAL_COLOR = '#8A8A86'  // gray — axis labels, grid lines, muted text
 
-export const ACCENT = '#1B2A4A'
-export const INK = '#0E0D0D'
+export const ACCENT = '#3D82F6'
+export const INK = '#1b1c19'
 export const GRID_COLOR = '#E8E8E6'
 export const AXIS_COLOR = '#8A8A86'
 export const TOOLTIP_BORDER = '#E8E8E6'
@@ -47,7 +47,7 @@ export const CARD_PADDING = 20
 export const CARD_BORDER = '0.5px solid #E8E8E6'
 export const CARD_RADIUS = 8
 export const CARD_TITLE_STYLE = {
-  fontFamily: '"IBM Plex Mono", monospace',
+  fontFamily: '"Space Grotesk", monospace',
   fontSize: 11,
   fontWeight: 500,
   letterSpacing: '0.05em',
@@ -60,7 +60,7 @@ export const CARD_TITLE_STYLE = {
 // ── Shared Recharts Styles ──────────────────────────────────────
 
 export const AXIS_STYLE = {
-  fontFamily: '"IBM Plex Mono", monospace',
+  fontFamily: '"Space Grotesk", monospace',
   fontSize: 10,
   fill: '#8A8A86',
 } as const
@@ -74,12 +74,12 @@ export const TOOLTIP_CONFIG = {
     border: '0.5px solid #E8E8E6',
     borderRadius: 8,
     padding: '10px 12px',
-    fontFamily: '"IBM Plex Mono", monospace',
+    fontFamily: '"Space Grotesk", monospace',
     fontSize: 11,
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
   },
   labelStyle: {
-    fontFamily: '"IBM Plex Mono", monospace',
+    fontFamily: '"Space Grotesk", monospace',
     fontSize: 10,
     color: '#8A8A86',
     textTransform: 'uppercase' as const,
@@ -87,9 +87,9 @@ export const TOOLTIP_CONFIG = {
     marginBottom: 4,
   },
   itemStyle: {
-    fontFamily: '"IBM Plex Mono", monospace',
+    fontFamily: '"Space Grotesk", monospace',
     fontSize: 12,
-    color: '#0E0D0D',
+    color: '#1b1c19',
     padding: '1px 0',
   },
   cursor: { fill: 'rgba(27,42,74,0.06)' },

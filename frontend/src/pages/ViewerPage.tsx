@@ -126,7 +126,7 @@ const ViewerPage: FC<ViewerPageProps> = ({ embed = false }) => {
   if (!dashboard) return null
 
   const { branding } = dashboard
-  const fontLink = branding.fontFamily && branding.fontFamily !== 'IBM Plex Sans'
+  const fontLink = branding.fontFamily && branding.fontFamily !== 'Manrope'
     ? `https://fonts.googleapis.com/css2?family=${encodeURIComponent(branding.fontFamily)}:wght@400;500;600;700&display=swap`
     : null
 

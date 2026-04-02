@@ -92,7 +92,7 @@ const ChartCard: FC<ChartCardProps> = ({
             >
               <span
                 style={{
-                  fontFamily: '"IBM Plex Mono", monospace',
+                  fontFamily: '"Space Grotesk", monospace',
                   fontSize: 9,
                   fontWeight: 500,
                   color: hasWarnings ? '#B8860B' : '#8A8A86',
@@ -121,7 +121,7 @@ const ChartCard: FC<ChartCardProps> = ({
             >
               {/* Encoding section */}
               <p style={{
-                fontFamily: '"IBM Plex Mono", monospace',
+                fontFamily: '"Space Grotesk", monospace',
                 fontSize: 9,
                 fontWeight: 500,
                 textTransform: 'uppercase',
@@ -133,26 +133,26 @@ const ChartCard: FC<ChartCardProps> = ({
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
                 {info.encoding.columns && (
-                  <span style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 11, color: '#6D6860' }}>
+                  <span style={{ fontFamily: '"Manrope", sans-serif', fontSize: 11, color: '#6D6860' }}>
                     {formatBinding('Columns', info.encoding.columns)}
                   </span>
                 )}
                 {info.encoding.rows && (
-                  <span style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 11, color: '#6D6860' }}>
+                  <span style={{ fontFamily: '"Manrope", sans-serif', fontSize: 11, color: '#6D6860' }}>
                     {formatBinding('Rows', info.encoding.rows)}
                   </span>
                 )}
                 {info.encoding.color && (
-                  <span style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 11, color: '#6D6860' }}>
+                  <span style={{ fontFamily: '"Manrope", sans-serif', fontSize: 11, color: '#6D6860' }}>
                     Color: {info.encoding.color.field}
                   </span>
                 )}
                 {info.encoding.size && (
-                  <span style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 11, color: '#6D6860' }}>
+                  <span style={{ fontFamily: '"Manrope", sans-serif', fontSize: 11, color: '#6D6860' }}>
                     Size: {info.encoding.size.field}
                   </span>
                 )}
-                <span style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 11, color: '#8A8A86' }}>
+                <span style={{ fontFamily: '"Manrope", sans-serif', fontSize: 11, color: '#8A8A86' }}>
                   Mark: {info.markType}
                 </span>
               </div>
@@ -161,7 +161,7 @@ const ChartCard: FC<ChartCardProps> = ({
               {info.calculatedFields && info.calculatedFields.length > 0 && (
                 <>
                   <p style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontFamily: '"Space Grotesk", monospace',
                     fontSize: 9,
                     fontWeight: 500,
                     textTransform: 'uppercase',
@@ -173,7 +173,7 @@ const ChartCard: FC<ChartCardProps> = ({
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
                     {info.calculatedFields.map((cf, i) => (
-                      <span key={i} style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#6D6860' }}>
+                      <span key={i} style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 11, color: '#6D6860' }}>
                         {cf}
                       </span>
                     ))}
@@ -185,7 +185,7 @@ const ChartCard: FC<ChartCardProps> = ({
               {hasWarnings && (
                 <>
                   <p style={{
-                    fontFamily: '"IBM Plex Mono", monospace',
+                    fontFamily: '"Space Grotesk", monospace',
                     fontSize: 9,
                     fontWeight: 500,
                     textTransform: 'uppercase',
@@ -197,7 +197,7 @@ const ChartCard: FC<ChartCardProps> = ({
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {info!.warnings!.map((w, i) => (
-                      <span key={i} style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 11, color: '#B8860B', lineHeight: 1.4 }}>
+                      <span key={i} style={{ fontFamily: '"Manrope", sans-serif', fontSize: 11, color: '#B8860B', lineHeight: 1.4 }}>
                         {w}
                       </span>
                     ))}

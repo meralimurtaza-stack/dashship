@@ -613,9 +613,9 @@ const PlanSidebar: FC<PlanSidebarProps> = ({
           disabled={!canGenerate}
           className="w-full py-2.5 text-[12px] font-medium cursor-pointer transition-all"
           style={{
-            background: canGenerate ? '#0E0D0D' : '#F1EFE8',
-            color: canGenerate ? '#FAFAF8' : '#9C9A92',
-            border: canGenerate ? '0.5px solid #0E0D0D' : '0.5px solid #D3D1C7',
+            background: canGenerate ? '#3D82F6' : '#f5f3ee',
+            color: canGenerate ? '#ffffff' : '#727785',
+            border: canGenerate ? '0.5px solid #3D82F6' : '0.5px solid #e4e2dd',
             borderRadius: 8,
           }}
         >

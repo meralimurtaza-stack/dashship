@@ -46,10 +46,10 @@ const KPICard: FC<KPICardProps> = ({
     >
       <p
         style={{
-          fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
+          fontFamily: '"Manrope", system-ui, sans-serif',
           fontSize: 28,
           fontWeight: 500,
-          color: '#0E0D0D',
+          color: '#1b1c19',
           lineHeight: 1,
           margin: 0,
         }}
@@ -60,7 +60,7 @@ const KPICard: FC<KPICardProps> = ({
       {delta && (
         <p
           style={{
-            fontFamily: '"IBM Plex Mono", monospace',
+            fontFamily: '"Space Grotesk", monospace',
             fontSize: 12,
             color: delta.direction === 'up'
               ? POSITIVE_COLOR
