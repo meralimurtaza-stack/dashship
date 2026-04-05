@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     resend_api_key: str = ""
     resend_from_email: str = "DashShip <reports@dashship.io>"
     app_url: str = "http://localhost:5173"
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,https://dashship-meralimurtaza-stacks-projects.vercel.app,https://dashship.vercel.app"
 
     model_config = {
         "env_file": str(_ENV_FILE),
