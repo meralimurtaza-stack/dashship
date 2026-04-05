@@ -1,10 +1,10 @@
 /**
  * components/chat/ChatMessage.tsx
  *
- * Restyled with landing page design system:
- * - Captain uses sailing icon in white circle with ring
- * - Glass-panel message bubbles for Captain
- * - Surface-container-low for user messages
+ * Updated styling to match prototype:
+ * - Captain uses HelmLogo in accent-light circle
+ * - User messages: dark bubble with rounded corners (sharp bottom-right)
+ * - Captain text: left-aligned, indented to align with label text
  * - All logic (plan parsing, insights, wireframe) unchanged
  */
 
@@ -17,6 +17,7 @@ import Markdown from './Markdown';
 import InsightCard from './InsightCard';
 import WireframeWidget from './WireframeWidget';
 import ChoiceCards, { parseChoices, hasChoiceQuestion } from './ChoiceCards';
+import { HelmLogo } from '../icons';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -24,10 +25,41 @@ interface ChatMessageProps {
   onCalcAction?: (action: string) => void;
   onPinInsight?: (insight: InsightData) => void;
   onPlanDelta?: (delta: PlanDelta) => void;
+  /** When true, hide WireframeWidget (plan preview cards) — used in BUILD mode */
   suppressPlanDelta?: boolean;
+  /** Whether this is the last assistant message (for showing choice cards) */
   isLastAssistant?: boolean;
+  /** Callback when user clicks a choice card */
   onChoiceSelect?: (choice: string) => void;
 }
+
+// ── Captain identity label ──────────────────────────────────────
+
+const CaptainLabel: FC = () => (
+  <div className="flex items-center gap-1.5 mb-2">
+    <div
+      className="flex items-center justify-center shrink-0"
+      style={{
+        width: '20px',
+        height: '20px',
+        borderRadius: '9999px',
+        background: 'var(--color-ds-accent-light)',
+      }}
+    >
+      <HelmLogo size={11} className="text-ds-accent" />
+    </div>
+    <span
+      className="text-ds-text-muted"
+      style={{
+        fontSize: '11px',
+        fontWeight: 600,
+        letterSpacing: '0.03em',
+      }}
+    >
+      Captain
+    </span>
+  </div>
+);
 
 // ── Assistant message content ───────────────────────────────────
 
@@ -40,8 +72,10 @@ const AssistantContent: FC<{
 }> = ({ content, onCalcAction, onPinInsight, onPlanDelta, suppressPlanDelta }) => {
   const deltaEmitted = useRef(false);
 
+  // Parse plan delta from the message
   const { cleanText, planDelta } = parsePlanMessage(content);
 
+  // Notify parent of plan delta (once per message)
   useEffect(() => {
     if (planDelta && onPlanDelta && !deltaEmitted.current) {
       deltaEmitted.current = true;
@@ -49,8 +83,10 @@ const AssistantContent: FC<{
     }
   }, [planDelta, onPlanDelta]);
 
+  // Parse insights from the clean text (after plan tags stripped)
   const { cleanText: finalText, insights } = parseInsights(cleanText);
 
+  // No insights — simple render with optional wireframe
   if (insights.length === 0) {
     return (
       <div className="space-y-2">
@@ -60,6 +96,7 @@ const AssistantContent: FC<{
     );
   }
 
+  // Has insights — interleave text, insights, and wireframe
   const parts = finalText.split(/(__INSIGHT_\d+__)/);
   return (
     <div className="space-y-3">
@@ -98,20 +135,19 @@ const ChatMessage: FC<ChatMessageProps> = ({
 
   if (isUser) {
     return (
-      <div className="flex gap-4 justify-end items-start mb-6">
+      <div className="flex justify-end mb-5">
         <div
-          className="max-w-xl rounded-[2rem] rounded-tr-none shadow-sm"
+          className="max-w-[78%] bg-ds-text text-ds-bg"
           style={{
-            padding: '20px 24px',
-            backgroundColor: 'var(--color-lp-surface-container-low)',
-            border: '1px solid rgba(228,226,221,0.3)',
+            padding: '11px 16px',
+            borderRadius: '16px 16px 4px 16px',
           }}
         >
           <p
-            className="whitespace-pre-wrap leading-relaxed"
+            className="whitespace-pre-wrap"
             style={{
-              fontSize: '14px',
-              color: 'var(--color-lp-on-surface-variant)',
+              fontSize: '13px',
+              lineHeight: '1.6',
             }}
           >
             {message.content}
@@ -122,65 +158,84 @@ const ChatMessage: FC<ChatMessageProps> = ({
   }
 
   return (
-    <div className="flex gap-4 items-start mb-6">
-      <div className="w-10 h-10 rounded-full bg-white shadow-xl ring-2 ring-lp-primary/20 flex items-center justify-center shrink-0">
-        <span className="material-symbols-outlined text-lp-primary text-xl">sailing</span>
-      </div>
-      <div className="max-w-2xl">
+    <div className="flex justify-start mb-6">
+      <div className="max-w-[90%]">
+        <CaptainLabel />
         <div
-          className="glass-panel rounded-[2rem] rounded-tl-none shadow-sm ring-1 ring-lp-primary/5"
           style={{
-            padding: '20px 24px',
-            border: '1px solid rgba(255,255,255,0.4)',
+            paddingLeft: '26px',
+            fontSize: '13px',
+            lineHeight: '1.7',
           }}
         >
-          <div
-            style={{
-              fontSize: '14px',
-              lineHeight: '1.7',
-            }}
-          >
-            {message.content ? (
-              <>
-                <AssistantContent
-                  content={message.content}
-                  onCalcAction={onCalcAction}
-                  onPinInsight={onPinInsight}
-                  onPlanDelta={onPlanDelta}
-                  suppressPlanDelta={suppressPlanDelta}
-                />
-                {/* Choice cards */}
-                {isLastAssistant && !isStreaming && onChoiceSelect && (() => {
-                  const choices = hasChoiceQuestion(message.content) ? parseChoices(message.content) : null
-                  return choices ? (
-                    <ChoiceCards choices={choices} onSelect={onChoiceSelect} />
-                  ) : null
-                })()}
-                {isStreaming && (
-                  <div className="flex items-center gap-2 mt-4 animate-pulse">
-                    <span className="material-symbols-outlined text-lp-primary text-sm">sailing</span>
-                    <span
-                      className="text-[10px] uppercase tracking-widest"
-                      style={{
-                        fontFamily: 'var(--font-label)',
-                        color: 'var(--color-lp-on-surface-variant)',
-                      }}
-                    >
-                      Charting the course...
-                    </span>
-                  </div>
-                )}
-              </>
-            ) : isStreaming ? (
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-lp-primary)' }} />
-                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-lp-primary)', opacity: 0.6, animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--color-lp-primary)', opacity: 0.3, animationDelay: '300ms' }} />
+          {message.content ? (
+            <>
+              <AssistantContent
+                content={message.content}
+                onCalcAction={onCalcAction}
+                onPinInsight={onPinInsight}
+                onPlanDelta={onPlanDelta}
+                suppressPlanDelta={suppressPlanDelta}
+              />
+              {/* Choice cards — shown on last assistant message when not streaming */}
+              {isLastAssistant && !isStreaming && onChoiceSelect && (() => {
+                const choices = hasChoiceQuestion(message.content) ? parseChoices(message.content) : null
+                return choices ? (
+                  <ChoiceCards choices={choices} onSelect={onChoiceSelect} />
+                ) : null
+              })()}
+              {isStreaming && (
+                <div className="flex items-center gap-2 mt-3 animate-pulse">
+                  <HelmLogo size={10} className="text-ds-text-dim" />
+                  <span
+                    className="text-ds-text-dim"
+                    style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '10px',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Charting the course…
+                  </span>
                 </div>
+              )}
+            </>
+          ) : isStreaming ? (
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                <div
+                  className="animate-pulse"
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '9999px',
+                    background: 'var(--color-ds-text-dim)',
+                  }}
+                />
+                <div
+                  className="animate-pulse"
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '9999px',
+                    background: 'var(--color-ds-border-strong)',
+                    animationDelay: '150ms',
+                  }}
+                />
+                <div
+                  className="animate-pulse"
+                  style={{
+                    width: '5px',
+                    height: '5px',
+                    borderRadius: '9999px',
+                    background: 'var(--color-ds-border)',
+                    animationDelay: '300ms',
+                  }}
+                />
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

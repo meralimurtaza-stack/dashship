@@ -139,7 +139,7 @@ const SheetChart: FC<{
     return (
       <ChartCard title={sheet.name} isSelected={isSelected} onClick={onClick} index={index} info={chartInfo}>
         <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>
             No data available
           </span>
         </div>
@@ -294,7 +294,7 @@ const SheetChart: FC<{
         return (
           <ChartCard title={sheet.name} isSelected={isSelected} onClick={onClick} index={index} info={chartInfo}>
             <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>
+              <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>
                 Unsupported: {sheet.markType}
               </span>
             </div>
@@ -306,7 +306,7 @@ const SheetChart: FC<{
     return (
       <ChartCard title={sheet.name} isSelected={isSelected} onClick={onClick} index={index} info={chartInfo}>
         <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>
             Error rendering chart
           </span>
         </div>

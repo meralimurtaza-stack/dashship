@@ -280,7 +280,7 @@ const DashboardIframe: FC<DashboardIframeProps> = ({
             backgroundColor: '#FFF8F0',
             border: '1px solid #E8D5C0',
             marginBottom: 12,
-            fontFamily: '"Space Grotesk", monospace',
+            fontFamily: '"IBM Plex Mono", monospace',
             fontSize: 12,
             color: '#C1403D',
             whiteSpace: 'pre-wrap',
@@ -309,7 +309,7 @@ const DashboardIframe: FC<DashboardIframeProps> = ({
         >
           <span
             style={{
-              fontFamily: '"Space Grotesk", monospace',
+              fontFamily: '"IBM Plex Mono", monospace',
               fontSize: 12,
               color: '#A19D94',
               textTransform: 'uppercase',

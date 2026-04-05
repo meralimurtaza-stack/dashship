@@ -57,8 +57,10 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
   const { currentProject } = useProject()
 
   // Reconstruct plan from existing messages if we don't have one
+  // This handles: leave project → return → plan sidebar restores
   useEffect(() => {
     if (currentPlan || messages.length === 0) return
+    // Scan messages in reverse for the last plan_delta
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]
       if (msg.role === 'assistant' && msg.content) {
@@ -70,7 +72,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
         }
       }
     }
-  }, [messages.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [messages.length]) // Only on mount / messages load — not every render
 
   // Data context comes from the project (set by DataPage after schema review)
   const dataContext = ctxDataContext
@@ -94,6 +96,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
         columns: src.schema.columns
           .filter(c => !c.hidden)
           .map(c => {
+            // Pull stats from saved profile
             const prof = src.profile?.columns?.[c.name]
             let stats: Record<string, unknown> | undefined
 
@@ -181,9 +184,12 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
     }
   }, [ctxDataContext, messages.length, isStreaming, isLoadingData, loading, initialMessage, sendMessage])
 
-  // Mid-conversation data load
+  // Mid-conversation data load: when data arrives after messages already exist,
+  // send an auto-message so Captain knows data is now available.
+  // Checks if a "data loaded" message was already sent for this source.
   const dataAnnouncedRef = useRef(false)
   useEffect(() => {
+    // Reset when data context changes source
     dataAnnouncedRef.current = false
   }, [ctxDataContext?.sourceId])
 
@@ -198,6 +204,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
       !loading &&
       !dataAnnouncedRef.current
     ) {
+      // Check if any existing message already announced this data source
       const alreadyAnnounced = messages.some(
         m => m.role === 'user' && m.content.includes(`I've loaded ${ctxDataContext.sourceName}`)
       )
@@ -246,11 +253,15 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
 
   // ── Generate from plan ─────────────────────────────────────────
 
+  // ── Build conversation summary for Claude ──────────────────────
+
   const buildSummary = useCallback((): string => {
     return messages
       .map((m) => `${m.role === 'user' ? 'User' : 'Captain'}: ${m.content}`)
       .join('\n\n')
   }, [messages])
+
+  // ── Download data rows from Supabase ──────────────────────────
 
   const downloadRows = useCallback(async (): Promise<Record<string, unknown>[]> => {
     if (!dataContext?.filePath || !dataContext?.fileName) {
@@ -261,6 +272,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
       const rows = await downloadDataSourceRows(dataContext.filePath, dataContext.fileName)
       console.log(`[ChatPage] Downloaded ${rows.length} rows`)
 
+      // Coerce numeric strings to numbers — Papa Parse returns strings with dynamicTyping:false
+      // Build a set of numeric column names from the schema
       const numericCols = new Set(
         dataContext.columns.filter(c => c.type === 'number').map(c => c.name)
       )
@@ -284,6 +297,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
     }
   }, [dataContext])
 
+  // ── Generate dashboard (unified — both plan and legacy) ───────
+
   const handlePlanGenerate = useCallback(async (_approvals: ApprovalState) => {
     if (!dataContext || isGenerating) return
     setIsGenerating(true)
@@ -293,7 +308,11 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
     try {
       const summary = buildSummary()
       const dashboardName = currentPlan?.name || 'Dashboard'
+
+      // Fetch actual CSV rows first so we can send sample rows to Claude
       const rows = await downloadRows()
+
+      // Call Claude to generate JSX component — pass plan_delta + sample rows
       const result = await generateDashboardJsx(dataContext, summary, undefined, rows, currentPlan as Record<string, unknown> | null)
 
       if (result.warnings.length > 0) {
@@ -331,6 +350,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
         }
       }
 
+      // Remap rows to use display names so they match the generated JSX field references
       const renameMap = result.renameMap ?? {}
       const remappedRows = Object.keys(renameMap).length > 0
         ? rows.map((row) => {
@@ -360,9 +380,14 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
 
     try {
       const summary = buildSummary()
+
+      // Fetch actual CSV rows first so we can send sample rows to Claude
       const rows = await downloadRows()
+
+      // Call Claude to generate JSX component — pass sample rows so Claude can see real data
       const result = await generateDashboardJsx(dataContext, summary, undefined, rows)
 
+      // Remap rows to use display names
       const renameMap = result.renameMap ?? {}
       const remappedRows = Object.keys(renameMap).length > 0
         ? rows.map((row) => {
@@ -384,6 +409,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
     }
   }, [dataContext, isGenerating, buildSummary, downloadRows, onDashboardGenerated, onGeneratingStarted, onGeneratingFailed, messages])
 
+  // ── Plan delta handler ─────────────────────────────────────────
+
   const handlePlanDelta = useCallback((delta: PlanDelta) => {
     setCurrentPlan(delta)
     onPlanChanged?.(delta)
@@ -391,43 +418,29 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
 
   const hasMessages = messages.length > 0
   const userMessageCount = messages.filter(m => m.role === 'user').length
+  // Only show legacy generate after at least 2 user messages (real conversation, not first turn)
+  // Only show legacy generate after real conversation (3+ user messages), not just data loading
   const canLegacyGenerate = hasMessages && userMessageCount >= 3 && !isStreaming && !!dataContext && !currentPlan
   const showPlanSidebar = !!currentPlan
 
   return (
-    <div
-      className="h-full flex"
-      style={{
-        fontFamily: 'var(--font-body)',
-        backgroundColor: 'var(--color-lp-surface)',
-        color: 'var(--color-lp-on-surface)',
-      }}
-    >
-      <div className="flex-1 min-w-0 flex flex-col relative">
-        {/* Header bar */}
-        <div
-          className="px-6 py-3 flex items-center justify-between shrink-0"
-          style={{
-            backgroundColor: 'var(--color-lp-surface)',
-            borderBottom: '1px solid var(--color-lp-surface-container-highest)',
-          }}
-        >
-          <div className="flex items-center gap-4">
-            <div className="w-8 h-8 rounded-full bg-white shadow-sm ring-1 ring-lp-primary/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-lp-primary text-lg">sailing</span>
-            </div>
+    <div className="h-full flex">
+      <div className="flex-1 min-w-0 flex flex-col">
+        {/* Header */}
+        <div className="px-5 py-3 bg-ds-surface flex items-center justify-between shrink-0" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.06)' }}>
+          <div className="flex items-center gap-3">
             <div>
               {dataContext ? (
                 <>
-                  <p className="text-sm font-bold" style={{ color: 'var(--color-lp-on-surface)' }}>{dataContext.sourceName}</p>
-                  <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
+                  <p className="font-mono text-xs font-medium text-ds-text">{dataContext.sourceName}</p>
+                  <p className="font-mono text-[10px] text-ds-text-dim tabular-nums">
                     {dataContext.rowCount.toLocaleString()} rows &middot; {dataContext.columns.length} fields
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-bold" style={{ color: 'var(--color-lp-on-surface)' }}>The Captain</p>
-                  <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>AI Consultant Online</p>
+                  <p className="font-mono text-xs font-medium text-ds-text">Captain</p>
+                  <p className="font-mono text-[10px] text-ds-text-dim">No data source yet</p>
                 </>
               )}
             </div>
@@ -436,8 +449,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
             {hasMessages && (
               <button
                 onClick={() => { clearChat(); setGenerateError(null); setCurrentPlan(null) }}
-                className="text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl transition-colors hover:bg-white"
-                style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}
+                className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 transition-colors"
               >
                 New Chat
               </button>
@@ -445,12 +457,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
             {currentProject?.id && (
               <button
                 onClick={() => setDictionaryOpen(true)}
-                className="text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl transition-colors hover:border-lp-primary"
-                style={{
-                  fontFamily: 'var(--font-label)',
-                  color: 'var(--color-lp-on-surface-variant)',
-                  border: '1px solid var(--color-lp-outline-variant)',
-                }}
+                className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 hover:border-ds-accent transition-colors"
+                style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
               >
                 Dictionary
               </button>
@@ -458,12 +466,8 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
             {!showPlanSidebar && dataContext && (
               <button
                 onClick={() => setContextPanelOpen(!contextPanelOpen)}
-                className="text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl transition-colors hover:border-lp-primary"
-                style={{
-                  fontFamily: 'var(--font-label)',
-                  color: 'var(--color-lp-on-surface-variant)',
-                  border: '1px solid var(--color-lp-outline-variant)',
-                }}
+                className="font-mono text-[10px] uppercase tracking-wide text-ds-text-dim hover:text-ds-text px-3 py-1.5 hover:border-ds-accent transition-colors"
+                style={{ border: '0.5px solid var(--color-ds-border)', borderRadius: 8 }}
               >
                 Data
               </button>
@@ -476,27 +480,16 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
           dataContext ? (
             <ConversationStarters dataContext={dataContext} onSend={sendMessage} />
           ) : (
-            <div className="flex-1 flex items-center justify-center px-8">
-              <div className="max-w-xl text-center space-y-6">
-                <div
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full"
-                  style={{ backgroundColor: 'var(--color-lp-tertiary-fixed)', color: 'var(--color-lp-on-tertiary-fixed)' }}
-                >
-                  <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
-                  <span className="text-[10px] uppercase tracking-widest font-bold" style={{ fontFamily: 'var(--font-label)' }}>AI Consultant Online</span>
-                </div>
-                <h2 className="text-4xl md:text-5xl leading-[0.95] tracking-tight" style={{ fontFamily: 'var(--font-headline)' }}>
-                  Let's build your <span className="italic font-light">vision.</span>
-                </h2>
-                <p className="text-lg leading-relaxed" style={{ color: 'var(--color-lp-on-surface-variant)' }}>
-                  The Captain is ready to transform your raw data into professional, narrative-driven analytics.
-                </p>
+            <div className="flex-1 flex items-center justify-center px-5">
+              <div className="max-w-md text-center space-y-3">
+                <p className="font-mono text-xs font-medium text-ds-text">Tell Captain what you want to build</p>
+                <p className="font-sans text-[13px] text-ds-text-muted">Captain will help you choose data and plan your dashboard.</p>
               </div>
             </div>
           )
         ) : (
-          <div className="flex-1 overflow-y-auto px-6 py-8 pb-32">
-            <div className="max-w-3xl mx-auto space-y-8">
+          <div className="flex-1 overflow-y-auto px-5 py-6">
+            <div className="max-w-2xl mx-auto space-y-6">
               {messages.map((msg, i) => {
                 const isLast = i === messages.length - 1
                 const isLastAssistantMsg = msg.role === 'assistant' && !isStreaming && isLast
@@ -513,7 +506,7 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
                 )
               })}
 
-              {/* Data choice cards */}
+              {/* Data choice cards — shown after first assistant response when no data */}
               {!dataContext && hasMessages && !isStreaming && onDataUploaded && (
                 <DataChoiceCards
                   onUseSampleData={handleUseSampleData}
@@ -527,36 +520,38 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
           </div>
         )}
 
-        {/* Legacy generate button */}
+        {/* Legacy generate button (when Captain didn't produce a plan) */}
         {canLegacyGenerate && (
-          <div className="shrink-0 px-6 pb-2">
-            <div className="max-w-3xl mx-auto flex items-center gap-3">
-              <button
-                onClick={handleLegacyGenerate}
-                disabled={isGenerating}
-                className="bg-lp-primary text-white text-xs font-bold uppercase tracking-widest px-6 py-3 rounded-xl hover:opacity-90 transition-all disabled:opacity-40"
-                style={{ fontFamily: 'var(--font-label)' }}
-              >
-                {isGenerating ? 'Generating...' : 'Generate Dashboard'}
-              </button>
-              {generateError && (
-                <span className="text-xs" style={{ color: 'var(--color-lp-error)' }}>{generateError}</span>
-              )}
+          <div className="shrink-0 px-5 pb-2">
+            <div className="max-w-2xl mx-auto">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleLegacyGenerate}
+                  disabled={isGenerating}
+                  className="bg-ds-accent text-white font-mono text-xs font-medium px-5 py-2.5 hover:bg-ds-accent-hover transition-colors disabled:opacity-40"
+                  style={{ borderRadius: 10 }}
+                >
+                  {isGenerating ? 'Generating…' : 'Generate dashboard'}
+                </button>
+                {generateError && (
+                  <span className="font-mono text-[10px] text-ds-error">{generateError}</span>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Floating Input */}
-        <div className="shrink-0 px-6 pb-6 pt-2">
-          <div className="max-w-3xl mx-auto">
+        {/* Input */}
+        <div className="shrink-0 px-5 pb-4 pt-2">
+          <div className="max-w-2xl mx-auto">
             <ChatInput onSend={sendMessage} disabled={isLoadingData} isStreaming={isStreaming} onStop={stopStreaming} />
           </div>
         </div>
       </div>
 
-      {/* Plan sidebar */}
+      {/* Plan sidebar — right side, shown when Captain has produced a plan */}
       {showPlanSidebar && (
-        <div className="w-80 shrink-0">
+        <div className="w-72 shrink-0">
           <PlanSidebar
             plan={currentPlan}
             dataContext={dataContext}
@@ -566,9 +561,9 @@ const ChatPage: FC<ChatPageProps> = ({ onDashboardGenerated, onGeneratingStarted
         </div>
       )}
 
-      {/* Data context panel */}
+      {/* Data context panel — only when plan sidebar is hidden */}
       {contextPanelOpen && dataContext && !showPlanSidebar && (
-        <div className="w-80 shrink-0">
+        <div className="w-72 shrink-0">
           <DataContextPanel dataContext={dataContext} onCollapse={() => setContextPanelOpen(false)} />
         </div>
       )}

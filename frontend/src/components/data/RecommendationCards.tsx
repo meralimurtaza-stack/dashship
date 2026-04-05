@@ -3,11 +3,11 @@ import type { DataRecommendation } from '../../lib/data-review-api'
 
 // ── Badge config per recommendation type ─────────────────────────
 
-const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
-  rename: { bg: 'rgba(61,130,246,0.1)', text: 'var(--color-lp-primary)' },
-  reclassify: { bg: 'rgba(129,39,207,0.1)', text: 'var(--color-lp-tertiary)' },
-  type_change: { bg: 'rgba(184,134,11,0.1)', text: '#B8860B' },
-  hide: { bg: 'rgba(114,119,133,0.1)', text: 'var(--color-lp-outline)' },
+const BADGE_STYLES: Record<string, string> = {
+  rename: 'bg-[#1C3360]/10 text-[#1C3360]',
+  reclassify: 'bg-[#5B3E8A]/10 text-[#5B3E8A]',
+  type_change: 'bg-[#B8860B]/10 text-[#B8860B]',
+  hide: 'bg-ds-surface-alt text-ds-text-dim',
 }
 
 const BADGE_LABELS: Record<string, string> = {
@@ -44,72 +44,58 @@ interface CardProps {
 const Card: FC<CardProps> = ({ rec, status, onApprove, onSkip }) => {
   if (status === 'skipped') return null
 
-  const badge = BADGE_COLORS[rec.type] || BADGE_COLORS.hide
+  const badgeStyle = BADGE_STYLES[rec.type] || BADGE_STYLES.hide
   const badgeLabel = BADGE_LABELS[rec.type] || rec.type
   const isApproved = status === 'approved'
 
   return (
     <div
-      className={`p-4 rounded-xl border transition-all duration-200 ${
+      className={`bg-ds-surface p-4 transition-opacity duration-200 ${
         isApproved ? 'opacity-50' : 'opacity-100'
       }`}
-      style={{
-        backgroundColor: 'white',
-        borderColor: 'rgba(194,198,214,0.2)',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-      }}
+      style={{ borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
     >
       {/* Badge + Field name */}
       <div className="flex items-center gap-2 mb-2">
         <span
-          className="text-[9px] uppercase tracking-widest px-2 py-0.5 rounded"
-          style={{ fontFamily: 'var(--font-label)', backgroundColor: badge.bg, color: badge.text }}
+          className={`font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 ${badgeStyle}`}
+          style={{ borderRadius: '4px' }}
         >
           {badgeLabel}
         </span>
-        <span
-          className="text-[10px] truncate"
-          style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-outline)' }}
-        >
+        <span className="font-mono text-[10px] text-ds-text-dim truncate">
           {rec.field}
         </span>
       </div>
 
       {/* Change description */}
-      <p className="text-xs leading-relaxed mb-1" style={{ color: 'var(--color-lp-on-surface)' }}>
+      <p className="font-sans text-xs text-ds-text leading-relaxed mb-1">
         {describeChange(rec)}
       </p>
 
       {/* Reason */}
-      <p className="text-[11px] leading-relaxed mb-3" style={{ color: 'var(--color-lp-on-surface-variant)' }}>
+      <p className="text-[11px] text-ds-text-muted leading-relaxed mb-3">
         {rec.reason}
       </p>
 
       {/* Actions */}
       {isApproved ? (
-        <div className="flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-sm" style={{ color: '#2E7D5B' }}>check_circle</span>
-          <p className="text-[10px] uppercase tracking-wider font-bold" style={{ fontFamily: 'var(--font-label)', color: '#2E7D5B' }}>
-            Applied
-          </p>
-        </div>
+        <p className="font-sans text-[10px] text-ds-success uppercase tracking-wide">
+          Applied ✓
+        </p>
       ) : (
         <div className="flex items-center gap-2">
           <button
             onClick={onApprove}
-            className="text-white text-[10px] uppercase tracking-wider font-bold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
-            style={{ fontFamily: 'var(--font-label)', backgroundColor: 'var(--color-lp-primary)' }}
+            className="bg-ds-accent text-white font-sans text-[10px] uppercase tracking-wide px-4 py-1.5 hover:opacity-90 transition-opacity"
+            style={{ borderRadius: '6px' }}
           >
-            Approve
+            Approve ✓
           </button>
           <button
             onClick={onSkip}
-            className="text-[10px] uppercase tracking-wider px-4 py-1.5 rounded-lg border hover:bg-white transition-colors"
-            style={{
-              fontFamily: 'var(--font-label)',
-              color: 'var(--color-lp-outline)',
-              borderColor: 'rgba(194,198,214,0.3)',
-            }}
+            className="text-ds-text-dim font-sans text-[10px] uppercase tracking-wide px-4 py-1.5 hover:text-ds-text-muted transition-colors"
+            style={{ borderRadius: '6px', border: '0.5px solid rgba(0,0,0,0.06)' }}
           >
             Skip
           </button>
@@ -165,74 +151,23 @@ const RecommendationCards: FC<RecommendationCardsProps> = ({
     onApproveAll()
   }
 
-  const pendingRecs = recommendations.filter(r => getStatus(r.id) === 'pending')
-  const hasPending = pendingRecs.length > 0
-  const hasNoRecs = recommendations.length === 0
+  const hasPending = recommendations.some(r => getStatus(r.id) === 'pending')
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
-      {/* Summary bubble */}
-      <div className="flex items-start gap-3">
-        <div
-          className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center mt-0.5"
-          style={{ backgroundColor: 'var(--color-lp-primary)' }}
-        >
-          <span className="text-white text-[10px] font-bold" style={{ fontFamily: 'var(--font-label)' }}>C</span>
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="flex items-start gap-2">
+        <div className="w-5 h-5 shrink-0 bg-ds-accent flex items-center justify-center mt-0.5" style={{ borderRadius: '9999px' }}>
+          <span className="text-white text-[10px] font-mono font-medium">C</span>
         </div>
-        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-lp-on-surface)' }}>
+        <p className="font-sans text-[13px] text-ds-text leading-relaxed">
           {summary}
         </p>
       </div>
 
-      {/* No recommendations — data is clean */}
-      {hasNoRecs && (
-        <div
-          className="p-5 rounded-xl border text-center space-y-3"
-          style={{ backgroundColor: 'white', borderColor: 'rgba(194,198,214,0.15)' }}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <span className="material-symbols-outlined text-lg" style={{ color: '#2E7D5B' }}>verified</span>
-            <p className="text-xs font-medium">Data looks clean</p>
-          </div>
-          <button
-            onClick={onStartPlanning}
-            className="text-white text-xs font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all inline-flex items-center gap-2"
-            style={{ fontFamily: 'var(--font-body)', backgroundColor: 'var(--color-lp-primary)' }}
-          >
-            Start Planning
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
-          </button>
-        </div>
-      )}
-
-      {/* Approve All bar — pinned at top when there are pending recs */}
-      {hasPending && recommendations.length > 1 && (
-        <button
-          onClick={handleApproveAll}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-xs uppercase tracking-widest font-bold transition-all hover:text-white"
-          style={{
-            fontFamily: 'var(--font-label)',
-            color: 'var(--color-lp-primary)',
-            borderColor: 'var(--color-lp-primary)',
-            backgroundColor: 'transparent',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--color-lp-primary)'
-            e.currentTarget.style.color = 'white'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'transparent'
-            e.currentTarget.style.color = 'var(--color-lp-primary)'
-          }}
-        >
-          <span className="material-symbols-outlined text-sm">done_all</span>
-          Approve All ({pendingRecs.length})
-        </button>
-      )}
-
-      {/* Scrollable recommendation list */}
+      {/* Recommendation cards */}
       {recommendations.length > 0 && (
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1" style={{ maxHeight: 'calc(100vh - 420px)' }}>
+        <div className="space-y-3">
           {recommendations.map(rec => (
             <Card
               key={rec.id}
@@ -245,23 +180,37 @@ const RecommendationCards: FC<RecommendationCardsProps> = ({
         </div>
       )}
 
-      {/* All handled — ready to plan */}
-      {allHandled && !hasNoRecs && (
-        <div
-          className="p-5 rounded-xl border text-center space-y-3"
-          style={{ backgroundColor: 'white', borderColor: 'rgba(194,198,214,0.15)' }}
+      {/* Approve All button */}
+      {hasPending && recommendations.length > 1 && (
+        <button
+          onClick={handleApproveAll}
+          className="w-full text-ds-accent font-sans text-[10px] uppercase tracking-wide px-4 py-2 hover:bg-ds-accent hover:text-white transition-colors"
+          style={{ borderRadius: '10px', border: '0.5px solid rgba(0,0,0,0.10)' }}
         >
+          Approve All ✓
+        </button>
+      )}
+
+      {/* All handled — ready to plan */}
+      {allHandled && (
+        <div className="bg-ds-surface p-5 text-center space-y-3" style={{ borderRadius: '12px', border: '0.5px solid rgba(0,0,0,0.06)' }}>
           <div className="flex items-center justify-center gap-2">
-            <span className="material-symbols-outlined text-lg" style={{ color: '#2E7D5B' }}>verified</span>
-            <p className="text-xs font-medium">Data looks clean</p>
+            <svg className="w-4 h-4 text-ds-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+            <p className="font-sans text-xs font-medium text-ds-text">
+              Data looks clean
+            </p>
           </div>
           <button
             onClick={onStartPlanning}
-            className="text-white text-xs font-bold px-6 py-2.5 rounded-xl hover:opacity-90 transition-all inline-flex items-center gap-2"
-            style={{ fontFamily: 'var(--font-body)', backgroundColor: 'var(--color-lp-primary)' }}
+            className="bg-ds-accent text-white font-sans text-xs font-medium px-6 py-2.5 hover:bg-ds-accent-hover transition-colors inline-flex items-center gap-2"
+            style={{ borderRadius: '10px' }}
           >
             Start Planning
-            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+            </svg>
           </button>
         </div>
       )}

@@ -6,14 +6,6 @@ interface ConversationStartersProps {
   onSend: (message: string) => void
 }
 
-const ICONS = ['monitoring', 'trending_up', 'analytics', 'bar_chart']
-const COLORS = [
-  'var(--color-lp-primary)',
-  'var(--color-lp-tertiary)',
-  'var(--color-lp-primary)',
-  'var(--color-lp-secondary)',
-]
-
 const ConversationStarters: FC<ConversationStartersProps> = ({
   dataContext,
   onSend,
@@ -28,31 +20,27 @@ const ConversationStarters: FC<ConversationStartersProps> = ({
     const topMeasure =
       measures[0]?.displayName || measures[0]?.name || 'metric'
 
-    const prompts: Array<{ label: string; message: string; subtitle: string }> = []
+    const prompts: Array<{ label: string; message: string }> = []
 
     if (dateCols.length > 0) {
       prompts.push({
-        label: 'Monitoring Overall Health',
-        subtitle: `${topMeasure} · Trends · Time Series`,
+        label: 'Trends over time',
         message: `What trends can I see in ${topMeasure} over time?`,
       })
     }
 
     prompts.push({
       label: `Breakdown by ${topDim}`,
-      subtitle: `${topMeasure} · ${topDim} · Segmentation`,
       message: `Show me a breakdown of ${topMeasure} by ${topDim}.`,
     })
 
     prompts.push({
-      label: 'Performance Dashboard',
-      subtitle: 'KPIs · Revenue · Growth',
+      label: 'Performance dashboard',
       message: `Create a performance dashboard for this data highlighting the key metrics.`,
     })
 
     prompts.push({
-      label: 'Key Metrics Deep Dive',
-      subtitle: 'Dimensions · Measures · Insights',
+      label: 'Key metrics',
       message: `What are the most important metrics and dimensions in this dataset?`,
     })
 
@@ -60,58 +48,42 @@ const ConversationStarters: FC<ConversationStartersProps> = ({
   }, [dataContext])
 
   return (
-    <div className="flex-1 flex flex-col justify-center px-8 md:px-12 overflow-y-auto">
-      <div className="max-w-3xl mx-auto w-full space-y-12 py-12">
-        {/* Welcome header */}
-        <div className="space-y-5">
-          <div
-            className="inline-flex items-center gap-2 px-3 py-1 rounded-full"
-            style={{ backgroundColor: 'var(--color-lp-tertiary-fixed)', color: 'var(--color-lp-on-tertiary-fixed)' }}
-          >
-            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
-            <span className="text-[10px] uppercase tracking-widest font-bold" style={{ fontFamily: 'var(--font-label)' }}>AI Consultant Online</span>
-          </div>
-          <h2
-            className="text-5xl md:text-6xl font-light leading-[0.95] tracking-tight"
-            style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-lp-on-surface)' }}
-          >
-            Let's build your <span className="italic font-light">vision.</span>
+    <div className="flex-1 flex items-center justify-center">
+      <div className="max-w-lg w-full space-y-8 px-6">
+        <div className="space-y-3">
+          <p className="micro-label">
+            Start Planning
+          </p>
+          <h2 className="font-mono text-2xl font-medium text-ds-text leading-tight">
+            What would you like to<br />build with this data?
           </h2>
-          <p className="text-lg max-w-xl leading-relaxed" style={{ color: 'var(--color-lp-on-surface-variant)' }}>
+          <p className="text-sm text-ds-text-muted leading-relaxed">
             {dataContext.sourceName} &middot;{' '}
-            <span className="tabular-nums">{dataContext.rowCount.toLocaleString()}</span> rows &middot;{' '}
-            <span className="tabular-nums">{dataContext.columns.length}</span> fields loaded. What should we build?
+            <span className="tabular-nums font-mono">
+              {dataContext.rowCount.toLocaleString()}
+            </span>{' '}
+            rows &middot;{' '}
+            <span className="tabular-nums font-mono">
+              {dataContext.columns.length}
+            </span>{' '}
+            fields
           </p>
         </div>
 
-        {/* Suggestion Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {starters.map((starter, i) => (
+        <div className="grid grid-cols-2 gap-3">
+          {starters.map((starter) => (
             <button
               key={starter.label}
               onClick={() => onSend(starter.message)}
-              className="text-left p-7 transition-all duration-300 rounded-[1.5rem] ring-1 hover:shadow-xl flex flex-col justify-between h-48 group"
-              style={{
-                backgroundColor: 'var(--color-lp-surface-container-low)',
-                ringColor: `${COLORS[i]}10`,
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#ffffff' }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'var(--color-lp-surface-container-low)' }}
+              className="text-left bg-ds-surface px-4 py-3 hover:border-ds-accent transition-colors group"
+              style={{ border: '0.5px solid rgba(0,0,0,0.06)', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)' }}
             >
-              <div
-                className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform ring-1"
-                style={{ color: COLORS[i], ringColor: `${COLORS[i]}20` }}
-              >
-                <span className="material-symbols-outlined text-2xl">{ICONS[i]}</span>
-              </div>
-              <div>
-                <h3 className="text-xl mb-1" style={{ fontFamily: 'var(--font-headline)', color: 'var(--color-lp-on-surface)' }}>
-                  {starter.label}
-                </h3>
-                <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-label)', color: 'var(--color-lp-on-surface-variant)' }}>
-                  {starter.subtitle}
-                </p>
-              </div>
+              <p className="font-mono text-xs font-medium text-ds-text group-hover:text-ds-text">
+                {starter.label}
+              </p>
+              <p className="text-[11px] text-ds-text-dim mt-1 leading-relaxed line-clamp-2">
+                {starter.message}
+              </p>
             </button>
           ))}
         </div>

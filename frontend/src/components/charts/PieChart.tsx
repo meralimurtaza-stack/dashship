@@ -71,9 +71,9 @@ const renderCustomLabel = (props: any) => {
         textAnchor={textAnchor}
         dominantBaseline="central"
         style={{
-          fontFamily: '"Space Grotesk", monospace',
+          fontFamily: '"IBM Plex Mono", monospace',
           fontSize: 11,
-          fill: '#1b1c19',
+          fill: '#0E0D0D',
         }}
       >
         {name}: {typeof value === 'number' ? value.toLocaleString() : value}
@@ -130,7 +130,7 @@ const PieChartComponent: FC<PieChartProps> = ({
     return (
       <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
         <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
         </div>
       </ChartCard>
     )
@@ -179,10 +179,10 @@ const PieChartComponent: FC<PieChartProps> = ({
             textAnchor="middle"
             dominantBaseline="central"
             style={{
-              fontFamily: '"Manrope", system-ui, sans-serif',
+              fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
               fontSize: 20,
               fontWeight: 500,
-              fill: '#1b1c19',
+              fill: '#0E0D0D',
             }}
           >
             {formattedTotal}
@@ -193,7 +193,7 @@ const PieChartComponent: FC<PieChartProps> = ({
             textAnchor="middle"
             dominantBaseline="central"
             style={{
-              fontFamily: '"Space Grotesk", monospace',
+              fontFamily: '"IBM Plex Mono", monospace',
               fontSize: 9,
               fill: '#8A8A86',
               textTransform: 'uppercase' as any,
@@ -232,7 +232,7 @@ const PieChartComponent: FC<PieChartProps> = ({
               />
               <span
                 style={{
-                  fontFamily: '"Space Grotesk", monospace',
+                  fontFamily: '"IBM Plex Mono", monospace',
                   fontSize: 11,
                   color: '#8A8A86',
                 }}

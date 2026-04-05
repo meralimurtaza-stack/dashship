@@ -38,10 +38,10 @@ const FinalValueLabel = ({ viewBox, value, color }: any) => {
       x={viewBox.x + 8}
       y={viewBox.y - 8}
       style={{
-        fontFamily: '"Space Grotesk", monospace',
+        fontFamily: '"IBM Plex Mono", monospace',
         fontSize: 11,
         fontWeight: 500,
-        fill: color || '#1b1c19',
+        fill: color || '#0E0D0D',
       }}
     >
       {value}
@@ -65,7 +65,7 @@ const LineChartComponent: FC<LineChartProps> = ({
     return (
       <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
         <div style={{ height: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
         </div>
       </ChartCard>
     )

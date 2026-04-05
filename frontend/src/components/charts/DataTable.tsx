@@ -38,14 +38,14 @@ const DataTableComponent: FC<DataTableProps> = ({
     return (
       <ChartCard title={title} isSelected={isSelected} onClick={onClick} index={index} info={info}>
         <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
+          <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 12, color: '#8A8A86' }}>No data</span>
         </div>
       </ChartCard>
     )
   }
 
   const headerStyle: React.CSSProperties = {
-    fontFamily: '"Space Grotesk", monospace',
+    fontFamily: '"IBM Plex Mono", monospace',
     fontSize: 11,
     fontWeight: 500,
     letterSpacing: '0.5px',
@@ -57,9 +57,9 @@ const DataTableComponent: FC<DataTableProps> = ({
   }
 
   const cellStyle: React.CSSProperties = {
-    fontFamily: '"Manrope", system-ui, sans-serif',
+    fontFamily: '"IBM Plex Sans", system-ui, sans-serif',
     fontSize: 13,
-    color: '#1b1c19',
+    color: '#0E0D0D',
     padding: '7px 12px',
     whiteSpace: 'nowrap',
   }
@@ -114,7 +114,7 @@ const DataTableComponent: FC<DataTableProps> = ({
                       style={{
                         ...cellStyle,
                         textAlign: numericCols.has(col) ? 'right' : 'left',
-                        fontFamily: isNum ? '"Space Grotesk", monospace' : cellStyle.fontFamily,
+                        fontFamily: isNum ? '"IBM Plex Mono", monospace' : cellStyle.fontFamily,
                         color: isNeg ? '#C0392B' : cellStyle.color,
                       }}
                     >

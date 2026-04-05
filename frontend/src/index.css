@@ -1,47 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Manrope", system-ui, -apple-system, sans-serif;
-  --font-mono: "Space Grotesk", Menlo, Consolas, monospace;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
   --font-display: "Instrument Serif", Georgia, serif;
-  --font-dash: "Manrope", -apple-system, sans-serif;
-  --font-headline: "Newsreader", Georgia, serif;
-  --font-body: "Manrope", system-ui, sans-serif;
-  --font-label: "Space Grotesk", system-ui, sans-serif;
+  --font-dash: "Plus Jakarta Sans", -apple-system, sans-serif;
 
-  /* ds-* tokens remapped to new palette */
-  --color-ds-bg: #fbf9f3;
-  --color-ds-surface: #ffffff;
-  --color-ds-surface-alt: #f5f3ee;
-  --color-ds-text: #1b1c19;
-  --color-ds-text-muted: #424754;
-  --color-ds-text-dim: #727785;
-  --color-ds-accent: #3D82F6;
-  --color-ds-accent-light: #d8e2ff;
-  --color-ds-accent-hover: #2370e4;
-  --color-ds-accent-glow: rgba(61,130,246,0.06);
-  --color-ds-success: #16a34a;
-  --color-ds-success-light: #dcfce7;
-  --color-ds-warning: #ca8a04;
-  --color-ds-warning-light: #fef9c3;
-  --color-ds-error: #ba1a1a;
-  --color-ds-error-light: #ffdad6;
+  --color-ds-bg: #FAFAF8;
+  --color-ds-surface: #FFFFFF;
+  --color-ds-surface-alt: #F0EFEA;
+  --color-ds-text: #0E0D0D;
+  --color-ds-text-muted: #6B6B65;
+  --color-ds-text-dim: #9E9E96;
+  --color-ds-accent: #1C3360;
+  --color-ds-accent-light: #E8EDF4;
+  --color-ds-accent-hover: #152847;
+  --color-ds-accent-glow: rgba(28,51,96,0.06);
+  --color-ds-success: #3B9B6F;
+  --color-ds-success-light: #E3F0EA;
+  --color-ds-warning: #C69026;
+  --color-ds-warning-light: #FBF0DA;
+  --color-ds-error: #C45454;
+  --color-ds-error-light: #FCEAEA;
   --color-ds-border: rgba(0,0,0,0.06);
   --color-ds-border-strong: rgba(0,0,0,0.10);
-  --color-ds-gold: #ca8a04;
+  --color-ds-gold: #C8963E;
 
-  --radius-btn: 12px;
-  --radius-card: 16px;
-  --radius-input: 12px;
+  --radius-btn: 10px;
+  --radius-card: 12px;
+  --radius-input: 20px;
 
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
 
-  --color-chart-1: #3D82F6;
-  --color-chart-2: #1b1c19;
-  --color-chart-3: #727785;
-  --color-chart-4: #8127cf;
+  --color-chart-1: #1C3360;
+  --color-chart-2: #141210;
+  --color-chart-3: #8D8981;
+  --color-chart-4: #C8963E;
 
   --color-pub-bg: #FFFFFF;
   --color-pub-surface: #FAFAFA;
@@ -51,31 +47,6 @@
   --color-pub-border: #EDEDEB;
   --color-pub-success: #3B9B6F;
   --color-pub-error: #C45454;
-
-  /* Landing page tokens */
-  --color-lp-primary: #3D82F6;
-  --color-lp-primary-container: #2370e4;
-  --color-lp-on-primary: #ffffff;
-  --color-lp-surface: #fbf9f3;
-  --color-lp-surface-container-low: #f5f3ee;
-  --color-lp-surface-container: #f0eee8;
-  --color-lp-surface-container-high: #eae8e2;
-  --color-lp-surface-container-highest: #e4e2dd;
-  --color-lp-on-surface: #1b1c19;
-  --color-lp-on-surface-variant: #424754;
-  --color-lp-outline: #727785;
-  --color-lp-outline-variant: #c2c6d6;
-  --color-lp-secondary: #615e58;
-  --color-lp-secondary-container: #e7e2da;
-  --color-lp-tertiary: #8127cf;
-  --color-lp-tertiary-container: #9c48ea;
-  --color-lp-tertiary-fixed: #f0dbff;
-  --color-lp-on-tertiary-fixed: #2c0051;
-  --color-lp-primary-fixed: #d8e2ff;
-  --color-lp-primary-fixed-dim: #aec6ff;
-  --color-lp-inverse-surface: #30312d;
-  --color-lp-inverse-on-surface: #f2f1eb;
-  --color-lp-error: #ba1a1a;
 }
 
 *,
@@ -91,30 +62,19 @@ html {
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--font-sans);
   background-color: var(--color-ds-bg);
   color: var(--color-ds-text);
   margin: 0;
   min-height: 100vh;
 }
 
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  vertical-align: middle;
-}
-
-.glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
 .micro-label {
-  font-family: var(--font-label);
+  font-family: var(--font-mono);
   font-size: 9px;
-  font-weight: 500;
+  font-weight: 400;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   color: var(--color-ds-text-dim);
 }
 
@@ -141,8 +101,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-lp-primary-fixed);
-  color: var(--color-lp-on-surface);
+  background: var(--color-ds-accent-glow);
+  color: var(--color-ds-text);
 }
 
 @keyframes fadeIn {

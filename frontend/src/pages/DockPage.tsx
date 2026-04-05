@@ -27,7 +27,7 @@ function timeAgo(dateStr: string | null): string {
 }
 
 function getInitialColor(name: string): string {
-  const colors = ['#3D82F6', '#16a34a', '#ca8a04', '#ba1a1a', '#727785', '#8127cf']
+  const colors = ['#1C3360', '#3B9B6F', '#C69026', '#C45454', '#6B6B65', '#C8963E']
   let hash = 0
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash)
@@ -310,7 +310,7 @@ const DockPage: FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#fbf9f3' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAFAF8' }}>
         <div className="space-y-3 text-center">
           <div className="w-40 h-2.5 mx-auto" style={{ background: '#E8E8E6', borderRadius: 6 }} />
           <div className="w-28 h-2.5 mx-auto" style={{ background: '#F0F0EE', borderRadius: 6 }} />
@@ -323,17 +323,17 @@ const DockPage: FC = () => {
 
   if (error === 'not_found') {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#fbf9f3', fontFamily: '"Manrope", sans-serif' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAFAF8', fontFamily: '"IBM Plex Sans", sans-serif' }}>
         <div className="text-center space-y-4 px-6 max-w-md">
           <div className="w-14 h-14 mx-auto flex items-center justify-center" style={{ background: '#F0F0EE', borderRadius: 12 }}>
             <svg className="w-7 h-7" fill="none" stroke="#9E9E96" viewBox="0 0 24 24" strokeWidth={1.2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
             </svg>
           </div>
-          <h1 style={{ fontFamily: '"Manrope", sans-serif', fontSize: 22, fontWeight: 500, color: '#1b1c19' }}>
+          <h1 style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 22, fontWeight: 500, color: '#0E0D0D' }}>
             This Dock doesn't exist
           </h1>
-          <p style={{ fontFamily: '"Manrope", sans-serif', fontSize: 14, color: '#8A8A86', lineHeight: 1.6 }}>
+          <p style={{ fontFamily: '"IBM Plex Sans", sans-serif', fontSize: 14, color: '#8A8A86', lineHeight: 1.6 }}>
             Check the URL or contact the person who shared it.
           </p>
         </div>
@@ -345,7 +345,7 @@ const DockPage: FC = () => {
 
   if (error || !dock) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#fbf9f3', fontFamily: '"Manrope", sans-serif' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#FAFAF8', fontFamily: '"IBM Plex Sans", sans-serif' }}>
         <div className="text-center space-y-3 px-6">
           <p style={{ fontSize: 14, color: '#8A8A86' }}>Something went wrong loading this Dock.</p>
         </div>
@@ -357,7 +357,7 @@ const DockPage: FC = () => {
 
   if (dashboardSlug) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: '#fbf9f3', fontFamily: '"Manrope", sans-serif' }}>
+      <div className="min-h-screen flex flex-col" style={{ background: '#FAFAF8', fontFamily: '"IBM Plex Sans", sans-serif' }}>
         {/* Dock header bar */}
         <header
           className="shrink-0 flex items-center justify-between px-6"
@@ -369,7 +369,7 @@ const DockPage: FC = () => {
         >
           <div className="flex items-center gap-3">
             <DockLogo dock={dock} size={32} />
-            <span style={{ fontSize: 14, fontWeight: 500, color: '#1b1c19' }}>
+            <span style={{ fontSize: 14, fontWeight: 500, color: '#0E0D0D' }}>
               {dock.displayName}
             </span>
           </div>
@@ -378,8 +378,8 @@ const DockPage: FC = () => {
               <button
                 onClick={() => setDictionaryOpen(true)}
                 className="flex items-center gap-1.5 transition-colors"
-                style={{ fontSize: 12, color: '#8A8A86', fontFamily: '"Space Grotesk", monospace', letterSpacing: '0.05em' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#1b1c19')}
+                style={{ fontSize: 12, color: '#8A8A86', fontFamily: '"IBM Plex Mono", monospace', letterSpacing: '0.05em' }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#0E0D0D')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = '#8A8A86')}
               >
                 Dictionary
@@ -388,8 +388,8 @@ const DockPage: FC = () => {
             <button
               onClick={() => navigate(`/dock/${slug}`)}
               className="flex items-center gap-1.5 transition-colors"
-              style={{ fontSize: 13, color: '#8A8A86', fontFamily: '"Manrope", sans-serif' }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#1b1c19')}
+              style={{ fontSize: 13, color: '#8A8A86', fontFamily: '"IBM Plex Sans", sans-serif' }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#0E0D0D')}
               onMouseLeave={(e) => (e.currentTarget.style.color = '#8A8A86')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -419,7 +419,7 @@ const DockPage: FC = () => {
 
         {/* Footer */}
         <footer className="shrink-0 py-6 text-center">
-          <p style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#BCBCBC', letterSpacing: '0.04em' }}>
+          <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#BCBCBC', letterSpacing: '0.04em' }}>
             Powered by DashShip
           </p>
         </footer>
@@ -440,7 +440,7 @@ const DockPage: FC = () => {
   // ── Grid View (Dock homepage) ────────────────────────────────
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#fbf9f3', fontFamily: '"Manrope", sans-serif' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: '#FAFAF8', fontFamily: '"IBM Plex Sans", sans-serif' }}>
       {/* Header */}
       <header className="shrink-0 px-6 py-8 sm:px-8 lg:px-12">
         <div className="max-w-6xl mx-auto">
@@ -448,10 +448,10 @@ const DockPage: FC = () => {
             <div className="flex items-center gap-4">
               <DockLogo dock={dock} size={40} />
               <div>
-                <h1 style={{ fontSize: 18, fontWeight: 500, color: '#1b1c19', margin: 0, lineHeight: 1.3 }}>
+                <h1 style={{ fontSize: 18, fontWeight: 500, color: '#0E0D0D', margin: 0, lineHeight: 1.3 }}>
                   {dock.displayName}
                 </h1>
-                <p style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#8A8A86', marginTop: 2, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#8A8A86', marginTop: 2, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                   Dashboard Dock
                 </p>
               </div>
@@ -461,8 +461,8 @@ const DockPage: FC = () => {
                 <button
                   onClick={handleOpenSettings}
                   className="flex items-center gap-1.5 transition-colors"
-                  style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.04em', textTransform: 'uppercase' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#1b1c19')}
+                  style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.04em', textTransform: 'uppercase' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#0E0D0D')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = '#8A8A86')}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -473,11 +473,11 @@ const DockPage: FC = () => {
                 </button>
               )}
               <div className="hidden sm:flex items-center gap-2">
-                <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 11, color: '#8A8A86' }}>
+                <span style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#8A8A86' }}>
                   {liveDashboardCount} dashboard{liveDashboardCount !== 1 ? 's' : ''}
                 </span>
-                <span className="flex items-center gap-1" style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 11, color: '#16a34a' }}>
-                  <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#16a34a' }} />
+                <span className="flex items-center gap-1" style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#3B9B6F' }}>
+                  <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#3B9B6F' }} />
                   Live
                 </span>
               </div>
@@ -499,14 +499,14 @@ const DockPage: FC = () => {
             }}
           >
             <div className="flex items-center justify-between mb-5">
-              <p style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                 Dock Settings
               </p>
               <button
                 onClick={() => setShowSettings(false)}
                 className="p-1 transition-colors"
                 style={{ color: '#8A8A86' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = '#1b1c19')}
+                onMouseEnter={(e) => (e.currentTarget.style.color = '#0E0D0D')}
                 onMouseLeave={(e) => (e.currentTarget.style.color = '#8A8A86')}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -519,7 +519,7 @@ const DockPage: FC = () => {
               {/* Display Name */}
               <div>
                 <label
-                  style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}
+                  style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}
                 >
                   Company / Display Name
                 </label>
@@ -532,14 +532,14 @@ const DockPage: FC = () => {
                       flex: 1,
                       padding: '8px 12px',
                       fontSize: 14,
-                      fontFamily: '"Manrope", sans-serif',
-                      color: '#1b1c19',
-                      background: '#fbf9f3',
+                      fontFamily: '"IBM Plex Sans", sans-serif',
+                      color: '#0E0D0D',
+                      background: '#FAFAF8',
                       border: '0.5px solid #E8E8E6',
                       borderRadius: 8,
                       outline: 'none',
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = '#1b1c19')}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = '#0E0D0D')}
                     onBlur={(e) => (e.currentTarget.style.borderColor = '#E8E8E6')}
                   />
                   <button
@@ -548,10 +548,10 @@ const DockPage: FC = () => {
                     style={{
                       padding: '8px 16px',
                       fontSize: 11,
-                      fontFamily: '"Space Grotesk", monospace',
+                      fontFamily: '"IBM Plex Mono", monospace',
                       fontWeight: 500,
                       color: '#FFFFFF',
-                      background: '#3D82F6',
+                      background: '#1C3360',
                       border: 'none',
                       borderRadius: 8,
                       cursor: saving ? 'not-allowed' : 'pointer',
@@ -568,7 +568,7 @@ const DockPage: FC = () => {
               {/* Logo Upload */}
               <div>
                 <label
-                  style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}
+                  style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#8A8A86', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}
                 >
                   Logo
                 </label>
@@ -595,8 +595,8 @@ const DockPage: FC = () => {
                     style={{
                       padding: '8px 14px',
                       fontSize: 11,
-                      fontFamily: '"Space Grotesk", monospace',
-                      color: '#1b1c19',
+                      fontFamily: '"IBM Plex Mono", monospace',
+                      color: '#0E0D0D',
                       background: 'transparent',
                       border: '0.5px solid #E8E8E6',
                       borderRadius: 8,
@@ -609,7 +609,7 @@ const DockPage: FC = () => {
                     {uploading ? 'Uploading...' : dock.logoUrl ? 'Change Logo' : 'Upload Logo'}
                   </button>
                 </div>
-                <p style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#BCBCBC', marginTop: 6 }}>
+                <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#BCBCBC', marginTop: 6 }}>
                   PNG, JPG, or SVG. Max 5MB.
                 </p>
               </div>
@@ -630,7 +630,7 @@ const DockPage: FC = () => {
             <EmptyState />
           ) : (
             <>
-              <h2 style={{ fontSize: 13, fontWeight: 500, color: '#1b1c19', marginBottom: 24 }}>
+              <h2 style={{ fontSize: 13, fontWeight: 500, color: '#0E0D0D', marginBottom: 24 }}>
                 Your Dashboards
               </h2>
               <div
@@ -653,7 +653,7 @@ const DockPage: FC = () => {
 
       {/* Footer */}
       <footer className="shrink-0 py-8 text-center">
-        <p style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 10, color: '#BCBCBC', letterSpacing: '0.04em' }}>
+        <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 10, color: '#BCBCBC', letterSpacing: '0.04em' }}>
           Powered by DashShip
         </p>
       </footer>
@@ -687,7 +687,7 @@ const DockLogo: FC<{ dock: DockWithDashboards; size: number }> = ({ dock, size }
         background: bgColor,
       }}
     >
-      <span style={{ color: '#FFFFFF', fontSize: size * 0.42, fontWeight: 500, fontFamily: '"Manrope", sans-serif' }}>
+      <span style={{ color: '#FFFFFF', fontSize: size * 0.42, fontWeight: 500, fontFamily: '"IBM Plex Sans", sans-serif' }}>
         {initial}
       </span>
     </div>
@@ -726,7 +726,7 @@ const DashboardCard: FC<{ dashboard: DockDashboard; index: number; onClick: () =
       {/* Preview area */}
       <div
         className="flex items-center justify-center px-6"
-        style={{ height: 120, color: '#1b1c19', background: '#fbf9f3' }}
+        style={{ height: 120, color: '#0E0D0D', background: '#FAFAF8' }}
       >
         <div className="w-full max-w-[200px] h-16">
           {pattern(index)}
@@ -735,16 +735,16 @@ const DashboardCard: FC<{ dashboard: DockDashboard; index: number; onClick: () =
 
       {/* Card content */}
       <div className="px-5 py-4" style={{ borderTop: '0.5px solid #E8E8E6' }}>
-        <h3 style={{ fontSize: 14, fontWeight: 500, color: '#1b1c19', margin: 0, lineHeight: 1.4 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 500, color: '#0E0D0D', margin: 0, lineHeight: 1.4 }}>
           {dashboard.dashboardName}
         </h3>
         <div className="flex items-center gap-2" style={{ marginTop: 6 }}>
-          <p style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 11, color: '#8A8A86', margin: 0 }}>
+          <p style={{ fontFamily: '"IBM Plex Mono", monospace', fontSize: 11, color: '#8A8A86', margin: 0 }}>
             Updated {timeAgo(dashboard.publishedAt || dashboard.updatedAt || dashboard.createdAt)}
           </p>
           {dashboard.version > 1 && (
             <span style={{
-              fontFamily: '"Space Grotesk", monospace',
+              fontFamily: '"IBM Plex Mono", monospace',
               fontSize: 10,
               color: '#8A8A86',
               background: '#F0F0EE',
@@ -772,7 +772,7 @@ const EmptyState: FC = () => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
       </svg>
     </div>
-    <h3 style={{ fontSize: 16, fontWeight: 500, color: '#1b1c19', margin: 0 }}>
+    <h3 style={{ fontSize: 16, fontWeight: 500, color: '#0E0D0D', margin: 0 }}>
       No dashboards docked yet
     </h3>
     <p style={{ fontSize: 14, color: '#8A8A86', marginTop: 8, maxWidth: 320, lineHeight: 1.5 }}>
